@@ -1,0 +1,765 @@
+*RAVENLY • INTERNAL SALES ENABLEMENT • OCTOBER 11, 2026*
+
+# Ravenly sales training & product reference
+
+A comprehensive guide to the product, the buyer’s problems, the sales conversation, and the competitive landscape.
+
+Topics: Product capabilities; Benefits & discovery; Demo playbook; Intaker & Juvo Leads.
+
+Research combines Ravenly’s public website, a read-only review of the Stritmatter Law demo account, and competitors’ own public materials. Prepared for internal training; review the confirmation items before converting this into external marketing copy.
+
+## 01 · How to use this guide
+
+**The central sales story:** Ravenly helps a law firm capture inquiries, understand their potential, organize follow-up, and connect intake outcomes to marketing sources. Its value extends from the website interaction to the intake team’s daily work and the firm’s measurement of results.
+
+New representatives should read sections 2–3, 12–17, and the objection handling and certification sections first. Product specialists should also study the detailed capability catalog and implementation requirements. Managers should review the unresolved claims in section 21 before approving a standard pitch.
+
+**Observed** means the control, configuration, report, or record was visible in this demo. It does not mean that delivery, integrations, calculations, or end-to-end behavior were tested.
+
+**Public claim** means Ravenly or a competitor describes the capability on its website. Competitor claims were not tested in their applications.
+
+**Sales interpretation** means a proposed benefit, positioning angle, example, or recommendation derived from the capabilities. It is not a measured customer result.
+
+**Confirm** means scope, entitlement, configuration, behavior, or policy remains unresolved. “Not verified” does not mean a feature is absent.
+
+The demo session had **Super Admin** access while viewing one firm. That view may expose controls unavailable to a normal customer or a particular plan. No records or settings were saved, no messages were sent, no leads were submitted, and no integrations or workflows were activated. The firm selector was left on Stritmatter Law. Private lead identities, contact details, case narratives, credentials, and account identifiers are deliberately excluded from this guide.
+
+Prices and product status are a snapshot as of October 11, 2026. Links at the end of each topic identify public evidence or the relevant authenticated product area. The source register provides the full coverage map.
+
+## 02 · Product positioning and core narrative
+
+### What Ravenly is
+
+Ravenly publicly calls itself a **conversion accelerator for law firms**. The product combines website intake experiences, configurable qualification, AI-assisted lead intelligence, a shared intake workspace, communications, automations, and marketing attribution. The strongest pitch follows the entire inquiry-to-retained-client process rather than stopping at “we have a chatbot.”
+
+- **Engage:** Chat, form, case evaluation
+- **Qualify:** Questions, criteria, scoring
+- **Respond:** Alerts, messages, calls, tasks
+- **Manage:** Ownership, stages, follow-up
+- **Measure:** Sources, retention, value
+
+### Thirty-second pitch
+
+> Ravenly helps law firms turn more of their existing inquiries into organized, actionable intake opportunities. It gives visitors several ways to reach you, collects information relevant to the matter, helps your team prioritize and follow up, and shows which marketing sources are associated with retained clients. It brings those steps into one intake workflow so your team can see what needs attention.
+
+### Two-minute pitch
+
+“Many firms already invest in traffic and advertising. The next question is what happens when a potential client arrives: can they explain their situation, does the right person receive it, and does someone own the follow-up? Ravenly provides chat, webforms, and guided case evaluations. You can tailor questions by practice area and case type, use firm-specific criteria to inform scoring, and give intake staff the original answers alongside an AI summary.
+
+“From there, staff can work with leads, messages, tasks, stages, and activity history. Configured integrations and automations can support the handoff into the firm’s existing tools. Reporting connects acquisition channels and sources to qualification, retained matters, and recorded value. The goal is to make your intake process easier to run and easier to evaluate. We would start by identifying where your current inquiries stall and prove the relevant workflow with your team.”
+
+### Positioning boundaries
+
+- Position Ravenly alongside the firm’s intake process and case management system. A replacement for full legal practice management, accounting, document management, or attorney judgment was not established.
+- Website capture can operate outside office hours. That does not mean a human intake employee, attorney, live answering service, or every communication channel responds around the clock.
+- AI summaries and scores assist review. They are not legal advice, verified case valuation, or a promise that an inquiry is suitable for representation.
+- The public site’s “20+ years” refers to the team’s legal technology experience. Do not present it as Ravenly’s operating history.
+- Pipeline stages such as Conflict Check or Retainer Sent describe status. Their names do not prove automated conflict searching or electronic signature functionality.
+
+*Public evidence: [Ravenly overview](https://ravenly.com/), [trial and intake examples](https://ravenly.com/trial-sign-up/). Product evidence: Action Center, Leads, Chatflows, Reports.*
+
+## 03 · Buyer problems, personas, and fit
+
+| Buyer or user | Problem to explore | Relevant proof | Benefit to articulate |
+| --- | --- | --- | --- |
+| Managing partner / owner | Unclear intake accountability; high-value inquiries go stale; marketing results are hard to explain. | Action Center, ownership, lead stages, retained outcomes, recorded revenue by source. | A clearer view of opportunities and the process responsible for converting them. |
+| Intake director / office manager | Scattered notifications, uneven qualification, duplicate records, inconsistent follow-up. | Lead filters, original answers, scoring, tasks, templates, workflow conditions. | More consistent triage and fewer handoffs that rely on memory. |
+| Marketing director / agency | Reports stop at raw leads or form fills; no visibility into lead quality or retained matters. | Paid, organic, LLM referral reporting; landing pages; source rules; Google Ads conversion mappings. | More useful evidence for evaluating acquisition spend and website experiences. |
+| Intake specialist / receptionist | Repeated questions, too many places to look, unclear next action. | AI summary, contact preferences, messages, tasks, notes, activity history. | More context before contacting the prospect and a clearer next step. |
+| Attorney | Review time is spent reconstructing the story or sorting poor-fit matters. | Practice-specific answers, firm criteria, score explanation, responsible attorney. | Faster initial orientation, with source answers available for verification. |
+| Website / IT administrator | Installation effort, branding, consent, access, and integration uncertainty. | Snippet approach, three appearance builders, organization settings, integration catalog. | A defined implementation scope and a way to identify dependencies before launch. |
+
+### Strong-fit signals
+
+- The firm already receives meaningful website inquiries or buys traffic and wants to improve handling.
+- Several practice areas require different questions and priorities.
+- The firm has staff who can act on leads but lacks a consistent shared process.
+- Management wants outcomes by source, not only counts of inquiries.
+- The team wants multiple website intake formats without redesigning its entire website.
+- A marketing agency or internal team can help configure source tracking and maintain outcome data.
+
+### Situations that require a more careful fit assessment
+
+- The immediate requirement is outsourced human conversations or a fully staffed intake department. The reviewed Ravenly offering did not establish a human answering service.
+- The buyer requires proven autonomous AI phone answering, free-form conversational SMS agents, native WhatsApp messaging, e-signature, or a specific native two-way CRM connector. These were not established in this review.
+- No one at the firm will own responses, lead stages, or data quality. Software visibility alone will not solve that operating gap.
+- The purchase is conditioned on a specific certification, data jurisdiction, uptime commitment, accessibility conformance, or contractual SLA. Obtain current documentation.
+- The buyer has very low inquiry volume. Begin with the operational problem and plausible economics rather than an aggressive revenue projection.
+
+*Sales interpretation, based on the observed feature set and [Ravenly’s positioning](https://ravenly.com/).*
+
+## 04 · Capture: chat, webforms, and case evaluations
+
+**Observed:** Ravenly exposes three separately configurable visitor experiences. They share the intake context but offer different interaction patterns. Describe the prospect’s experience before describing the configuration controls.
+
+| Format | Observed configuration | Why a buyer may care | Useful demonstration |
+| --- | --- | --- | --- |
+| Chat widget | Welcome text or video; practice-area selection; flow questions; branding; floating launcher; consent; language choices; completion and scheduling messages. | A visible conversational entry point for visitors who want guidance on what information to provide. | Show the welcome experience and a relevant flow preview, without submitting a lead. |
+| Webform | Contact labels/placeholders; case-type follow-up questions; custom fields; message field; consent; success popup or redirect; design and language sections. | A familiar intake option that can collect structured context beyond a basic name-and-email form. | Show a practice-specific question and the configured submission outcome. |
+| Case evaluation | Guided multi-step preview; title, sidebar explanation, colors and fonts; full-screen or centered-card presentation; trigger button; inherited or overridden messages. | A dedicated experience for a visitor ready to provide more detail about a potential matter. | Explain the progression from contact details to matter information and next steps. |
+
+### Chatflow authoring and qualification questions
+
+The flow library groups chatflows by practice area and case type. A representative can show the flow’s enabled state, question count, update date, and lead/qualification statistics. Controls for importing from a library, generating with AI, creating, editing, duplicating, and deleting flows were visible. The import and generation functions were not executed.
+
+A motor vehicle accident flow exposed twelve questions covering accident type, date and location, the visitor’s role, other drivers, fault, road conditions, a police report, medical treatment, injuries, work impact, and additional narrative. This is a configuration example, not a required universal intake script. The editor supports required questions and reordering. Single-select choices can have follow-up questions and a disqualifier flag. Single-select, multi-select, text, date, and text-area question types were evidenced across the editor and abandonment reporting.
+
+**Benefit:** the firm can ask relevant questions in a consistent order while preserving the actual answers for staff review. A sensible demonstration connects one question to a real intake decision: “What information do you wish your team had before making its first call?”
+
+### Page targeting
+
+Chatflows include page-targeting controls, with grouped-by-flow and page-directory views, search, and full-URL assignments. The inspected organization had no page assignments configured. Explain the intended value—matching the intake flow to the page’s subject—while confirming matching rules and fallback behavior during implementation.
+
+### Branding and presentation
+
+Chat appearance includes optional welcome video, an animated launcher preview, video-background or video-then-message options, heading and body fonts, text size, colors, logo, launcher dimensions, bottom-right positioning, open-by-default behavior, and a floating welcome bubble. Case evaluation adds sidebar styling and trigger-button styles such as solid, outline, soft, ghost, and gradient, plus hover effects. These controls help the experience fit the firm’s site; they do not establish a measurable conversion lift by themselves.
+
+### Contact fields and visitor preferences
+
+The chat configuration shows first-name controls, a required last name, and a requirement for at least one of email or phone. Location collection via IP and a collect-but-hide option were visible. Preferred contact methods include email, phone, SMS, and an optional WhatsApp preference. **A WhatsApp preference field is not proof of a native WhatsApp messaging integration.** Each channel has its own configuration and should be reviewed separately.
+
+### Languages
+
+The chat language selector offers English plus Spanish, French, German, Portuguese, Italian, Simplified Chinese, Traditional Chinese, Japanese, Korean, Russian, Arabic, Hindi, Vietnamese, Urdu, Dari, Hebrew, Haitian Creole, and Ukrainian. English was enabled in the inspected configuration. The presence of choices is verified; translation quality, completeness across surfaces, and each plan’s entitlement were not tested. Public pricing lists multilingual support for Ascend and Summit.
+
+### Consent and next steps
+
+The chat consent screen can sit between contact information and case questions, with configurable opt-in text, links, optional/required behavior, and decline behavior. Webforms expose consent display and requirement controls. Case evaluation includes an on-screen statement that its opt-in does not block submission. Do not assume identical consent behavior across all three experiences. The firm should approve the actual language and channel settings.
+
+Calendly-related invitations, post-scheduling messages, skip messages, and completion text are configurable. They depend on the scheduling integration being configured. A public promise of “live in minutes” should be qualified by website access, content approval, SMS registration, and integration setup.
+
+### Practice-area starting points
+
+The public trial page describes templates for personal injury, criminal defense, family law, estate planning, immigration, business law, employment, and bankruptcy. Examples range from injury and insurance questions to deadlines, assets, entity details, debt, or employer information. Actual activated flows and plan limits differ by firm; the inspected account’s library was concentrated in a subset of practices.
+
+*Observed: [Chatflows](https://app.ravenly.com/dashboard/chatflows/), [Chat Widget](https://app.ravenly.com/dashboard/appearance/chat-widget/), [Webform](https://app.ravenly.com/dashboard/appearance/webform/), [Case Evaluation](https://app.ravenly.com/dashboard/appearance/case-evaluation/). Public: [trial templates](https://ravenly.com/trial-sign-up/), [plan scope](https://ravenly.com/pricing/).*
+
+## 05 · Qualification, scoring, and routing
+
+### Teach these concepts separately
+
+| Concept | What was established | Sales boundary |
+| --- | --- | --- |
+| Structured qualification | Case-specific questions, required answers, choice-specific follow-ups, and explicit disqualifier controls. | The firm must approve its screening logic. A flow can gather context without proving legal eligibility. |
+| Practice/case priority | Case-type scoring modes show High, Medium, and Low with base values of 50, 30, and 10. | This is one input to prioritization, not a complete published scoring formula. |
+| Firm-specific scoring criteria | Text fields for ideal clients/cases and additional factors or dealbreakers, with 2,000-character limits. | The UI explicitly says these criteria affect score and do not automatically reject a lead. |
+| AI intelligence | A summary, 0–100 score, quality label, timestamp, and explanatory components appeared on an existing lead. | Verify the original answers; do not promise accuracy or calculate a score by adding displayed components. |
+| Spam handling | Spam filter, spam action, and spam-related automation conditions. | Spam accuracy and automatic decision thresholds were not tested. |
+| Team routing | Teams can be associated with case types, and a default team can act as fallback; flow editor shows auto-assignment by case type. | Round-robin, capacity balancing, detailed geographic routing, and escalation algorithms were not verified. |
+
+The intelligence breakdown included intent, legitimacy, potential value, AI analysis, and case-type value. It helps explain why an item deserves review. One displayed breakdown did not map to a simple additive total; the normalization or cap was not established. Teach representatives to explain the *purpose* of the score, not reverse-engineer its math.
+
+The notification preview distinguishes high priority as a score above 80 and standard priority as 80 or below. Do not confuse that threshold with the case type’s High/Medium/Low base mode or with a report’s “qualified” status. The LLM report, for example, treated high-priority and qualified counts separately.
+
+### Estimated case value
+
+Case-type settings include an estimated value applied to new leads of that type. This can support consistent pipeline reporting, but it is a configured estimate. It is not a prediction of a settlement, legal merits, collected fees, or profit. Discovery should establish whether the firm wants pipeline amounts to represent expected fees, potential revenue, or another approved value definition.
+
+### Scoring and automation timing
+
+The workflow editor warns that scoring occurs shortly after lead creation and suggests stage-based triggers for more reliable score-dependent rules. This matters operationally: a new-lead workflow cannot simply be assumed to see the final score at the instant the record is created. Validate timing before selling a specific “high score immediately alerts the partner” sequence.
+
+### Suggested talk track
+
+> “You define the information and priorities that matter to your practice. Ravenly organizes those inputs and provides a score and summary so your team can triage faster. Your intake staff can still inspect the original answers and make the actual decision.”
+
+*Observed: lead Intelligence tab; [Case Types](https://app.ravenly.com/dashboard/settings/case-types/); [Organization and Teams](https://app.ravenly.com/dashboard/settings/organization/); [notification preview](https://app.ravenly.com/dashboard/settings/notification-settings/); [Automations](https://app.ravenly.com/dashboard/workflows/).*
+
+## 06 · Daily intake work: leads, pipeline, tasks, and records
+
+### Action Center and Daily Digest
+
+The Action Center is a practical opening screen for an intake-manager demo. It surfaces messages awaiting response, personal versus firm-wide message views, tasks due today, overdue and upcoming work, and a high-priority lead list with stage, last activity, and score. High-priority, inactive-lead, and overdue-task indicators link the interface to daily attention. The Daily Digest groups those same kinds of exceptions. The current session contained empty task/message states, so the review establishes the interface rather than notification delivery or populated task behavior.
+
+### Lead list and filtering
+
+The list includes name, assignment, date, score, stage, case type, channel, unread indicators, possible duplicate warnings, and CallRail-related badges where applicable. Search, pagination, CSV export, and Add Lead controls are present. Quick views include all active, all, unassigned, priority, unviewed, and spam.
+
+The detailed filters cover case type, stage, date presets and custom dates, High/Medium/Low scoring mode, channel, capture method, referral, and deleted leads. Channel choices include Organic, Paid, LLM, Organic Social, Paid Social, Directory, Email, Referral, Direct, and Unknown. Capture method choices include Webform, CallRail, Case Evaluation, and Chat Widget. This distinction is important: **Google can be the acquisition source while a webform is the capture method.**
+
+### The lead record
+
+| Area | What the team can inspect | Operational value |
+| --- | --- | --- |
+| Overview | AI summary, original Q&A, source/medium/channel, capture method, contact preferences and opt-in, stage, owner/team/attorney, timestamps, notes, history. | One place to understand the inquiry and its handling so far. |
+| Messages | SMS and email modes, recipients, composer, attachments, templates, send controls. | Communications in the context of the lead; delivery requires configured services. |
+| Calls | Call recording/transcript area and calling controls. | Potential call context alongside other intake information; no call was placed or played. |
+| Tasks | New-task control, status/type filters, pending/completed/overdue categories, list view. | A visible next action instead of an informal reminder. |
+| Contact information | A dedicated tab is present. | Separates contact details from the wider intake narrative; editing was not tested. |
+| Documents | Search, upload control, document area. | A location for lead-related files. E-signature, OCR, or a full document-management system was not established. |
+| Attribution | Visitor journey, pages, timestamps/time metrics, landing page, source/channel/medium, referrer and device/browser details. | Context for how the visitor arrived and interacted before submitting. |
+| Intelligence | AI summary, score, quality indication and component explanation. | A triage aid with a route back to underlying answers. |
+
+Lead actions include Mark Unread, Mark Spam, Merge with Another Lead, Export PDF, and Delete. Duplicate detection/review is exposed in the list. These actions were inspected but not performed. An export control being present is not a guarantee of export completeness or a bulk migration format.
+
+### Stages and ownership
+
+Stage administration exposes ordering, active/inactive states, a default, and editing. The inspected firm uses stages including New Lead, Attempted Contact, Call Connected, Meeting Scheduled, Investigating, Conflict Check, Retainer Sent, Retained, On Hold, Referred Out, Closed Lost, Firm Disqualified, System Disqualified, and Spam, plus a firm-specific attorney-follow-up stage. These are examples of a configured process, not a mandatory universal pipeline.
+
+Sales representatives should ask who owns each transition, which stages mean a matter is actually retained, and whether a reason or note is expected. Reporting is only as useful as the team’s stage and value discipline.
+
+### Task workspace
+
+A global Tasks workspace is reachable from the Action Center. It offers task search, grouping by status, due date, or no grouping, and All Tasks/Pending/Completed/Overdue views. The inspected workspace was empty. Demonstrate the structure and agree on ownership before promising an automated task process.
+
+*Observed: [Action Center](https://app.ravenly.com/dashboard/user-dashboard/), [Daily Digest](https://app.ravenly.com/dashboard/digest/), [Leads](https://app.ravenly.com/dashboard/leads/), [Tasks](https://app.ravenly.com/dashboard/tasks/), [Stages](https://app.ravenly.com/dashboard/settings/stages/). One previously viewed lead was inspected; its private details are not reproduced.*
+
+## 07 · Messaging, calling, notifications, and mobile access
+
+### Shared communications
+
+The global Messages workspace has All, SMS, and Email filters, search, a new-message control, and everyone/assigned-to-me views. The assignment view was disabled for the Super Admin session, with a note that leads cannot be assigned to that role. Demonstrations should use an appropriate customer role if personal workload is the key story.
+
+A lead’s communication area exposes SMS and email, recipient selection, attachments, and templates. Integrations include Gmail and Microsoft email, SMS registration, call forwarding, Call Connect, CallRail, and VoIP configuration. The existence of these controls does not establish that all are enabled for a given firm or included in every subscription.
+
+### Messaging templates
+
+The inspected library contained six initial-touch templates, including SMS acknowledgement, scheduling, availability checks, and email follow-up. Editors support channel and name, merge fields for first/last name, case type, practice area, firm, Calendly link, assigned member, and office phone, along with capitalization controls. SMS editing shows character and expanded-segment information, a preview, and a STOP-disclaimer option. Templates help consistency; staff still need to check relevance and consent.
+
+### Calling distinctions representatives must know
+
+- **Call Connect:** listed as an instant connection from a visitor request to the firm during office hours. It was not configured in the inspected catalog.
+- **Call forwarding:** listed as active, routing toward an office/mobile destination. This is separate from an AI or human answering service.
+- **VoIP:** a “Make VoIP call” control appeared on a lead and caller-ID configuration appeared in settings. No call was placed; detailed availability and usage pricing need confirmation.
+- **CallRail:** the catalog describes call, text, and form events; recordings/transcripts have a place in the lead record. The connection showed no tracking number, so complete data flow was not demonstrated.
+
+### Notifications
+
+The notification page is a preview of preferences managed by individual users. It lists 21 event types over in-app, email, and SMS channels. Examples include lead creation/assignment/reassignment/update/stage changes, high-priority leads, new messages, task assignment/update/completion/overdue events, user assignment changes, system alerts, and the daily digest. One event addresses a high-priority lead untouched for 15 minutes. The preview’s enabled indicators do not prove every user receives every event.
+
+**Benefit:** the firm can design who needs to know about a lead and how quickly. **Dependency:** individual settings, account configuration, registration, and delivery services must support the chosen channel. There was a discrepancy between an approved SMS registration card and warnings elsewhere that registration was incomplete; resolve this before any messaging demonstration.
+
+### Mobile access
+
+Ravenly has public iOS and Android app listings. Its site describes mobile replies that keep personal numbers private, and the Apple release history references VoIP, notifications, filters, and an email shortcut. The native apps were not installed or tested. Older store descriptions mention invitation-only access, while the public website offers a free trial; use the current sales process and confirm onboarding details.
+
+*Observed: [Messages](https://app.ravenly.com/messaging/), [Messaging Templates](https://app.ravenly.com/dashboard/settings/messaging-templates/), [Notification Preferences](https://app.ravenly.com/dashboard/settings/notification-settings/), integration catalog. Public: [mobile response description](https://ravenly.com/trial-sign-up/), [Apple listing](https://apps.apple.com/us/app/ravenly/id6754639394), [Google Play listing](https://play.google.com/store/apps/details?id=com.prizmmobile).*
+
+## 08 · Automations and follow-up
+
+**Observed:** an automation builder, template library, and activity tab are present. The inspected firm had no saved workflows, and no workflow was created or executed during this review. Sell the available configuration with a validation plan, not an untested operational result.
+
+| Building block | Observed choices | Training implication |
+| --- | --- | --- |
+| Triggers | New lead created; stage is set to a selected stage; new LSA message; new LSA call or booking. | Anchor the automation in a concrete event, then confirm timing and repeat behavior. |
+| Conditions | Lead score, spam score/flag, source, case type, contact preference, marketing channel, attribution source, capture method; LSA type, charged/status/credit state, category and service. | Rules can distinguish context. ALL-condition matching was visible; other logical modes were not established. |
+| Execution | Immediate actions or a sequence of timed steps; sequence copy states it cancels on stage change. | Check what should stop follow-up and confirm it in a controlled test. |
+| Standard actions | Send SMS, send email, create task. | These support acknowledgement and assignment; they do not establish an autonomous conversational AI agent. |
+| Reusable content | Templates and merge fields. | Agree on tone, sender, contact method, and which facts can safely populate a message. |
+
+Library examples include intake task assignment, partner lead review, high-value lead alert, a new-lead intake sequence combining welcome messages and a task, and practice-area welcome messages. They are useful starting points rather than evidence that the demo firm is already running those processes.
+
+### Three proposed workflows to discuss
+
+1. **New-inquiry acknowledgement:** a newly created, non-spam lead receives an approved acknowledgement by an eligible channel, and the intake owner receives a task. Validate opt-in, sender setup, merge fields, and duplicate prevention.
+2. **Partner review:** when staff move an inquiry into a review stage, a condition on case type or score determines whether a review task is created. Stage-based timing is useful where AI scoring is not yet available on creation.
+3. **Unreached prospect follow-up:** a defined stage starts a limited timed sequence with clear next steps. Validate cancellation on stage change, response handling, opt-outs, and what happens if the lead is reassigned.
+
+These are sales/implementation examples assembled from visible controls, not pretested recipes. Do not promise branching conversational follow-up, response-aware stopping, business-hour logic, retry policies, automatic ownership changes, or arbitrary webhook actions unless demonstrated in the current product.
+
+### Local Services Ads caveat
+
+The LSA integration interface describes importing leads and replying in the Google thread, and it encourages creation of a reply automation. The inspected integration was disabled. It stated that leads arrive on a 15-minute cadence, with effective polling potentially slower than the target. Distinguish **time until import** from **time to respond after import**. Do not sell an unconditional instant-from-submission SLA based on the word “seconds” in the automation prompt.
+
+*Observed: [Automations](https://app.ravenly.com/dashboard/workflows/), template library and unsaved builder; [LSA integration settings](https://app.ravenly.com/dashboard/settings/integrations/).*
+
+## 09 · Reporting, attribution, and measurement
+
+### What is available now versus marked coming soon
+
+**Available in the reviewed UI:** Insights, Lead Performance, channel/source views, paid/organic/LLM detail, and abandonment analytics. **Marked “Coming soon”:** dedicated Revenue & Pipeline, Team Performance, and Conversion Funnel report modules. Basic pipeline and revenue measures already appear in available screens; the unavailable dedicated modules should not be presented as live.
+
+### Insights
+
+The Insights dashboard has date-period selection, active pipeline value, won/lost measures, case-type and channel charts, a pipeline-by-stage view, and abandonment totals/trend. Use this to orient an owner, then move into a focused report rather than narrating every chart.
+
+### Lead Performance
+
+Overview, Channels, and Sources tabs expose date, practice-area, attorney, and channel filters; previous-period comparison; and a CSV export control. Measures include total, qualified, won and lost leads, conversion, won revenue, and pipeline value. Tables and charts connect lead volume, share, retained outcomes, win rates, revenue, and average case value.
+
+“Ravenly Intelligence” adds an AI-written narrative with strengths, watch points, opportunities, or content insights, plus generation context. It is a starting point for analysis. Validate its statements against the actual metrics and definitions before using it as a recommendation.
+
+### Channel and source detail
+
+| View | Observed information | Useful buyer question |
+| --- | --- | --- |
+| Paid | Lead quality/retention, spend, cost per lead, cost per retained lead, won revenue, ROAS, campaign tables, landing pages, practice areas and trends. Tabs include Google Ads, Local Services Ads, Microsoft Ads, and Other Paid. | “Do you know which campaigns bring matters your firm actually retains?” |
+| Organic | Search engine/domain, landing page, practice area, trends, qualification and retention metrics, search queries when available. | “Which informational or practice pages attract useful inquiries?” |
+| LLM referrals | Platform/domain, share, qualified/high-priority/retained counts, rates, value, landing pages, practice areas and daily trend. | “Can you identify inquiries that arrived through an AI assistant referral?” |
+| Sources | Resolved source/attribution categories across search engines, Google Business, AI assistants, social, referrals, direct and unknown. | “How consistently can your team explain where an inquiry came from?” |
+
+The LLM detail visibly included ChatGPT, Gemini, and Claude. Built-in classification references also included Perplexity and Copilot domains. This is **referral attribution**; it is not a complete inventory of AI mentions, answer-engine rankings, search prompts, or every visit influenced by an AI tool. Unknown, stripped, or missing referral data remains possible.
+
+Search-query fields have availability/coverage indicators. The inspected organic report had no query coverage for its shown leads. Do not promise access to search terms that the source does not provide. Similarly, a Microsoft Ads reporting tab is not proof of a configured native Microsoft Ads integration.
+
+### Lead-level attribution
+
+The lead’s Attribution tab shows a page journey, entry context, source/channel/medium, landing page, referrer, device/browser/OS and time information. This connects aggregate reporting to a specific record. It does not establish deterministic cross-device identity or attribution across every offline touchpoint.
+
+### Channel classification rules
+
+Settings expose priority-ordered custom rules where the first match wins, with built-in classification as a fallback. A preview accepts UTM source, medium, campaign, term, content, referrer, and landing page. The firm had no custom rules configured. This can help align reporting with an agency’s campaign conventions; rule changes and any historical reclassification behavior need implementation review.
+
+### Abandonment analytics
+
+The report provides dates, capture method and chatflow filters, totals and time trends, top drop-off questions, question type, and individual abandonment events with step/progress. Chatbot and case-evaluation events were present, including consent, contact, and case-detail steps. The sales value is specific: find which step warrants investigation. Do not infer why a person abandoned, or claim recovery messages are sent, from abandonment reporting alone.
+
+### Measurement definitions representatives must confirm
+
+- **Lead:** an inquiry record. Count definitions can differ from billable leads and from unique people.
+- **Qualified:** a defined qualification status or report measure. It is not automatically synonymous with a high score, consultation, or accepted matter.
+- **High priority:** score-based prioritization; separate from the case type’s priority mode.
+- **Retained / won:** an outcome dependent on the firm’s process and recorded stage. Confirm mappings and timing.
+- **Pipeline value:** a recorded estimate, potentially seeded from case-type defaults. Confirm whether probability weighting applies; none was established here.
+- **Won revenue:** recorded value associated with won outcomes. The review did not establish collected cash or accounting-system reconciliation.
+- **ROAS:** a revenue-to-ad-spend measure whose usefulness depends on accurate spend, attribution, and value. It is not profit.
+- **Conversion rate:** always name the numerator, denominator, and time window. Lead-to-qualified and lead-to-retained answer different questions.
+
+*Observed: [Insights](https://app.ravenly.com/dashboard/), [Reports catalog](https://app.ravenly.com/dashboard/reports/), [Lead Performance](https://app.ravenly.com/dashboard/reports/lead-performance/), [Abandonment Analytics](https://app.ravenly.com/dashboard/chatflows/abandonment-analytics/), [Channel Rules](https://app.ravenly.com/dashboard/settings/channel-rules/). Public: [measurement positioning](https://ravenly.com/).*
+
+## 10 · Integrations and deployment
+
+The public integration story is compatibility with an existing website and existing firm tools. Ravenly describes a lightweight snippet for WordPress, Squarespace, Wix, Duda, and custom modern CMS sites, regardless of who built the website. Implementation should identify the website owner and access path before promising a launch date.
+
+| Integration / mechanism | What was established | Demo state and dependencies |
+| --- | --- | --- |
+| Calendly | Scheduling from chat and case evaluation; settings for team token and booking/cancellation webhooks. | Enabled-looking catalog control but not configured. Account access and setup are required. |
+| Call Connect | Visitor-requested connection to the firm, described for office hours. | Not configured. Confirm hours, timezone, destination, failure behavior and cost. |
+| Call forwarding | Forwarding to office/mobile destination. | Active indication. Routing was not tested. |
+| CallRail | Call, text and form events; public site describes central recordings/transcripts. | Connected indication but no tracking number. Confirm selected accounts/numbers and event mappings. |
+| Gmail | Email connectivity for unified messaging. | Personal connection present; organization connection absent. Sender scope matters. |
+| Microsoft Email | Outlook/Microsoft 365 email sending connection listed. | Not configured. Confirm supported account type and permissions. |
+| Google Ads | Connected account configuration, OAuth/manual setup and offline conversion mappings. | Webform, Chatbot, CallRail and Deal Closed Won mappings showed linked. No delivery test was run. |
+| Google Analytics 4 | Server-side lead, deal and call event description. | Not configured. Confirm event names, deduplication, measurement ID and consent treatment. |
+| Google Local Services | Lead import, Google-thread reply context, performance summary, polling status and history import control. | Disabled. Validate import cadence, response automation and scope before promising response speed. |
+| SMS Registration | A2P registration interface and approved status in catalog. | Other screens warned registration was incomplete. Resolve the discrepancy and confirm usage charges. |
+| VoIP Configuration | Caller-ID name configuration. | Caller ID not configured. A call control was visible; calling quality and coverage were not tested. |
+| Zapier | Catalog describes automatic lead-data transfer and connectivity to thousands of apps. | Not configured. Identify the exact trigger, action, fields, direction and third-party subscription needs. |
+| Inbound email sources | A named lead source can receive a unique @leads.ravenly.com address; notifications forwarded there can become leads. | No source was created. Parsing formats, attachments, duplicate handling and reliability need a sample-based test. |
+
+### Case management connectivity: speak precisely
+
+The public integration page displays Actionstep, CASEpeer, Clio, CosmoLex, Filevine, MyCase, Neos, LEAP, PracticePanther, and Smokeball in its Zapier context. That supports a conversation about connecting workflows through Zapier. It does **not** establish a native, supported, bidirectional connector for every named platform.
+
+A sound integration discovery sentence is: “Which exact event should send which fields to which system, and does anything need to come back?” Build the proposal from that answer. Distinguish a contact export, lead creation, matter creation, stage synchronization, document transfer, and two-way messaging; they are different scopes.
+
+### Installation review item
+
+The inspected Add to Website modal displayed a `<meta name="robots" content="noindex">` element before its embed script. That is unexpected in code intended for a public marketing site and could affect indexing depending on where and how it is installed. The code was not installed, and existing customer sites were not tested. **Have the product/web team verify the generated snippet before using it in a standard installation playbook.** Do not reproduce that snippet as an approved deployment instruction.
+
+*Public: [Ravenly Integrations](https://ravenly.com/integrations/). Observed: [integration catalog and selected details](https://app.ravenly.com/dashboard/settings/integrations/), [inbound email lead sources](https://app.ravenly.com/dashboard/settings/lead-sources/), Chatflows → Add to Website.*
+
+## 11 · Administration, support, and trust questions
+
+### Administration
+
+Settings are grouped into Organization, Practice & Intake, Firm Branding, Notification Preferences, Site Setup, My Profile, and Subscription. Organization links expose a profile with contact/address/signature information, Teams, and Users/roles/invites. Team configuration associates members and case types and provides a default fallback team. Detailed role permissions, SSO, SCIM, audit export, and enterprise provisioning were not established.
+
+Practice & Intake exposes case types, stages, acquisition channels, channel rules, lead sources, and referral sources. Case-type controls include priority, criteria, estimated value, and color. The public onboarding service includes user permissions and notification routing, custom chatflow/webform configuration, website integration, and training.
+
+### Support
+
+The public site has a support form. The in-app support dialog offers question, bug, feature request, and billing categories, subject/message fields, and screenshot attachments. No support request was submitted. Support hours, escalation paths, response-time commitments, and plan-specific SLAs were not published in the material reviewed.
+
+### Policy statements: attribute them, and know the open questions
+
+Ravenly’s privacy policy describes US hosting on AWS, Twilio for SMS/voice, and CallRail. It states that data is encrypted in transit and at rest, role-based access is used, MFA is available, and security audits/testing are performed. These are vendor policy statements, not certifications independently verified in this research. The policy describes a US/Canada-oriented service and says it does not intentionally target the EEA, UK, or Switzerland. [Source: Ravenly Privacy Policy](https://ravenly.com/privacy-policy/).
+
+The terms identify Prizm AI LLC, state that users retain ownership of their data, describe security controls, and reserve aggregate/anonymized data use for improving company models while saying third-party AI providers may not train on user data. They also state that AI outputs can be inaccurate. Treat this as the basis for a specialist discussion, not permission to promise that no AI processing occurs. [Source: Ravenly Terms](https://app.ravenly.com/terms/).
+
+**Do not promise** HIPAA compliance, a BAA, SOC 2, ISO 27001, GDPR compliance, zero retention, complete exclusion of all data from every training use, a particular backup recovery objective, or guaranteed uptime without current approved evidence. This is a claim-verification boundary, not a conclusion that the product fails a particular requirement.
+
+The privacy and terms pages differ on post-closure retention (14 versus 30 days), use different cookie descriptions, and need a unified explanation of AI data handling. The complete internal review list is in section 21. A representative’s answer should be: “We have published security and data-use policies; I’ll obtain the current, applicable documentation for your requirement.”
+
+*Observed: [Settings](https://app.ravenly.com/dashboard/settings/), Organization, Teams, in-app help. Public: [Support](https://ravenly.com/support/), [Privacy Policy](https://ravenly.com/privacy-policy/), [Terms](https://app.ravenly.com/terms/).*
+
+## 12 · Packaging, pricing, trial, and commercial discovery
+
+**Public prices checked October 11, 2026.** The Yearly selector shows monthly-equivalent rates; Monthly shows the higher rates below. Confirm invoicing, commitments, taxes and current quote terms.
+
+| Plan | Yearly selection | Monthly selection | Published scope |
+| --- | --- | --- | --- |
+| Launch | $99/month | $119/month | 25 monthly leads; 2 users; 3 practice areas for custom bot/form flows; 1 website. |
+| Ascend | $199/month | $229/month | 50 monthly leads; 5 users; 5 practice areas; 1 website; third-party integrations and multilingual support listed. |
+| Summit | Custom quote | Custom quote | Flexible volume/users/practices, multiple sites, integrations, multilingual support, advanced implementation/optimization, customized onboarding. |
+
+Published lead allowances exclude phone calls and spam. Full-service onboarding is listed at a one-time $3,000 and includes configuration, website work, and individual training. Confirm how it applies to the selected package. [Source: Ravenly Pricing](https://ravenly.com/pricing/).
+
+The trial page advertises 10 days free, no credit card, cancellation at any time and no long-term contracts. Do not extend trial language to every paid agreement without checking the order form: the terms contain renewal and nonrenewal provisions. [Trial offer](https://ravenly.com/trial-sign-up/); [Terms](https://app.ravenly.com/terms/).
+
+### Questions to settle before a quote
+
+- What counts toward the allowance: duplicate inquiries, reopened leads, imported leads, disqualified leads and multiple submissions from one person?
+- What happens at the allowance: overage charge, hard limit, notification or plan change?
+- How are additional users, practices, sites, numbers, SMS segments, voice minutes and third-party subscriptions priced?
+- Which integrations, automations, mobile features, language options and reporting capabilities are included in each plan?
+- Is implementation optional, required, or included? What exactly is covered, and who approves completion?
+- What is the paid term, renewal process, notice period and data-export procedure?
+- What ongoing optimization, support and training are included?
+
+Do not infer exclusion merely because a feature is omitted from a short pricing card. Use an approved entitlement matrix. When comparing vendors, normalize lead definitions, service labor, implementation, usage and contract term before calling one option cheaper.
+
+## 13 · Competitive landscape: choose the right comparison
+
+The live-chat comparator in this guide is **Juvo Leads at juvoleads.com**. Intaker and Juvo were researched from their own public pages. The matrix describes what was observed or advertised, not independent performance testing.
+
+| Buying dimension | Ravenly | Intaker | Juvo Leads |
+| --- | --- | --- | --- |
+| Primary buying story | Connected capture, qualification, intake work and attribution for law firms. | Legal intake platform with website experiences, communications and AI agents across channels. | Outsourced human engagement and qualification, with lead tracking/reporting services. |
+| Website experience | Observed chat widget, webform and case evaluation with extensive configuration. | Advertises video-led chat, customization, multilingual intake and voice/video submissions. | Advertises 24/7 human chat using firm-specific rules and scripts. |
+| Follow-up model | Observed SMS/email/task workflow builder; human team communications. Autonomous conversational SMS was not established. | Advertises workflows and AI SMS/LSA qualification and follow-up. | Advertises human SMS answering, fast-dial handoffs and scheduling. |
+| Intake workspace | Observed leads, stages, tasks, messages, records and intelligence. | Advertises shared communications, pipelines, tasks and activity context. | Advertises a lead dashboard, scoring/management and outcome reporting. |
+| Measurement | Observed source/channel, retained outcomes, paid/organic/LLM detail and question abandonment. | Advertises source-to-signed-client visibility and analytics. | Advertises marketing attribution and qualified/signed/revenue tracking. |
+| Pricing evidence | Public subscription tiers; details in section 12. | No current numeric price verified; obtain a scoped quote. | Public per-lead chat price; separate tracking package; details in section 15. |
+| Best evaluation focus | Usability of the complete intake process and fit with firm-owned operations. | Specific AI-agent behavior, channel coverage, workflow fit and integration depth. | Quality of human conversations, accepted-lead definition, handoff and service economics. |
+
+**Sources for the matrix:** Ravenly’s observed demo and [overview](https://ravenly.com/); Intaker’s [home](https://intaker.com/home/), [website chat](https://intaker.com/home/products/website-chat.html), [communications hub](https://intaker.com/home/products/communications-hub.html), and [AI texting](https://intaker.com/home/products/ai-texting-agent.html); Juvo’s [law-firm service](https://juvoleads.com/law-firms/), [service overview](https://juvoleads.com/what-we-do/), [SMS service](https://juvoleads.com/text-sms-message-answering-service/), and [reporting](https://juvoleads.com/leads-dashboard-and-reporting/).
+
+### The status quo is also a competitor
+
+A firm may compare Ravenly with a basic website form plus email notifications, its existing case-management intake module, an answering service, or simply its current staff process. The switching question is not “Which has the longest feature list?” It is “Which unmet requirement justifies changing the way this firm works?” Show the cost of scattered context, unclear ownership or missing outcome data using the firm’s own examples.
+
+### Potential Ravenly differentiation to demonstrate
+
+Three configurable intake formats; firm-specific scoring criteria with original-answer access; a connected daily intake workspace; LLM referral reporting; and question-level abandonment analysis make a coherent demonstration. These are **demonstrable strengths, not proven exclusive features**. A competitor may offer equivalents that were not documented in the pages reviewed.
+
+## 14 · Intaker battlecard
+
+### What to respect
+
+Intaker publicly markets a broad intake platform, including website chat, communications, workflows, and named AI agents. Its website-chat page describes video branding, visitor voice/video submissions, live call connection, call recording/transcription/summaries, and appointment/e-signature workflows. Do not describe Intaker as merely a static chatbot. [Platform overview](https://intaker.com/home/); [website chat capabilities](https://intaker.com/home/products/website-chat.html).
+
+Its communications page describes a shared inbox, tasks, pipelines, routing and source-to-signed-client analytics. That overlaps with Ravenly’s operational story, so “we have a dashboard” is not a sufficient differentiator. [Communications hub](https://intaker.com/home/products/communications-hub.html).
+
+Intaker’s workflow materials list triggers around chats, AI conversations, status and qualification, and actions including calls, messages, tasks, sequences and pipeline-card changes. Its LSA product promotes AI qualification, follow-up, warm transfers, routing and English/Spanish support. These claims deserve a scenario-based evaluation. [Workflows](https://intaker.com/home/products/workflows.html); [LSA responder](https://intaker.com/home/products/lsa-responder.html).
+
+Its AI texting product describes inbound qualification, booking, transfer, follow-up, escalation and manual takeover. Its two-way texting page adds shared-number threads, templates and file exchange. Ravenly’s reviewed SMS/email/task automations should not be represented as equivalent autonomous conversation behavior without proof. [AI texting agent](https://intaker.com/home/products/ai-texting-agent.html); [two-way texting](https://intaker.com/home/products/two-way-texting.html).
+
+### Where to focus a Ravenly evaluation
+
+- Use the buyer’s actual practice-area scenarios in the three Ravenly capture formats.
+- Show how the intake team reviews original answers beside scoring and firm criteria.
+- Trace one anonymized inquiry from source through follow-up ownership to a recorded outcome.
+- Show LLM referral and question-abandonment reporting if those address a stated marketing problem.
+- Compare the actual workflows and integrations the firm needs, rather than total feature counts.
+- Compare current, complete quotes. No defensible current numeric Intaker price was verified; old blog pricing is unsuitable.
+
+### Discovery questions
+
+1. “Which Intaker capabilities does your team use every week, and which problem is still unresolved?”
+2. “Do you need an agent to hold a conversation, or structured intake and a team-owned follow-up process—or both?”
+3. “How does your current setup distinguish a high-scoring inquiry from a qualified or retained matter?”
+4. “Which data must move into or out of your case-management system?”
+5. “How do you review an incorrect answer or qualification decision?”
+6. “What evidence would make switching worthwhile?”
+
+### Suggested response when Intaker is already installed
+
+> “Intaker covers substantial intake functionality. Let’s identify what is missing in your current process, then run the same scenarios through Ravenly. I would focus on how your staff work the lead, how the intake experience fits each practice, and whether the reporting answers your management questions. If those do not improve your process, a feature checklist alone is not a reason to switch.”
+
+### Claims to avoid
+
+Do not claim that Intaker lacks automation, video, messaging, pipelines, reporting, mobile access or integration options. Do not claim Ravenly is uniquely “AI-powered,” universally cheaper, more accurate, or faster without a controlled and relevant comparison. Do not promise native parity with Intaker’s advertised integration count. Its Zapier documentation, for example, describes specific outgoing events and inbound lead creation, which must be compared at the event/field level. [Intaker Zapier documentation](https://help.intaker.com/article/zapier-intaker-integration).
+
+## 15 · Juvo Leads battlecard
+
+### What to respect
+
+Juvo Leads sells human engagement. Its law-firm page emphasizes firm-approved scripts, qualification criteria, empathetic interaction and flexibility outside a rigid script. This can appeal to buyers who explicitly want a person handling sensitive or complex conversations. A useful evaluation should assess real conversation quality and handoff, not dismiss human service as obsolete. [Juvo for law firms](https://juvoleads.com/law-firms/).
+
+Its public pricing page lists human chat at **$40 per lead**, 24/7 coverage, firm-specific rules/FAQs, delivery by email/SMS/CRM, fast-dial connection, and optional qualified-lead calendar scheduling at no added charge. It advertises a 14-day trial; the law-firm page describes a 30-day switching offer. Confirm the applicable promotion and contract. [Juvo pricing](https://juvoleads.com/pricing/); [law-firm offer](https://juvoleads.com/law-firms/).
+
+Juvo also advertises human SMS answering with custom intake knowledge, fast-dial and scheduling options. Separate marketing pages describe attribution, signed-client/revenue tracking, and dashboards. It should not be framed as “chat only” or as having no outcome reporting. [SMS answering](https://juvoleads.com/text-sms-message-answering-service/); [service scope](https://juvoleads.com/what-we-do/); [dashboard/reporting](https://juvoleads.com/leads-dashboard-and-reporting/).
+
+The separately advertised Call Tracking Plus package is $179/month and lists 10 local numbers, 5,000 local minutes, 500 unique form submissions and 500 Zapier calls, with dynamic number insertion, call recording and attribution features. This is distinct from the per-lead chat service. Current bundle and usage terms require a quote. [Call Tracking Plus](https://juvoleads.com/call-tracking-plus/).
+
+Juvo’s integration directory names connections and instructions for tools including Google Analytics, Google Ads, Zapier/webhooks, Salesforce/Litify, Lead Docket, Lawmatics and HubSpot. Validate the actual direction and fields for the firm’s required system. [Juvo integrations](https://juvoleads.com/integrations/).
+
+### Where Ravenly’s story is different
+
+Ravenly gives the firm configurable intake experiences and a workspace in which its own team can prioritize, communicate, manage stages and tasks, and evaluate acquisition outcomes. Juvo’s central proposition includes providing the humans who conduct conversations. The right comparison therefore includes **who performs the work**, not only software cost or captured-lead volume.
+
+### Discovery questions
+
+1. “Are you buying a better intake system, outsourced conversations, or both?”
+2. “What makes a lead billable, and how are duplicates, existing clients, wrong geography and poor-fit matters treated?”
+3. “When a conversation is handed to the firm, who owns the next step?”
+4. “Do you want your team to control the qualification experience directly?”
+5. “How are chat conversations reconciled with other website forms, phone calls and retained matters?”
+6. “Which service outcomes would you want to audit during a trial?”
+
+### Pricing comparison: use a scoped worksheet
+
+At the posted rate, 25 billable Juvo chat leads would be $1,000 and 50 would be $2,000 before any other services or terms. These are arithmetic illustrations, not quotes. Ravenly’s subscription allowances count a different unit and do not establish equivalent outsourced labor. A valid comparison includes qualification definitions, staff time, conversion outcomes, onboarding, usage, integrations and any service bundles. Do not call the difference guaranteed savings. [Juvo rate basis](https://juvoleads.com/pricing/).
+
+### Suggested response to “I want a real person”
+
+> “That is a legitimate service requirement. Ravenly can help structure the visitor experience and your team’s intake work; the reviewed offering does not establish a staffed human answering service. Let’s separate the need for outside conversation coverage from the need for qualification, follow-up ownership and reporting, then see which operating model fits.”
+
+Do not claim Juvo lacks customization, scheduling, integrations, attribution, or an intake dashboard. If a buyer describes a broader Juvo service package than the website pages reviewed here, evaluate its current scope rather than assuming the public chat package is the whole offering.
+
+## 16 · Discovery: diagnose before demonstrating
+
+The goal of discovery is a shared description of the current process, the failure point, and a measurable evaluation. The following questions are recommended sales practice, not product claims.
+
+### Opening: establish the process
+
+1. “Walk me through what happens when someone contacts the firm through the website at 8 p.m.”
+2. “Which practice areas and matter types do you actively want more of? Which do you decline or refer?”
+3. “How many inquiries do you receive by website form, chat, phone, paid ads and referrals?”
+4. “Who first sees an inquiry, and how do they know they own it?”
+5. “What must the first responder know before reaching out?”
+
+### Find the cost of the current problem
+
+- Where are leads missed, duplicated, delayed, or left without a next step?
+- What is the current median and slowest response time? Is that time to acknowledgement or a meaningful human response?
+- How many attempts are made before a lead is considered unreachable?
+- How often do attorneys receive matters missing basic qualification information?
+- Can the firm identify which sources lead to retained matters and recorded revenue?
+- What time does staff spend reconstructing context or preparing reporting?
+
+### Define technical and operational scope
+
+- Website platform, number of sites, website administrator and preferred launch timing.
+- Users, roles, teams, practices, languages, service geography and approved intake criteria.
+- Case management/CRM, calendars, email provider, call tracking, ad accounts and analytics tools.
+- Required handoffs: fields, destination objects, direction, timing and failure owner.
+- Messaging registration, approved senders/numbers, consent wording and after-hours process.
+- Security/procurement requirements and the person authorized to approve them.
+
+### Close discovery with an evaluation agreement
+
+> “The main issue is [specific gap]. We’ll evaluate whether Ravenly can improve [observable workflow] for [users/practice]. We’ll use [sample scenarios and agreed measures], confirm [integration or policy requirement], and review the result with [decision makers] on [date].”
+
+A representative should leave discovery with a named owner, a use case, a baseline, a decision process and a short list of unanswered requirements. Avoid a generic feature tour when the real buying issue is clear.
+
+## 17 · A safe, persuasive 15-minute demo
+
+This is a proposed read-only demonstration sequence. Use approved, non-sensitive sample records. Keep the firm selector fixed. Preview interfaces and open records already approved for the demonstration; do not send messages, place calls, publish flows, change stages, or save configuration as part of a read-only tour.
+
+| Time | Screen / route | Story and proof |
+| --- | --- | --- |
+| 0:00–1:00 | Recap discovery | Repeat the buyer’s intake gap and the two outcomes this demo will address. |
+| 1:00–3:00 | Chatflows; Appearance → Chat Widget / Webform / Case Evaluation | Show the relevant visitor format and practice-specific questions. Explain page targeting and branding only if relevant. |
+| 3:00–5:00 | Leads → approved record → Overview / Intelligence | Connect the captured answers to the summary and score. Show that staff can verify the underlying information. |
+| 5:00–7:00 | Action Center; lead Tasks, Messages and activity | Explain ownership, response and next action. Distinguish a visible control from a configured communication service. |
+| 7:00–9:00 | Automations → Template Library; Messaging Templates | Show how a relevant acknowledgement or task process could be configured. Explain prerequisites; do not activate it. |
+| 9:00–12:00 | Reports → Lead Performance → relevant channel | Trace the buyer’s marketing question to qualification/retention/value. Show LLM or abandonment detail only if useful. |
+| 12:00–13:00 | Integrations catalog | Identify the exact handoff required by the buyer. Show connection status and explain remaining configuration. |
+| 13:00–15:00 | Recap and evaluation plan | Connect the demonstrated workflow to the original problem, acknowledge open items, and agree on the trial or technical validation. |
+
+### Persona-specific substitutions
+
+**Partner:** spend more time on ownership, stale opportunities and outcomes. **Intake manager:** spend more time on filters, assignments, original answers, templates and tasks. **Marketing leader:** emphasize source definitions, campaign outcomes, landing pages and attribution limitations. **IT/security:** schedule a focused technical session rather than crowding the standard demo with unverified answers.
+
+### Demo traps to avoid
+
+- Opening an unread record can change its read state. Prefer preselected demonstration records.
+- Empty task/message views and unconfigured integrations need a prepared explanation or an approved populated demo account.
+- Never present the demo’s lead volume, revenue, scores, or conversion rates as a real customer case study.
+- Do not click a “coming soon” card and imply the report is available.
+- Do not show private case narratives, contact details, account IDs, integration credentials or unrelated firms.
+- Do not assume a Super Admin view reflects customer permissions.
+- Do not copy the inspected website snippet into a customer site until the noindex issue is resolved.
+
+## 18 · Objection handling and suggested language
+
+| Objection / question | Suggested response | Next evidence or action |
+| --- | --- | --- |
+| “We already have a form or chatbot.” | “Which part works well, and what happens after the inquiry arrives? Ravenly’s relevant value may be the qualification, follow-up ownership and outcome visibility around that interaction.” | Map the handoff and show only the unresolved part. |
+| “We already have a CRM/case-management system.” | “Let’s define where intake ends and your existing system begins. Ravenly can be evaluated as the capture and intake layer, with the required transfer scoped explicitly.” | Identify the trigger, data fields, destination and direction; verify the connector. |
+| “Our receptionist handles everything.” | “The question is whether your staff have enough context and a consistent way to track the next action. We can assess whether Ravenly supports that work.” | Review after-hours inquiries, repeat questions and unresolved tasks. |
+| “We need a live person.” | “Human coverage is a separate requirement. Let’s evaluate the service model alongside the software workflow.” | Assess human answering needs; do not promise an unverified staffed service. |
+| “AI may get the case wrong.” | “Use the summary and score to prioritize review, and inspect the original answers before making an intake decision.” | Show source answers, firm criteria and the distinction between scoring and rejection. |
+| “Can it answer every question like an attorney?” | “The reviewed product supports configured intake and AI-assisted intelligence. We should define approved questions, boundaries and human review.” | Do not promise legal advice or unrestricted conversational accuracy. |
+| “Does it work in Spanish?” | “Spanish is among the available language options. We should validate the actual flow, messages and plan scope you need.” | Review a bilingual test scenario with the firm before launch. |
+| “Will it immediately reply to every LSA inquiry?” | “The interface supports LSA import and reply automation, but import cadence and configuration affect elapsed time.” | Measure submission-to-import and import-to-response separately. |
+| “Can you guarantee more signed cases?” | “We can agree on an evaluation with your baseline. Outcomes also depend on traffic quality, your team’s response, practice fit and follow-through.” | Use a conservative, transparent model and measured trial results. |
+| “Is this secure/compliant?” | “There are published security and data-use policies. I’ll obtain the current documentation that addresses your exact requirement.” | Escalate certifications, contracts, retention and AI-processing questions. |
+| “We don’t have time to set it up.” | “There is a full-service onboarding option. Let’s identify what Ravenly handles and which approvals/access your firm still supplies.” | Build an implementation checklist and named owners. |
+| “It costs too much.” | “Let’s compare the complete cost with the workflow problem you want to solve, using your own volume and economics.” | Separate software, service labor, onboarding, usage and third-party fees. |
+| “What happens if we leave?” | “Data ownership and export/retention are addressed in the published terms, but the current retention discrepancy needs an approved answer.” | Confirm the applicable contract and export process in writing. |
+
+### Language that keeps claims accurate
+
+Prefer “helps your team prioritize” to “automatically identifies the best cases”; “recorded won revenue” to “collected revenue”; “available through a configured integration” to “works instantly with everything”; “a report is available in the demo” to “included in every plan”; and “the vendor advertises” to an unqualified assertion about a competitor’s performance.
+
+## 19 · Business case and ROI conversation
+
+Build a business case from the firm’s baseline and identify which assumptions Ravenly could plausibly affect. Keep capture improvement, qualification quality, staff efficiency and retained-client conversion separate so the same benefit is not counted twice.
+
+### A transparent model
+
+```text
+Baseline retained matters/month = current leads × current retained rate
+Scenario retained matters/month = scenario leads × scenario retained rate
+Incremental annual revenue = difference in monthly retained matters × revenue per matter × 12
+Annual benefit = incremental contribution + defensible labor savings
+Net ROI = (annual benefit − total annual cost) ÷ total annual cost
+```
+
+Use contribution after variable costs rather than gross revenue when assessing profitability. Include subscription, implementation, usage, third-party tools and incremental staff time. For contingency practices, distinguish expected fee value from cash timing, settlement amount, collection probability and case cost. This guide does not supply a valuation model for any specific legal matter.
+
+### Original hypothetical example—not a Ravenly performance claim
+
+Suppose a firm has 40 inquiries per month, retains 10%, and attributes $5,000 of eventual revenue to each retained matter. That is 4 matters per month. A scenario with the same lead volume and an 11% retained rate produces 4.4 expected matters per month: 0.4 additional matters, or $24,000 annual incremental revenue. The rate change is one percentage point, or a 10% relative improvement. It is an assumption to test.
+
+If the firm assumes a 50% contribution margin on that additional revenue and a hypothetical all-in first-year project cost of $6,000, the modeled benefit is $12,000 and net ROI is 100%. These values are invented for training, not a quote or forecast. A flat-result scenario must also be considered; if conversion does not change, that revenue benefit is zero.
+
+### How to use Ravenly’s public calculator responsibly
+
+The website’s default illustration assumes a 25% increase in captured leads and a 25% relative improvement in close rate. Its $648,000 annual increment and “108x” statement follow those assumptions and an illustrative $500/month cost. They are not observed customer outcomes, and $500 is not one of the named public plan prices. The multiple compares incremental revenue with cost, not net profit ROI. Use the calculator as an editable scenario, not a promise. [Source: Ravenly pricing calculator](https://ravenly.com/pricing/).
+
+### Measures for a defensible evaluation
+
+- Capture: visits to completed inquiries, by format and page; define bot/spam and duplicate exclusions.
+- Quality: inquiries that meet the firm’s agreed criteria, not simply those with a high score.
+- Responsiveness: time to first acknowledgement and first meaningful staff response, separately.
+- Execution: percentage with an assigned owner, next task, follow-up attempts, and current stage.
+- Outcome: consultations, retained matters, recorded value and later collected fees where available.
+- Efficiency: staff minutes per inquiry or reporting cycle, sampled consistently.
+- Attribution: percentage with a usable source and complete outcome/value fields.
+
+Control for traffic mix, campaign changes, seasonality, practice area and the lag between inquiry and retention. A 10-day trial can validate setup and workflow usability; it may be too short to establish retained revenue for a long decision cycle.
+
+## 20 · Implementation, trial success, and salesperson certification
+
+### Proposed implementation checklist
+
+1. **Scope and ownership:** choose practices, case types, sites, users, teams, lead owner and project approver; confirm the plan and implementation statement of work.
+2. **Intake design:** approve questions, required fields, disqualification rules, follow-ups, priority criteria, estimated values and referral handling.
+3. **Brand and accessibility review:** approve logo/video, text, colors, contrast, field labels, mobile layout and the three visitor formats actually being deployed. Accessibility conformance was not certified by this review.
+4. **Consent and communications:** approve language and privacy links, complete required messaging registration, configure senders/numbers, and agree on opt-out and human escalation handling.
+5. **Integration scope:** document system owners, fields, triggers, directions, mappings, expected latency and failure handling. Confirm credentials and permissions through the firm’s approved process.
+6. **Website deployment:** have the web team review the embed code, resolve the noindex finding, implement approved pages/targeting, and check behavior with other site tools.
+7. **Controlled validation:** with explicit approval to create test data, test each intake format, practice branch, disqualifier, consent choice, language, routing path and communication channel.
+8. **Automation validation:** test scoring timing, stage transitions, sequence cancellation, duplicate events, opt-outs, and the responsible person for failed steps.
+9. **Reporting definitions:** agree on qualified/retained mappings, source classification, value meaning, attribution gaps and reporting owner.
+10. **Training and launch:** train staff on daily queues, record review, replies, tasks, stages and exception handling; record acceptance and a follow-up review date.
+
+This is a proposed future implementation plan. None of these changes or live tests was performed during the research session.
+
+### A 10-day trial plan aligned to the public offer
+
+| Period | Objective | Evidence of success |
+| --- | --- | --- |
+| Days 1–2 | Agree on scope, baseline, users, criteria and one priority workflow. | Approved scenario list, owners and definitions. |
+| Days 3–4 | Configure and validate the selected capture experience and handoff. | Approved test submissions reach the correct records/team with expected fields. |
+| Days 5–7 | Have intake staff work the agreed scenarios and review daily queues. | Users can find context, respond through configured channels and maintain next actions. |
+| Days 8–9 | Review attribution, outcomes, adoption and exceptions. | Data quality findings and resolved or assigned issues. |
+| Day 10 | Make a scope-based decision and implementation plan. | Documented fit, open dependencies, current quote and owners. |
+
+Actual dates depend on approvals and integrations. A registration delay may prevent a complete messaging evaluation within the trial; identify this early rather than implying every feature will be production-ready on day one.
+
+### Knowledge check with answers
+
+1. **What are the three observed visitor formats?** Chat widget, webform and case evaluation.
+2. **Does a high score mean the firm has accepted the matter?** No. Prioritization, qualification and retention are separate concepts.
+3. **Do firm-specific scoring criteria automatically reject a lead?** The inspected UI says they adjust score without automatically rejecting it; explicit flow disqualifiers are separate.
+4. **Which dedicated reports were marked coming soon?** Revenue & Pipeline, Team Performance and Conversion Funnel.
+5. **What does the LLM report establish?** Referral/source attribution where data is available, not complete AI visibility or the visitor’s prompt.
+6. **Why can’t a rep promise instant LSA response?** Import polling and configuration affect the interval before an automation can act.
+7. **Does a logo on the integration page prove native two-way synchronization?** No. Confirm mechanism, direction, events and fields.
+8. **What distinguishes Juvo’s central offer?** Outsourced human engagement, which changes the service and labor comparison.
+9. **Why is “Intaker is only a chatbot” inaccurate?** Its public materials describe broader communications, workflows and AI agents.
+10. **What must be resolved before copying the reviewed embed snippet?** The unexpected noindex meta element.
+11. **Does a WhatsApp contact preference establish WhatsApp messaging?** No.
+12. **Can public calculator uplift assumptions be called proven results?** No; they are scenario assumptions.
+
+### Certification exercise
+
+Have each representative conduct a five-minute discovery, a ten-minute read-only demo, and a three-minute competitive conversation. Score: problem diagnosis (20%), accurate feature/benefit mapping (25%), evidence-based demo (25%), fair competitive handling (15%), and clear next step with honest limits (15%). Require correction of any fabricated capability, unsupported guarantee, private-data exposure, or confusion between live and forthcoming features before certification.
+
+## 21 · Internal confirmation and claims-cleanup register
+
+This section is for sales leadership, product, implementation and policy owners. It records concrete inconsistencies and unanswered questions found during research. It is not customer-facing objection copy and does not establish that any production incident occurred.
+
+| Priority / topic | Evidence or uncertainty | Recommended resolution |
+| --- | --- | --- |
+| Before installation: embed code | Add to Website displayed a noindex meta element preceding the embed script. | Product/web team should verify the generated code and publish a tested installation snippet. Review any affected deployment scope if applicable. |
+| Before policy assurances: retention | Privacy page describes deletion after 14 days; terms describe a 30-day post-termination retention/export window. | Policy owner should reconcile the documents and provide an approved answer applicable to the contract. |
+| Before AI data assurances | Privacy describes nonidentifiable aggregated AI input and disabled provider retention; terms distinguish company use of aggregate/anonymized information from third-party training restrictions. | Publish a current data-flow explanation covering inputs, redaction, processors, retention and each kind of training/improvement use. |
+| Before cookie statements | Privacy describes essential/preference cookies; terms address analytics/attribution cookies on customer websites. | Clarify corporate-site versus embedded-product scope and the responsibilities of each party. |
+| Before commercial promise | Trial copy says cancel anytime/no long-term contracts; terms contain auto-renewal and 30-day nonrenewal notice language. | Align trial, monthly/yearly orders, cancellation, notice and refunds in approved sales language. |
+| Before SMS demo | Integration catalog showed approved registration; widget/workflow screens showed incomplete-registration warnings. | Verify firm scope, status synchronization and readiness. Use an approved test account. |
+| Before roadmap commitment | Three report modules explicitly marked coming soon. | Keep them out of current entitlement claims; only product leadership should approve delivery commitments. |
+| Before score explanations | Displayed score components did not form a simple sum; several “priority/qualified” concepts coexist. | Document normalization, caps, thresholds, timing and the distinction between system qualification and staff outcomes. |
+| Before integration scope | Public logos sit in a Zapier context; the report UI also contains channels without a demonstrated native connector. | Create an integration matrix listing native/Zapier/email/webhook mechanisms, event directions, fields and support responsibility. |
+| Before pricing comparisons | Overages, usage charges, detailed entitlement boundaries and onboarding applicability are not fully specified publicly. | Publish an internal quoting guide and current competitive quote worksheet. |
+| Before performance claims | Public percentage claims and calculator assumptions were not accompanied by independently reviewed methodology in the pages inspected. | Provide dated source studies or customer evidence, with definitions and limitations, before training reps to repeat them as facts. |
+| Before polished demo rollout | Some empty states, zero/undefined measures and AI narrative oddities reduce demonstration clarity; native apps were not tested. | Prepare a coherent, sanitized demo dataset with checked metrics and a customer-role account. |
+| Mobile listing consistency | Invitation-only copy and “no data collected” store labels may be read differently from website signup and platform data-processing policies. | Review current store metadata and explain app/platform scope consistently. |
+| Unverified requested capabilities | Autonomous phone answering, conversational AI SMS, native WhatsApp, e-signature, automated conflict checking, SSO/SCIM and certifications were not established. | Classify each as current, partner-enabled, roadmap, or unavailable using current product evidence; do not infer absence solely from this review. |
+
+### Marketing statistics that should remain attributed claims
+
+The public site uses figures such as 80% of prospects contacting three or more firms, up to 40% of leads going unanswered, 42% of firms taking three or more days to respond, 20% preferring evaluation forms, and 35% of calls going unanswered on the trial page. These were not independently substantiated here. Do not convert them into universal industry facts or imply they describe a particular buyer. Competitor uplift and response-time statistics should receive the same treatment.
+
+### Commercial terms to verify through the actual agreement
+
+The reviewed terms address data ownership, post-termination export/deletion, recurring fees, renewals, refunds and number porting; the phone-number provision gives a seven-day post-termination porting window. Sales should use current approved contract summaries, especially where the public privacy page differs. This guide is a research inventory, not an interpretation of which provision governs a particular customer.
+
+*Evidence: [Privacy Policy, dated December 4, 2025](https://ravenly.com/privacy-policy/); [Terms, dated September 3, 2026](https://app.ravenly.com/terms/); [home](https://ravenly.com/); [trial](https://ravenly.com/trial-sign-up/); [pricing](https://ravenly.com/pricing/); app stores and the specific demo areas described throughout this guide.*
+
+## 22 · Source register, coverage, and research limits
+
+### Ravenly public sources reviewed
+
+- [Home](https://ravenly.com/) — positioning, lifecycle, public feature descriptions and marketing claims.
+- [Pricing](https://ravenly.com/pricing/) — both billing-selector states, tier limits, onboarding and calculator.
+- [Integrations](https://ravenly.com/integrations/) — website compatibility and named integration mechanisms.
+- [Trial signup](https://ravenly.com/trial-sign-up/) — trial offer, templates, mobile/alert descriptions.
+- [Demo](https://ravenly.com/demo/) — public demonstration entry point.
+- [Support](https://ravenly.com/support/) — support request surface.
+- [Privacy Policy](https://ravenly.com/privacy-policy/) — data use, hosting, vendors, security and retention claims.
+- [Terms](https://app.ravenly.com/terms/) — platform entity, commercial and data provisions.
+- [Sitemap](https://ravenly.com/sitemap/) — public-site coverage check; no substantial linked blog article was available from the reviewed sitemap entry.
+- [Apple App Store](https://apps.apple.com/us/app/ravenly/id6754639394) and [Google Play](https://play.google.com/store/apps/details?id=com.prizmmobile) — mobile availability and listing descriptions.
+
+### Authenticated demo coverage
+
+| Area | Depth of review | Boundary |
+| --- | --- | --- |
+| Action Center / Digest / Tasks | Read dashboards, task grouping and filters, attention categories. | No tasks created/completed; notification delivery not tested. |
+| Insights / Reports | Read available catalog, overview/channels/sources, paid/organic/LLM details and abandonment analytics. | No CSV exported; calculations not independently reconciled to all records. |
+| Leads | List/filter controls; one previously viewed record; Overview, Messages, Calls, Tasks, Documents, Attribution and Intelligence; action menu. | No lead added, edited, merged, deleted, exported, called or messaged. Contact Information tab identified but not deeply reviewed. |
+| Chatflows | Library, page targeting, one existing flow editor, a question/follow-up/disqualifier editor, embed modal. | No generation, import, publish, duplication, deletion, lead submission or installation. |
+| Appearance | Chat Widget, Webform, Case Evaluation settings and previews; consent/languages/branding. | No settings saved, media uploaded or live visitor submissions made. |
+| Integrations | Catalog statuses; Google Ads mappings and LSA detail. | No credentials changed, OAuth started, services connected, test buttons run or history imported. |
+| Automations / Templates | Library, trigger/condition/action choices, sequence copy, template editor and merge fields. | No workflow/template saved or message sent; unsaved editor state was discarded. |
+| Settings | Organization/Teams, Practice & Intake, case types/criteria, stages, channel rules, email lead sources, notification preview and help dialog. | Users/permissions not exhaustively tested; billing details not reviewed; acquisition/referral-source subpages not deeply inspected. |
+| Mobile | Public store listings only. | Native apps were not installed or tested. |
+
+The firm selector remained unchanged throughout. Research navigation can change which screen is displayed; the tab was returned to its original Action Center. The guide contains no private lead examples or screenshots of sensitive records.
+
+### Intaker primary-source set
+
+- [Platform overview](https://intaker.com/home/)
+- [Website chat](https://intaker.com/home/products/website-chat.html)
+- [Communications hub](https://intaker.com/home/products/communications-hub.html)
+- [Workflows](https://intaker.com/home/products/workflows.html)
+- [LSA responder](https://intaker.com/home/products/lsa-responder.html)
+- [Two-way texting](https://intaker.com/home/products/two-way-texting.html)
+- [AI texting agent](https://intaker.com/home/products/ai-texting-agent.html)
+- [Zapier integration documentation](https://help.intaker.com/article/zapier-intaker-integration)
+- [Vendor discussion of chat and AI-agent models](https://blog.intaker.com/blog/live-agents-vs-chatbots-vs-ai-agents-law-firms)
+- [Terms](https://intaker.com/home/terms.html) — no current numeric price established.
+
+### Juvo Leads primary-source set
+
+- [Home](https://juvoleads.com/) and [service overview](https://juvoleads.com/what-we-do/)
+- [Law firms](https://juvoleads.com/law-firms/)
+- [Pricing](https://juvoleads.com/pricing/)
+- [Lead dashboard and reporting](https://juvoleads.com/leads-dashboard-and-reporting/)
+- [Call Tracking Plus](https://juvoleads.com/call-tracking-plus/)
+- [SMS answering service](https://juvoleads.com/text-sms-message-answering-service/)
+- [Integrations](https://juvoleads.com/integrations/)
+
+### What this research can and cannot establish
+
+This is a broad product and sales-enablement review, not a security audit, accessibility certification, legal opinion, performance benchmark, billing audit, or full integration acceptance test. Available UI controls, public descriptions, plan entitlements and successfully operating configurations are different kinds of evidence. Those distinctions are preserved throughout the guide.
+
+Refresh the pricing, roadmap, competitor scope and policy sections before a major training rollout and whenever product packaging changes. Replace open items with approved facts and date the revision. Preserve the original source links so sales leadership can audit what supports a claim.
+
+*Ravenly sales enablement • Research snapshot: October 11, 2026 • Public sources + read-only demo review*
