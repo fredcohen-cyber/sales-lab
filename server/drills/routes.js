@@ -22,7 +22,15 @@ const drillSchema = z.object({
   assessedDimensions: z.array(z.enum(DIMENSION_KEYS)).min(1, 'Choose at least one scored dimension.'),
   defaults: z.object({ difficulty: level, skepticism: level, depth: level }),
   sourceRefs: z
-    .array(z.object({ sourceId: z.string().uuid(), sections: z.array(z.string().max(80)).max(40).default([]) }))
+    .array(
+      z.object({
+        sourceId: z.string().uuid(),
+        sections: z.array(z.string().max(80)).max(40).default([]),
+        // The editor says explicitly when a reference means the whole source, so a drill is never
+        // widened by accident when its chosen sections disappear from a source.
+        wholeSource: z.boolean().optional(),
+      }),
+    )
     .max(10)
     .default([]),
   changeNote: z.string().max(500).default(''),
@@ -35,6 +43,11 @@ async function validateRefs(q, body) {
   for (const key of Object.keys(body.personaLines)) {
     if (!body.personas.includes(key)) delete body.personaLines[key];
     else if (!body.personaLines[key].trim()) delete body.personaLines[key];
+  }
+  for (const ref of body.sourceRefs) {
+    if (ref.wholeSource === false && ref.sections.length === 0) {
+      throw new HttpError(400, 'validation_failed', 'Choose at least one section for each source, or use the whole source.');
+    }
   }
   if (body.sourceRefs.length) {
     const ids = body.sourceRefs.map((s) => s.sourceId);

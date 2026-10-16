@@ -2,7 +2,16 @@ import { evaluationOutputSchema } from './schema.js';
 import { ProviderError, RUN_ERROR_MESSAGES } from './provider.js';
 import { quoteAppearsIn, sentenceContaining } from '../lib/text.js';
 
-const NEGATION = /\b(not|never|no one|nobody|cannot|can't|can not|won't|wouldn't|don't|do not|doesn't|does not|isn't|aren't|without|no)\b[^.!?]{0,60}$/i;
+// A negation counts only when it governs the verb directly ("can't guarantee", "no one can honestly
+// promise"): it must sit in the same clause, within the last few words before the verb.
+const NEGATION_WORDS = /\b(not|never|no one|nobody|cannot|can't|can not|won't|wouldn't|don't|do not|doesn't|does not|isn't|aren't|unable|no)\b/i;
+const CLAUSE_BREAK = /[,;:\u2013\u2014]|\s(?:and|but|because|so|since)\s/gi;
+function negatesVerb(before) {
+  const parts = before.split(CLAUSE_BREAK);
+  const clause = parts[parts.length - 1] || '';
+  const lastWords = clause.trim().split(/\s+/).slice(-4).join(' ');
+  return NEGATION_WORDS.test(lastWords);
+}
 const GUARANTEE = /\b(guarantee[ds]?|guaranteeing|i promise|we promise|promise you|you will definitely|you'll definitely|will definitely|100% (?:sure|certain)|risk[- ]free results?)\b/i;
 const INJECTION =
   /(ignore (?:all |any |the )?(?:previous|prior|above|earlier) (?:instructions|rules|prompts?)|disregard (?:the|your) (?:rules|instructions)|you are now|system prompt|as the (?:evaluator|grader|ai|model)|give (?:me|this(?: answer)?) (?:a )?(?:100|full marks|perfect|top)|score (?:this|me) (?:a )?(?:100|perfect|highly)|record_evaluation|<\/?\s*(?:rep_answer|source_material|scenario|rubric)\b)/i;
@@ -21,8 +30,7 @@ export function detectGuarantees(answer) {
     const s = raw.replace(/[\u2018\u2019]/g, "'");
     const m = GUARANTEE.exec(s);
     if (!m) continue;
-    const before = s.slice(0, m.index);
-    if (NEGATION.test(before)) continue;
+    if (negatesVerb(s.slice(0, m.index))) continue;
     hits.push(raw.length > 300 ? raw.slice(0, 300) : raw);
   }
   return hits;
@@ -32,7 +40,7 @@ export function detectGuarantees(answer) {
 export function isNegatedGuarantee(sentence) {
   const s = String(sentence || '').replace(/[\u2018\u2019]/g, "'");
   const m = GUARANTEE.exec(s);
-  return Boolean(m) && NEGATION.test(s.slice(0, m.index));
+  return Boolean(m) && negatesVerb(s.slice(0, m.index));
 }
 
 export function detectInjection(answer) {

@@ -52,14 +52,19 @@ export const UNAVAILABLE_TEXT = {
 
 // For the editor: each reference's sections expressed as keys of the source's latest version, which is
 // the version whose sections the editor lists (sections are followed by title across versions).
+// Sections that cannot be found are listed as `unmatched` so the editor can show them instead of
+// silently dropping them.
 export function editorRefs(refs, index) {
   return (refs || []).map((ref) => {
     const src = index.byId.get(ref.sourceId);
-    if (!src || !ref.sections?.length || ref.versionId === src.latest_version_id) return { ...ref, versionId: src?.latest_version_id || ref.versionId };
+    const wholeSource = !ref.sections?.length;
+    if (!src || wholeSource || ref.versionId === src.latest_version_id) {
+      return { sourceId: ref.sourceId, sections: ref.sections || [], versionId: src?.latest_version_id || ref.versionId, wholeSource, unmatched: [] };
+    }
     const authored = index.sections.get(ref.versionId) || null;
     const latest = index.sections.get(src.latest_version_id) || [];
-    const { matched } = mapSections(ref.sections, authored, latest);
-    return { sourceId: ref.sourceId, sections: matched.map((s) => s.key), versionId: src.latest_version_id };
+    const { matched, missing } = mapSections(ref.sections, authored, latest);
+    return { sourceId: ref.sourceId, sections: matched.map((s) => s.key), versionId: src.latest_version_id, wholeSource: false, unmatched: missing };
   });
 }
 

@@ -206,7 +206,7 @@ function retryState(attempt, latestRun, recentRuns, config, viewer) {
 const RECENT_RUNS_SQL = `SELECT count(*) AS n FROM evaluation_runs WHERE attempt_id = $1 AND started_at > now() - interval '1 hour'`;
 
 export async function retryCoaching(db, config, user, attemptId, { provider }) {
-  return db.tx(async (q) => {
+  const out = await db.tx(async (q) => {
     const attempt = await q.one(`SELECT * FROM attempts WHERE id = $1 FOR UPDATE`, [attemptId]).catch(() => null);
     if (!attempt) throw notFound('That answer was not found.');
     if (attempt.learner_id !== user.id && !user.isManager) throw notFound('That answer was not found.');
@@ -227,14 +227,16 @@ export async function retryCoaching(db, config, user, attemptId, { provider }) {
     await checkCoachingRate(q, config, user);
     if (latest?.status === 'running') {
       await q.query(`UPDATE evaluation_runs SET status = 'superseded', finished_at = now(), error_code = 'superseded' WHERE id = $1 AND status = 'running'`, [latest.id]);
-      abortRun(latest.id); // give its coaching slot back right away
     }
     const run = await startRun(q, { attemptId: attempt.id, requestedBy: user.id, provider, config });
     if (attempt.learner_id !== user.id) {
       await audit(q, { actorId: user.id, action: 'coaching.restarted', targetUserId: attempt.learner_id, entityType: 'attempt', entityId: attempt.id });
     }
-    return { attemptId: attempt.id, runId: run.id };
+    return { attemptId: attempt.id, runId: run.id, supersededRunId: latest?.status === 'running' ? latest.id : null };
   });
+  // Only after the retry is committed: cancel the superseded request so it frees its coaching slot.
+  if (out.supersededRunId) abortRun(out.supersededRunId);
+  return out;
 }
 
 export async function canViewAttempt(q, viewer, attemptId) {

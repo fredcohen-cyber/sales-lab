@@ -261,7 +261,7 @@ export function DrillRunner() {
                     <li key={d.sourceId}>
                       {d.title}: {d.reason ? `not used, ${d.reasonText}.` : ''}
                       {d.missingSections?.length
-                        ? ` Not in the approved version: ${d.missingSections.map((m) => (m.why === 'retitled' ? `“${m.title}” (now “${m.nowTitle}”)` : `“${m.title}”`)).join(', ')}.`
+                        ? ` Not in the approved version: ${d.missingSections.map((m) => (m.why === 'retitled' ? `“${m.title}” (its old number now holds “${m.nowTitle}”)` : `“${m.title}”`)).join(', ')}.`
                         : ''}
                     </li>
                   ))}

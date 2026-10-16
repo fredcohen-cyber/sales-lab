@@ -268,11 +268,17 @@ test('reps can retry coaching a few times an hour; a manager can always restart 
   }
 });
 
-test('a flood from one address does not lock the person out from another', async () => {
+test('a flood from one address does not lock the person out from another, even while it lasts', async () => {
   const { user } = await addUser(h, owner, { name: 'Flo Flood', email: 'flo@ravenly.com' });
-  const flood = await Promise.all(Array.from({ length: 60 }, (_, i) => login(h.client(), user.email, `flood-${i}-xx`, '10.9.0.1')));
-  assert.ok(flood.filter((r) => r.status === 401).length <= 5);
-  assert.equal((await login(h.client(), user.email, PASSWORD, '10.9.0.2')).status, 200, 'their own address still works');
+  const first = await Promise.all(Array.from({ length: 60 }, (_, i) => login(h.client(), user.email, `flood-${i}-xx`, '10.9.0.1')));
+  assert.ok(first.filter((r) => r.status === 401).length <= 5);
+  for (let i = 0; i < 5; i += 1) await login(h.client(), user.email, `flood-seq-${i}`, '10.9.0.1');
+  // While a second flood from the blocked address is in progress, the person signs in from their own.
+  const flood = Promise.all(Array.from({ length: 120 }, (_, i) => login(h.client(), user.email, `flood2-${i}-xx`, '10.9.0.1')));
+  const own = [];
+  for (let i = 0; i < 5; i += 1) own.push((await login(h.client(), user.email, PASSWORD, '10.9.0.2')).status);
+  await flood;
+  assert.deepEqual(own, [200, 200, 200, 200, 200], 'their own address keeps working during the flood');
 });
 
 test('parallel submissions cannot get past the hourly coaching limit', async () => {
@@ -390,4 +396,43 @@ test('approving a renumbered source keeps drills on the same material', async ()
   assert.deepEqual(src.sections.map((x) => strip(x.title)), before.sections.map((x) => strip(x.title)), 'same sections, new numbers');
   assert.notDeepEqual(src.sections.map((x) => x.key), before.sections.map((x) => x.key));
   assert.equal(after.coaching.available, true);
+});
+
+test('saving a drill never widens it to the whole source by accident', async () => {
+  const draft = await owner.post('/api/knowledge', {
+    title: 'Ravenly onboarding notes',
+    brand: 'ravenly',
+    subjects: ['product'],
+    content: '# Notes\n\n## 01 · Setup steps\n\nConnect the website widget first.\n\n## 02 · Training\n\nTrain intake staff in week one.',
+    approve: true,
+  });
+  assert.equal(draft.status, 201);
+  const src = (await owner.get(`/api/knowledge/${draft.data.id}`)).data.version;
+  const id = await createDrill({
+    title: 'Onboarding drill',
+    brand: 'ravenly',
+    sourceRefs: [{ sourceId: draft.data.id, sections: ['s1'], wholeSource: false }],
+  });
+  // A new version retitles section 01, so the drill's chosen section is no longer found.
+  const v2 = await owner.post(`/api/knowledge/${draft.data.id}/versions`, {
+    title: src.title,
+    brand: 'ravenly',
+    subjects: ['product'],
+    content: '# Notes\n\n## 01 · Pricing overview\n\nNew material.\n\n## 02 · Training\n\nTrain intake staff in week one.',
+    approve: true,
+  });
+  assert.equal(v2.status, 201);
+  const edit = (await owner.get(`/api/drills/${id}`)).data.drill;
+  assert.equal(edit.sourceRefs[0].sections.length, 0);
+  assert.equal(edit.sourceRefs[0].wholeSource, false);
+  assert.equal(edit.sourceRefs[0].unmatched[0].why, 'retitled');
+  assert.equal(edit.coaching.reason, 'sections_missing');
+  const base = { ...edit, defaults: edit.defaults, sourceRefs: [{ sourceId: draft.data.id, sections: [], wholeSource: false }] };
+  const body = Object.fromEntries(
+    ['title', 'brand', 'subject', 'stage', 'roles', 'personas', 'situation', 'buyerLine', 'personaLines', 'objective', 'goodLooksLike', 'assessedDimensions', 'defaults', 'sourceRefs'].map((k) => [k, base[k]]),
+  );
+  const refused = await owner.put(`/api/drills/${id}`, body);
+  assert.equal(refused.status, 400, 'saving with no sections and no explicit whole-source choice is refused');
+  const whole = await owner.put(`/api/drills/${id}`, { ...body, sourceRefs: [{ sourceId: draft.data.id, sections: [], wholeSource: true }] });
+  assert.equal(whole.status, 200, 'choosing the whole source explicitly is allowed');
 });

@@ -18,29 +18,27 @@ export const EMAIL_FAILURE_LIMIT = 100;
 export const IP_FAILURE_LIMIT = 50;
 export const WINDOW_MINUTES = 15;
 
-const COUNTED = `outcome IN ('pending', 'failure') AND cleared_at IS NULL AND created_at > now() - make_interval(mins => $3)`;
+const counted = (windowParam) => `outcome IN ('pending', 'failure') AND cleared_at IS NULL AND created_at > now() - make_interval(mins => ${windowParam})`;
+const COUNTED = counted('$3');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function tryLocks(client, email, ip) {
-  const { rows } = await client.query(
-    `SELECT pg_try_advisory_xact_lock(hashtext($1)) AS e, pg_try_advisory_xact_lock(hashtext($2)) AS i`,
-    [`login-email:${email || ''}`, `login-ip:${ip || ''}`],
-  );
-  return rows[0].e && rows[0].i;
+async function tryLock(client, key) {
+  const { rows } = await client.query(`SELECT pg_try_advisory_xact_lock(hashtext($1)) AS ok`, [key]);
+  return rows[0].ok;
 }
 
-// Count and record one attempt. Runs while holding the per-email and per-address locks.
-async function decide(client, { email, ip, kind }) {
-  const counts = (
+const SINCE_SUCCESS = `WITH since AS (
+  SELECT COALESCE(max(created_at), '-infinity'::timestamptz) AS t FROM login_attempts WHERE email = $1 AND outcome = 'success')`;
+
+// Limits that depend on the network address: failures for this email from this address, and failures
+// from this address overall. Runs while holding the address lock.
+async function addressCounts(client, email, ip) {
+  const row = (
     await client.query(
-      `WITH since AS (
-         SELECT COALESCE(max(created_at), '-infinity'::timestamptz) AS t
-           FROM login_attempts WHERE email = $1 AND outcome = 'success')
+      `${SINCE_SUCCESS}
        SELECT
          (SELECT count(*) FROM login_attempts, since
            WHERE email = $1 AND ip IS NOT DISTINCT FROM $2 AND created_at > since.t AND ${COUNTED}) AS pair_failures,
-         (SELECT count(*) FROM login_attempts, since
-           WHERE email = $1 AND created_at > since.t AND ${COUNTED}) AS email_failures,
          (SELECT count(*) FROM login_attempts
            WHERE ip IS NOT DISTINCT FROM $2 AND $2::text IS NOT NULL AND ${COUNTED}) AS ip_failures,
          (SELECT min(created_at) FROM (
@@ -50,32 +48,59 @@ async function decide(client, { email, ip, kind }) {
       [email || null, ip || null, WINDOW_MINUTES, PAIR_FAILURE_LIMIT],
     )
   ).rows[0];
-  const n = (x) => Number(x) || 0;
-  const blocked =
-    n(counts.pair_failures) >= PAIR_FAILURE_LIMIT || n(counts.email_failures) >= EMAIL_FAILURE_LIMIT || n(counts.ip_failures) >= IP_FAILURE_LIMIT;
+  const pair = Number(row.pair_failures) || 0;
+  const perIp = Number(row.ip_failures) || 0;
   let retryMinutes = WINDOW_MINUTES;
-  if (blocked && n(counts.pair_failures) >= PAIR_FAILURE_LIMIT && counts.oldest_pair) {
-    const unblockAt = new Date(counts.oldest_pair).getTime() + WINDOW_MINUTES * 60_000;
+  if (pair >= PAIR_FAILURE_LIMIT && row.oldest_pair) {
+    const unblockAt = new Date(row.oldest_pair).getTime() + WINDOW_MINUTES * 60_000;
     retryMinutes = Math.max(1, Math.ceil((unblockAt - Date.now()) / 60_000));
   }
+  return { blocked: pair >= PAIR_FAILURE_LIMIT || perIp >= IP_FAILURE_LIMIT, retryMinutes };
+}
+
+// Failures for this email from every address. Runs while holding the email lock.
+async function emailFailures(client, email) {
   const row = (
-    await client.query(
-      `INSERT INTO login_attempts (email, ip, outcome, kind, reason) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-      [email || null, ip || null, blocked ? 'blocked' : 'pending', kind, blocked ? 'throttled' : null],
-    )
+    await client.query(`${SINCE_SUCCESS} SELECT count(*) AS n FROM login_attempts, since WHERE email = $1 AND created_at > since.t AND ${counted('$2')}`, [
+      email || null,
+      WINDOW_MINUTES,
+    ])
+  ).rows[0];
+  return Number(row.n) || 0;
+}
+
+async function record(client, { email, ip, kind, blocked, retryMinutes }) {
+  const row = (
+    await client.query(`INSERT INTO login_attempts (email, ip, outcome, kind, reason) VALUES ($1, $2, $3, $4, $5) RETURNING id`, [
+      email || null,
+      ip || null,
+      blocked ? 'blocked' : 'pending',
+      kind,
+      blocked ? 'throttled' : null,
+    ])
   ).rows[0];
   return { attemptId: row.id, blocked, busy: false, retryMinutes };
 }
 
 // Decides whether an attempt may check a password. Returns { attemptId, blocked, busy, retryMinutes }.
 // Must be called with the pool (db), never inside another transaction.
+// The address limits are decided first under the address lock, so a flood from one address (already
+// blocked there) never competes for the email lock that the person's own sign-in needs.
 export async function beginAttempt(db, { email, ip, kind = 'login' }) {
   for (let tryNo = 0; tryNo < 6; tryNo += 1) {
     const client = await db.pool.connect();
     let decision = null;
     try {
       await client.query('BEGIN');
-      if (await tryLocks(client, email, ip)) decision = await decide(client, { email, ip, kind });
+      if (await tryLock(client, `login-ip:${ip || ''}`)) {
+        const byAddress = await addressCounts(client, email, ip);
+        if (byAddress.blocked) {
+          decision = await record(client, { email, ip, kind, blocked: true, retryMinutes: byAddress.retryMinutes });
+        } else if (await tryLock(client, `login-email:${email || ''}`)) {
+          const blocked = (await emailFailures(client, email)) >= EMAIL_FAILURE_LIMIT;
+          decision = await record(client, { email, ip, kind, blocked, retryMinutes: WINDOW_MINUTES });
+        }
+      }
       await client.query(decision ? 'COMMIT' : 'ROLLBACK');
     } catch (err) {
       await client.query('ROLLBACK').catch(() => {});

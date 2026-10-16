@@ -370,6 +370,10 @@ test('remaining screens render for review', async ({ browser }) => {
     await owner.waitForLoadState('networkidle');
     await shot(owner, name);
   }
+  await owner.goto(`${state.drillUrl.replace('/practice/drill/', '/drills/')}/edit`);
+  await expect(owner.getByRole('heading', { name: /^Edit/, level: 1 })).toBeVisible();
+  await expect(owner.getByText('Chosen sections').first()).toBeVisible();
+  await shot(owner, '27-drill-editor');
   await owner.goto('/knowledge');
   await owner.locator('main a[href^="/knowledge/"]').filter({ hasText: 'Ravenly' }).first().click();
   await expect(owner.getByRole('heading', { level: 1 })).toBeVisible();

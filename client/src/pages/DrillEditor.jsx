@@ -65,9 +65,11 @@ function SourcePicker({ value, onChange, form, meta }) {
   if (loadError) return <ErrorNotice error={loadError} retry={load} />;
   if (!sources) return <Loading />;
   const selected = new Map(value.map((r) => [r.sourceId, r]));
-  const toggleSource = (id) => onChange(selected.has(id) ? value.filter((r) => r.sourceId !== id) : [...value, { sourceId: id, sections: [] }]);
+  const toggleSource = (id) =>
+    onChange(selected.has(id) ? value.filter((r) => r.sourceId !== id) : [...value, { sourceId: id, sections: [], wholeSource: false, unmatched: [] }]);
   const toggleSection = (id, key) =>
     onChange(value.map((r) => (r.sourceId !== id ? r : { ...r, sections: r.sections.includes(key) ? r.sections.filter((k) => k !== key) : [...r.sections, key] })));
+  const setWhole = (id, whole) => onChange(value.map((r) => (r.sourceId !== id ? r : { ...r, wholeSource: whole })));
   const usable = value.some((ref) => {
     const s = sources.find((x) => x.id === ref.sourceId);
     return s && s.status === 'approved' && (s.subjects || []).includes(form.subject) && !fitNote(s, form, meta)?.text.startsWith('Not used for coaching');
@@ -86,20 +88,52 @@ function SourcePicker({ value, onChange, form, meta }) {
               <strong>{s.title}</strong>
               {s.status !== 'approved' && <span className="badge badge-warn">Draft: not used for coaching until approved</span>}
             </label>
-            {note && <span className={`tiny ${note.kind === 'warn' ? 'error-text' : 'muted'}`}>{note.text}</span>}
-            {selected.has(s.id) && (
-              <div className="stack-sm" style={{ paddingLeft: 26 }}>
-                <span className="tiny muted">Choose the sections coaching should use. None selected means the whole source (long sources are trimmed).</span>
-                <div className="grid-2">
-                  {(sections[s.id] || []).map((sec) => (
-                    <label key={sec.key} className="checkbox small">
-                      <input type="checkbox" checked={selected.get(s.id).sections.includes(sec.key)} onChange={() => toggleSection(s.id, sec.key)} />
-                      {sec.title}
-                    </label>
-                  ))}
-                </div>
+            {note && (
+              <div className={`tiny ${note.kind === 'warn' ? 'error-text' : 'muted'}`} style={{ paddingLeft: 26 }}>
+                {note.text}
               </div>
             )}
+            {selected.has(s.id) && (() => {
+              const ref = selected.get(s.id);
+              const whole = Boolean(ref.wholeSource);
+              return (
+                <div className="stack-sm" style={{ paddingLeft: 26 }}>
+                  {ref.unmatched?.length > 0 && (
+                    <Notice kind="warn" title="Some chosen sections are not in the latest version">
+                      <p className="small">
+                        {ref.unmatched
+                          .map((m) => (m.why === 'retitled' ? `“${m.title}” (its old number now holds “${m.nowTitle}”)` : `“${m.title}”`))
+                          .join(', ')}
+                        . Choose replacements below, or leave them out. Saving keeps only the sections checked here.
+                      </p>
+                    </Notice>
+                  )}
+                  <div className="row">
+                    <label className="checkbox small">
+                      <input type="radio" name={`whole-${s.id}`} checked={!whole} onChange={() => setWhole(s.id, false)} />
+                      Chosen sections
+                    </label>
+                    <label className="checkbox small">
+                      <input type="radio" name={`whole-${s.id}`} checked={whole} onChange={() => setWhole(s.id, true)} />
+                      The whole source (long sources are trimmed)
+                    </label>
+                  </div>
+                  {!whole && (
+                    <>
+                      <div className="grid-2">
+                        {(sections[s.id] || []).map((sec) => (
+                          <label key={sec.key} className="checkbox small">
+                            <input type="checkbox" checked={ref.sections.includes(sec.key)} onChange={() => toggleSection(s.id, sec.key)} />
+                            {sec.title}
+                          </label>
+                        ))}
+                      </div>
+                      {ref.sections.length === 0 && <span className="tiny error-text">Choose at least one section, or use the whole source.</span>}
+                    </>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         );
       })}
@@ -151,11 +185,24 @@ export function DrillEditor() {
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const toggle = (k, v) => setForm((f) => ({ ...f, [k]: f[k].includes(v) ? f[k].filter((x) => x !== v) : [...f[k], v] }));
 
+  const sectionsMissing = form.sourceRefs.some((r) => r.wholeSource === false && r.sections.length === 0);
   const save = async () => {
+    if (sectionsMissing) {
+      setError({ message: 'Choose at least one section for each source, or use the whole source.' });
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      const { version, ...body } = form;
+      const { version, ...rest } = form;
+      const body = {
+        ...rest,
+        sourceRefs: form.sourceRefs.map((r) => ({
+          sourceId: r.sourceId,
+          sections: r.wholeSource ? [] : r.sections,
+          wholeSource: Boolean(r.wholeSource),
+        })),
+      };
       if (id) {
         await put(`/drills/${id}`, body);
         toast('Drill saved as a new version');
@@ -179,7 +226,7 @@ export function DrillEditor() {
       </Link>
       <div className="page-head">
         <div>
-          <h1>{id ? `Edit “${form.title}”` : 'New drill'}</h1>
+          <h1>{id ? `Edit ${/^[“"]/.test(form.title) ? form.title : `“${form.title}”`}` : 'New drill'}</h1>
           <p className="sub">{id ? `Saving creates version ${form.version + 1}. Past answers keep the version they were written against.` : 'One focused buyer moment, scored on the dimensions it actually tests.'}</p>
         </div>
       </div>

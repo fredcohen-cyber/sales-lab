@@ -58,7 +58,7 @@ function DrillImpact({ sourceId, versionId, open }) {
         {state.drills.map((d) => (
           <li key={d.drillId}>
             <Link to={`/drills/${d.drillId}/edit`}>{d.title}</Link>:{' '}
-            {d.missing.map((m) => (m.why === 'retitled' ? `“${m.title}” is now titled “${m.nowTitle}”` : `“${m.title}” is gone`)).join('; ')}
+            {d.missing.map((m) => (m.why === 'retitled' ? `“${m.title}” not found (its old number now holds “${m.nowTitle}”)` : `“${m.title}” is gone`)).join('; ')}
             {d.allMissing ? '. This drill would run as unscored practice.' : '.'}
           </li>
         ))}

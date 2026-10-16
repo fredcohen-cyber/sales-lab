@@ -178,3 +178,17 @@ test('a drill about both brands needs product material for both', () => {
   const gone = [{ available: false, primary: false, brand: 'ravenly', reason: 'sections_missing' }];
   assert.equal(availabilityReason(cfg, gone, { brand: 'ravenly', subject: 'product' }), 'sections_missing');
 });
+
+test('a negation counts only when it governs the guarantee', () => {
+  for (const s of ['I can’t guarantee you’ll sign more cases.', 'No one can honestly guarantee more signed cases.', 'I am not going to guarantee anything.', 'I would never promise you more cases.']) {
+    assert.ok(isNegatedGuarantee(s), s);
+  }
+  for (const s of [
+    'No problem at all, and I guarantee you will sign more cases with us.',
+    'Don’t worry about the price, because we guarantee more retained clients.',
+    'There is no risk here: we guarantee your intake will double.',
+    'You won’t regret it; I promise you more signed cases this quarter.',
+  ]) {
+    assert.ok(!isNegatedGuarantee(s), s);
+  }
+});
