@@ -5,6 +5,7 @@ import '@fontsource-variable/public-sans';
 import '@fontsource-variable/newsreader';
 import './styles/app.css';
 import { App } from './App.jsx';
+import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { AuthProvider, MetaProvider } from './state.jsx';
 import { ToastProvider } from './components/ui.jsx';
 
@@ -14,7 +15,9 @@ createRoot(document.getElementById('root')).render(
       <ToastProvider>
         <AuthProvider>
           <MetaProvider>
-            <App />
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
           </MetaProvider>
         </AuthProvider>
       </ToastProvider>

@@ -165,6 +165,17 @@ export function UserDetail() {
             <dt>Active sessions</dt>
             <dd>{u.activeSessions}</dd>
           </dl>
+          {data.signIn?.paused && (
+            <Notice kind="warn" title="Sign-in is paused after failed attempts">
+              <p>
+                {data.signIn.recentFailures} failed sign-in attempt{data.signIn.recentFailures === 1 ? '' : 's'} in the last 15 minutes. If these were their own typos, or
+                someone else guessing at the account, you can allow sign-in again now. A new password from a reset link also lifts the pause.
+              </p>
+              <button className="btn btn-small" disabled={busy} onClick={() => act(() => post(`/users/${u.id}/sign-in/clear`, {}), 'Sign-in allowed again')}>
+                Allow sign-in now
+              </button>
+            </Notice>
+          )}
           {link && <LinkResult link={link} name={u.name} />}
           <div className="row">
             {u.status === 'active' && !ownerLocked && (
@@ -172,12 +183,12 @@ export function UserDetail() {
                 {u.hasPassword ? 'Create password reset link' : u.pendingLink ? 'Create a new setup link' : 'Create setup link'}
               </button>
             )}
-            {u.pendingLink && (
+            {u.pendingLink && !ownerLocked && (
               <button className="btn btn-secondary" disabled={busy} onClick={() => act(() => post(`/users/${u.id}/links/revoke`, {}), 'Unused links revoked').then(() => setLink(null))}>
                 Revoke unused link
               </button>
             )}
-            {u.activeSessions > 0 && (
+            {u.activeSessions > 0 && !ownerLocked && (
               <button className="btn btn-secondary" disabled={busy} onClick={() => setConfirm('signout')}>
                 Sign out of all sessions
               </button>

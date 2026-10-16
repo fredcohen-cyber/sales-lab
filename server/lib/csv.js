@@ -7,8 +7,10 @@ function cell(value) {
   return s;
 }
 
-export function toCsv(columns, rows) {
-  const lines = [columns.map((c) => cell(c.label)).join(',')];
+// preamble: rows of plain cells written above the table (for example notes about the data), then a blank line.
+export function toCsv(columns, rows, { preamble = [] } = {}) {
+  const lines = preamble.length ? [...preamble.map((r) => r.map(cell).join(',')), ''] : [];
+  lines.push(columns.map((c) => cell(c.label)).join(','));
   for (const row of rows) {
     lines.push(columns.map((c) => cell(typeof c.value === 'function' ? c.value(row) : row[c.key])).join(','));
   }

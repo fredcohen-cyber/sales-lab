@@ -17,7 +17,7 @@ export function homeRoutes({ db }) {
           .sort((x, y) => (x.dueDate || '9999-12-31').localeCompare(y.dueDate || '9999-12-31'))
           .flatMap((a) => a.items.filter((i) => i.state === 'available').map((i) => ({ ...i, assignmentId: a.id, assignmentTitle: a.title, dueDate: a.dueDate, overdue: a.overdue })))[0] || null;
       const recent = await db.many(
-        `SELECT a.id, a.scenario->>'title' AS drill_title, a.submitted_at, a.mode, a.attempt_number, e.overall_score, e.review_status,
+        `SELECT a.id, a.scenario->>'title' AS drill_title, a.submitted_at, a.mode, a.attempt_number, a.coached_number, e.overall_score, e.review_status,
                 r.status AS run_status
            FROM attempts a LEFT JOIN evaluations e ON e.id = a.evaluation_id LEFT JOIN evaluation_runs r ON r.id = a.latest_run_id
           WHERE a.learner_id = $1 ORDER BY a.submitted_at DESC LIMIT 5`,

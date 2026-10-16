@@ -196,7 +196,7 @@ export function TrendNotes({ statement, retry }) {
     <div className="trend-notes">
       <p>{statement.text}</p>
       <p>
-        Improvement through retries, on the same drill and buyer: <RetryLine retry={retry} />
+        Improvement through retries, on the same drill and buyer at the same or harder settings: <RetryLine retry={retry} />
       </p>
     </div>
   );

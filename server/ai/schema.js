@@ -70,7 +70,7 @@ export function evaluationTool(assessedKeys) {
             required: ['claim_quote', 'status'],
             properties: {
               claim_quote: quote,
-              status: { type: 'string', enum: ['supported', 'contradicted', 'unsupported', 'uncertain'] },
+              status: { type: 'string', enum: ['supported', 'overstated', 'contradicted', 'unsupported', 'uncertain'] },
               source_ref: { type: 'string', description: 'Source label such as S1.' },
               source_quote: { type: 'string', description: 'Exact words copied from the cited source.' },
               note: { type: 'string' },
@@ -114,7 +114,8 @@ export const evaluationOutputSchema = z.object({
     .array(
       z.object({
         key: z.string(),
-        score: z.coerce.number().int().min(0).max(100),
+        // No coercion: a missing or non-numeric score fails the run instead of becoming a zero.
+        score: z.number().min(0).max(100).transform((n) => Math.round(n)),
         rationale: str(2000),
         evidence: z.array(str(600)).max(5).default([]),
       }),
@@ -126,7 +127,7 @@ export const evaluationOutputSchema = z.object({
     .array(
       z.object({
         claim_quote: str(600),
-        status: z.enum(['supported', 'contradicted', 'unsupported', 'uncertain']),
+        status: z.enum(['supported', 'overstated', 'contradicted', 'unsupported', 'uncertain']),
         source_ref: optStr(20),
         source_quote: optStr(1200),
         note: optStr(800),

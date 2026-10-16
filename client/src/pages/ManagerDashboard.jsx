@@ -149,7 +149,9 @@ export function ManagerDashboard() {
                             {r.name}
                           </Link>
                           <div className="tiny muted">
-                            {r.role === 'ae' ? 'AE' : 'AM'}
+                            {r.role === 'ae' ? 'AE' : r.role === 'am' ? 'AM' : 'Now a manager'}
+                            {(r.rolesPracticed || []).some((x) => x !== r.role) &&
+                              `, practiced as ${r.rolesPracticed.map((x) => x.toUpperCase()).join(' and ')}`}
                             {r.status !== 'active' ? ', deactivated' : ''}
                           </div>
                         </td>

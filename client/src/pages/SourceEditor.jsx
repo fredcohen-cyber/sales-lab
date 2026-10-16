@@ -4,7 +4,7 @@ import { get, post } from '../api.js';
 import { useMeta } from '../state.jsx';
 import { ErrorNotice, Field, Loading, Notice, useToast } from '../components/ui.jsx';
 
-const EMPTY = { title: '', brand: 'ravenly', subjects: ['product'], personas: [], asOfDate: '', caveats: '', content: '', changeNote: '', importedFrom: '' };
+const EMPTY = { title: '', brand: 'ravenly', subjects: ['product'], personas: [], asOfDate: '', caveats: '', evidenceBasis: 'documented', content: '', changeNote: '', importedFrom: '' };
 
 export function SourceEditor() {
   const { id } = useParams();
@@ -29,6 +29,7 @@ export function SourceEditor() {
           personas: d.version.personas,
           asOfDate: d.version.asOfDate || '',
           caveats: d.version.caveats || '',
+          evidenceBasis: d.version.evidenceBasis || 'documented',
           content: d.version.content,
           changeNote: '',
           importedFrom: '',
@@ -81,6 +82,7 @@ export function SourceEditor() {
         personas: form.personas,
         asOfDate: form.asOfDate || null,
         caveats: form.caveats,
+        evidenceBasis: form.evidenceBasis,
         content: form.content,
         changeNote: form.changeNote,
         approve,
@@ -157,6 +159,19 @@ export function SourceEditor() {
             </div>
             <span className="hint tiny muted">Leave all unchecked if the source applies to every persona.</span>
           </fieldset>
+          <Field
+            label="What kind of evidence is this?"
+            id="s-evidence"
+            hint="Coaching treats documented facts as established, public claims as what a vendor says, and observations as things to confirm."
+          >
+            <select id="s-evidence" value={form.evidenceBasis} onChange={(e) => setForm({ ...form, evidenceBasis: e.target.value })}>
+              {Object.entries(meta.evidenceBasis).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </Field>
           <Field label="Caveats" id="s-caveats" hint="What is unverified, time-sensitive, or a public claim rather than a tested capability. Shown with the source and given to coaching.">
             <textarea id="s-caveats" rows={3} value={form.caveats} maxLength={4000} onChange={(e) => setForm({ ...form, caveats: e.target.value })} />
           </Field>

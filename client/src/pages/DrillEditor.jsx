@@ -23,12 +23,37 @@ const BLANK = {
   status: 'active',
 };
 
-function SourcePicker({ value, onChange }) {
+// Mirrors the server's relevance rule (server/knowledge/service.js sourceFit) to explain each choice.
+function fitNote(source, form, meta) {
+  if (!source) return null;
+  const subjects = source.subjects || [];
+  if (!(source.brand === 'both' || form.brand === 'both' || source.brand === form.brand)) {
+    return { kind: 'warn', text: `Not used for coaching: it covers ${source.brand === 'omnizant' ? 'Omnizant' : 'Ravenly'}, and this drill is for ${form.brand === 'omnizant' ? 'Omnizant' : 'Ravenly'}.` };
+  }
+  if (!subjects.includes(form.subject) && !subjects.includes('sales_technique')) {
+    return { kind: 'warn', text: `Not used for coaching: it does not cover ${meta.subjects[form.subject].toLowerCase()} or sales technique.` };
+  }
+  if (!subjects.includes(form.subject)) {
+    return { kind: 'info', text: `Supports sales technique only. Coaching also needs a source that covers ${meta.subjects[form.subject].toLowerCase()}.` };
+  }
+  const limited = (source.personas || []).length ? form.personas.filter((p) => !source.personas.includes(p)) : [];
+  if (limited.length) {
+    return { kind: 'info', text: `Not used for ${limited.map((k) => meta.personas.find((p) => p.key === k)?.label || k).join(', ').toLowerCase()}.` };
+  }
+  return null;
+}
+
+function SourcePicker({ value, onChange, form, meta }) {
   const [sources, setSources] = useState(null);
+  const [loadError, setLoadError] = useState(null);
   const [sections, setSections] = useState({});
-  useEffect(() => {
-    get('/knowledge').then((d) => setSources(d.sources.filter((s) => s.status !== 'archived')));
-  }, []);
+  const load = () => {
+    setLoadError(null);
+    get('/knowledge')
+      .then((d) => setSources(d.sources.filter((s) => s.status !== 'archived')))
+      .catch(setLoadError);
+  };
+  useEffect(load, []);
   useEffect(() => {
     for (const ref of value) {
       if (sections[ref.sourceId]) continue;
@@ -37,35 +62,47 @@ function SourcePicker({ value, onChange }) {
         .catch(() => setSections((m) => ({ ...m, [ref.sourceId]: [] })));
     }
   }, [value, sections]);
+  if (loadError) return <ErrorNotice error={loadError} retry={load} />;
   if (!sources) return <Loading />;
   const selected = new Map(value.map((r) => [r.sourceId, r]));
   const toggleSource = (id) => onChange(selected.has(id) ? value.filter((r) => r.sourceId !== id) : [...value, { sourceId: id, sections: [] }]);
   const toggleSection = (id, key) =>
     onChange(value.map((r) => (r.sourceId !== id ? r : { ...r, sections: r.sections.includes(key) ? r.sections.filter((k) => k !== key) : [...r.sections, key] })));
+  const usable = value.some((ref) => {
+    const s = sources.find((x) => x.id === ref.sourceId);
+    return s && s.status === 'approved' && (s.subjects || []).includes(form.subject) && !fitNote(s, form, meta)?.text.startsWith('Not used for coaching');
+  });
   return (
     <div className="stack-sm">
-      {sources.map((s) => (
-        <div key={s.id} className="panel panel-tight stack-sm">
-          <label className="checkbox">
-            <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggleSource(s.id)} />
-            <strong>{s.title}</strong>
-            {s.status !== 'approved' && <span className="badge badge-warn">Draft: not used for coaching until approved</span>}
-          </label>
-          {selected.has(s.id) && (
-            <div className="stack-sm" style={{ paddingLeft: 26 }}>
-              <span className="tiny muted">Choose the sections coaching should use. None selected means the whole source (long sources are trimmed).</span>
-              <div className="grid-2">
-                {(sections[s.id] || []).map((sec) => (
-                  <label key={sec.key} className="checkbox small">
-                    <input type="checkbox" checked={selected.get(s.id).sections.includes(sec.key)} onChange={() => toggleSection(s.id, sec.key)} />
-                    {sec.title}
-                  </label>
-                ))}
+      {value.length > 0 && !usable && (
+        <Notice kind="warn">None of the chosen sources is approved and covers this drill’s brand and subject, so the drill runs as unscored practice.</Notice>
+      )}
+      {sources.map((s) => {
+        const note = selected.has(s.id) ? fitNote(s, form, meta) : null;
+        return (
+          <div key={s.id} className="panel panel-tight stack-sm">
+            <label className="checkbox">
+              <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggleSource(s.id)} />
+              <strong>{s.title}</strong>
+              {s.status !== 'approved' && <span className="badge badge-warn">Draft: not used for coaching until approved</span>}
+            </label>
+            {note && <span className={`tiny ${note.kind === 'warn' ? 'error-text' : 'muted'}`}>{note.text}</span>}
+            {selected.has(s.id) && (
+              <div className="stack-sm" style={{ paddingLeft: 26 }}>
+                <span className="tiny muted">Choose the sections coaching should use. None selected means the whole source (long sources are trimmed).</span>
+                <div className="grid-2">
+                  {(sections[s.id] || []).map((sec) => (
+                    <label key={sec.key} className="checkbox small">
+                      <input type="checkbox" checked={selected.get(s.id).sections.includes(sec.key)} onChange={() => toggleSection(s.id, sec.key)} />
+                      {sec.title}
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      ))}
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -271,7 +308,7 @@ export function DrillEditor() {
         <section className="panel stack">
           <h2 className="section-title">Source material for coaching</h2>
           {form.sourceRefs.length === 0 && <Notice kind="warn">Without an approved source, this drill runs as unscored practice only.</Notice>}
-          <SourcePicker value={form.sourceRefs} onChange={(v) => set('sourceRefs', v)} />
+          <SourcePicker value={form.sourceRefs} onChange={(v) => set('sourceRefs', v)} form={form} meta={meta} />
         </section>
 
         {id && (

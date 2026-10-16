@@ -130,13 +130,16 @@ test('assigning to several reps creates one assignment each, frozen to the drill
 
 test('manager review: confirm and dispute change what counts', async () => {
   const d = await drillBySlug(h, 'ravenly-guarantee-ask');
-  const bad = await submit(am, d, 'Yes. I guarantee you will sign more cases with us. [[mock:guarantee]]');
+  const bad = await submit(am, d, 'Yes. I guarantee you will sign more cases with us. [[mock:gtee]]');
   const ev = (await waitForCoaching(am, bad.data.attempt.id)).evaluation;
   assert.equal(ev.reviewStatus, 'provisional');
   const queue = await owner.get('/api/reviews?filter=pending');
   assert.ok(queue.data.items.some((i) => i.attempt_id === bad.data.attempt.id));
   assert.equal((await owner.post(`/api/evaluations/${ev.id}/dispute`, { note: '' })).status, 400, 'a dispute needs a reason');
-  assert.equal((await owner.post(`/api/evaluations/${ev.id}/confirm`, { note: 'Clear guarantee. Review the guarantee section.' })).status, 200);
+  assert.equal((await owner.post(`/api/evaluations/${ev.id}/confirm`, { note: 'x' })).status, 409, 'the critical failure needs a decision');
+  const reviewed = await owner.post(`/api/evaluations/${ev.id}/review`, { criticalFailures: { cf1: 'confirm' }, note: 'Clear guarantee. Review the guarantee section.' });
+  assert.equal(reviewed.status, 200);
+  assert.equal(reviewed.data.overallScore, 0);
   const note = await owner.post(`/api/attempts/${bad.data.attempt.id}/notes`, { body: 'Never promise outcomes. Offer the 10-day evaluation instead.' });
   assert.equal(note.status, 201);
   const view = await am.get(`/api/practice/attempts/${bad.data.attempt.id}`);

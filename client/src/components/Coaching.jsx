@@ -1,15 +1,16 @@
 import { Link } from 'react-router-dom';
 import { CheckIcon } from './Icons.jsx';
-import { Notice, ReviewBadge, ScoreBar } from './ui.jsx';
+import { attemptLabel, Notice, ReviewBadge, ScoreBar } from './ui.jsx';
 
-const CF_LABEL = {
+export const CF_LABEL = {
   invented_capability: 'Invented capability',
   contradicts_approved_fact: 'Contradicts approved material',
   unauthorized_guarantee: 'Unauthorized guarantee',
 };
-const FLAG_LABEL = {
+export const FLAG_LABEL = {
   unsupported: 'Not covered by approved material',
   uncertain: 'Marked as unverified in the material',
+  overstated: 'Stated as fact, but the material only reports it as a claim or observation',
   possible_contradiction: 'May conflict with approved material',
   unverified_critical: 'Possible critical issue, not verified',
   possible_guarantee: 'Reads like a promise of results',
@@ -21,14 +22,34 @@ function Quote({ children }) {
   return <span className="evidence">“{children}”</span>;
 }
 
+function CriticalItem({ c }) {
+  return (
+    <li>
+      <strong>{CF_LABEL[c.type] || c.type}.</strong> {c.explanation}
+      <Quote>{c.claimQuote}</Quote>
+      {c.sourceQuote && (
+        <span className="quote-source">
+          {c.sourceTitle ? `${c.sourceTitle}: ` : 'Approved material: '}“{c.sourceQuote}”
+        </span>
+      )}
+      {c.origin === 'manager' && <span className="tiny muted" style={{ display: 'block', marginTop: 4 }}>Added by a manager in review.</span>}
+    </li>
+  );
+}
+
 export function CoachingResult({ attempt, evaluation, next }) {
   const ev = evaluation;
   const s = attempt.scenario;
   const cfs = ev.criticalFailures || [];
-  const flags = ev.reviewFlags || [];
+  const pendingCfs = cfs.filter((c) => (c.status || 'pending') === 'pending');
+  const confirmedCfs = cfs.filter((c) => c.status === 'confirmed');
+  const openFlags = (ev.reviewFlags || []).filter((f) => (f.status || 'open') === 'open');
   const assessed = ev.dimensionScores.filter((d) => d.assessed);
   const notAssessed = ev.dimensionScores.filter((d) => !d.assessed);
-  const zero = cfs.length > 0;
+  const disputed = ev.reviewStatus === 'disputed';
+  const awaiting = !disputed && (ev.overallScore === null || ev.overallScore === undefined);
+  const zero = !disputed && !awaiting && confirmedCfs.length > 0;
+  const label = attemptLabel(attempt);
 
   return (
     <div className="stack-lg">
@@ -37,68 +58,81 @@ export function CoachingResult({ attempt, evaluation, next }) {
           Score
         </h2>
         <div className="score-slip">
-          <div className={`score-figure${zero ? ' zero' : ''}`} aria-label={`Overall score ${ev.overallScore} out of 100`}>
-            {ev.overallScore}
-            <small>/100</small>
-          </div>
+          {disputed || awaiting ? (
+            <div className="score-figure pending" aria-label={disputed ? 'Disputed evaluation, not counted' : 'Score pending manager review'}>
+              —
+            </div>
+          ) : (
+            <div className={`score-figure${zero ? ' zero' : ''}`} aria-label={`Overall score ${ev.overallScore} out of 100`}>
+              {ev.overallScore}
+              <small>/100</small>
+            </div>
+          )}
           <div className="stack-sm">
             <div className="row">
-              <span className="badge badge-neutral">{attempt.isFirstAttempt ? 'First attempt' : `Retry ${attempt.attemptNumber - 1}`}</span>
-              {ev.meetsTarget ? (
+              <span className="badge badge-neutral">{label}</span>
+              {!disputed && !awaiting && (ev.meetsTarget ? (
                 <span className="badge badge-ok">
                   <CheckIcon />
                   Met target of {ev.proficiencyThreshold}
                 </span>
               ) : (
                 <span className="badge badge-neutral">Below target of {ev.proficiencyThreshold}</span>
-              )}
+              ))}
               <ReviewBadge status={ev.reviewStatus} />
             </div>
             <p className="small muted" style={{ margin: 0 }}>{ev.feedback.summary}</p>
+            {awaiting && (
+              <p className="small" style={{ margin: 0 }}>
+                Coaching found a possible critical failure. If your manager confirms it, this answer scores 0. If not, it scores {ev.weightedScore}.
+              </p>
+            )}
             {zero && (
               <p className="small" style={{ margin: 0 }}>
-                A critical failure sets the overall score to zero. Without it, the weighted score would be {ev.weightedScore}.
+                A confirmed critical failure sets the overall score to zero. Without it, the weighted score would be {ev.weightedScore}.
               </p>
             )}
           </div>
         </div>
         {ev.reviewStatus === 'provisional' && (
           <p className="tiny muted" style={{ marginTop: 12, marginBottom: 0 }}>
-            This evaluation is waiting for a manager to review the flagged items below. Until then it is not counted in performance reports.
+            This evaluation is waiting for a manager to review the items below. Until then it is not counted in performance reports.
           </p>
         )}
-        {ev.reviewStatus === 'disputed' && (
+        {disputed && (
           <p className="tiny muted" style={{ marginTop: 12, marginBottom: 0 }}>
-            A manager disputed this evaluation, so it is not counted in performance reports.
+            A manager disputed this evaluation, so it has no score that counts in performance reports.
             {ev.reviewNote ? ` Their note: ${ev.reviewNote}` : ''}
           </p>
         )}
       </section>
 
-      {cfs.length > 0 && (
-        <Notice kind="critical" title={`Critical failure${cfs.length > 1 ? 's' : ''}`}>
+      {pendingCfs.length > 0 && (
+        <Notice kind="critical" title={`Possible critical failure${pendingCfs.length > 1 ? 's' : ''}, waiting for manager review`}>
           <ul className="feedback-list">
-            {cfs.map((c, i) => (
-              <li key={i}>
-                <strong>{CF_LABEL[c.type] || c.type}.</strong> {c.explanation}
-                <Quote>{c.claimQuote}</Quote>
-                {c.sourceQuote && (
-                  <span className="quote-source">
-                    {c.sourceTitle ? `${c.sourceTitle}: ` : 'Approved material: '}“{c.sourceQuote}”
-                  </span>
-                )}
-              </li>
+            {pendingCfs.map((c) => (
+              <CriticalItem key={c.id || c.claimQuote} c={c} />
             ))}
           </ul>
         </Notice>
       )}
 
-      {flags.length > 0 && (
+      {confirmedCfs.length > 0 && (
+        <Notice kind="critical" title={`Critical failure${confirmedCfs.length > 1 ? 's' : ''}`}>
+          <ul className="feedback-list">
+            {confirmedCfs.map((c) => (
+              <CriticalItem key={c.id || c.claimQuote} c={c} />
+            ))}
+          </ul>
+        </Notice>
+      )}
+
+      {openFlags.length > 0 && (
         <Notice kind="warn" title="Flagged for manager review">
           <p className="small">These are not counted as mistakes. A manager checks them against approved material.</p>
           <ul className="feedback-list">
-            {flags.map((f, i) => (
-              <li key={i}>
+            {openFlags.map((f) => (
+              <li key={f.id || f.note}>
                 <strong>{FLAG_LABEL[f.kind] || 'Flag'}.</strong> {f.note}
                 <Quote>{f.claimQuote}</Quote>
                 {f.sourceQuote && <span className="quote-source">Approved material: “{f.sourceQuote}”</span>}

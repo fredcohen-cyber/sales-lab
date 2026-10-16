@@ -6,7 +6,7 @@ import { clientIp, requireManager } from '../auth/middleware.js';
 import { parseSections } from '../lib/text.js';
 import { isValidDateString } from '../lib/time.js';
 import { coverage, shapeSourceRow, SOURCE_LIST_SQL } from './service.js';
-import { BRANDS, SUBJECTS } from '../domain.js';
+import { BRANDS, EVIDENCE_BASIS, SUBJECTS } from '../domain.js';
 
 const MAX_CONTENT = 1_000_000;
 
@@ -22,6 +22,7 @@ const versionFields = {
     .nullable()
     .refine((v) => !v || isValidDateString(v), { message: 'Use a date like 2026-10-11.' }),
   caveats: z.string().max(4000).default(''),
+  evidenceBasis: z.enum(Object.keys(EVIDENCE_BASIS)).default('documented'),
   content: z
     .string()
     .max(MAX_CONTENT, 'This document is too long (limit 1,000,000 characters).')
@@ -38,8 +39,8 @@ async function personaKeys(q) {
 async function insertVersion(q, sourceId, body, userId) {
   const next = await q.one(`SELECT COALESCE(max(version), 0) + 1 AS v FROM knowledge_versions WHERE source_id = $1`, [sourceId]);
   return q.one(
-    `INSERT INTO knowledge_versions (source_id, version, title, brand, subjects, personas, as_of_date, caveats, content, change_note, created_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id, version`,
+    `INSERT INTO knowledge_versions (source_id, version, title, brand, subjects, personas, as_of_date, caveats, content, change_note, created_by, evidence_basis)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id, version`,
     [
       sourceId,
       next.v,
@@ -52,6 +53,7 @@ async function insertVersion(q, sourceId, body, userId) {
       body.content.replace(/\r\n?/g, '\n'),
       body.changeNote || (body.importedFrom ? `Imported from ${body.importedFrom}` : ''),
       userId,
+      body.evidenceBasis,
     ],
   );
 }
@@ -66,6 +68,35 @@ async function approveVersion(q, sourceId, versionId, userId, ip) {
   await audit(q, { actorId: userId, action: 'knowledge.approved', entityType: 'knowledge_source', entityId: sourceId, details: { versionId }, ip });
 }
 
+// Drills whose chosen sections are missing from, or titled differently in, a version of a source.
+export async function drillImpact(q, sourceId, currentContent, targetContent) {
+  const targetSections = parseSections(targetContent);
+  const currentSections = currentContent ? parseSections(currentContent) : [];
+  const drills = await q.many(
+    `SELECT d.id, d.status, v.title, v.source_refs FROM drills d JOIN drill_versions v ON v.id = d.current_version_id
+      WHERE d.status <> 'archived' AND v.source_refs @> $1::jsonb`,
+    [JSON.stringify([{ sourceId }])],
+  );
+  const out = [];
+  for (const d of drills) {
+    const ref = (d.source_refs || []).find((x) => x.sourceId === sourceId);
+    const wanted = (ref?.sections || []).filter(Boolean);
+    const missing = [];
+    const retitled = [];
+    for (const key of wanted) {
+      const t = targetSections.find((s) => s.key === key);
+      if (!t) {
+        missing.push({ key, title: currentSections.find((s) => s.key === key)?.title || key });
+        continue;
+      }
+      const c = currentSections.find((s) => s.key === key);
+      if (c && c.title.trim() !== t.title.trim()) retitled.push({ key, from: c.title, to: t.title });
+    }
+    if (missing.length || retitled.length) out.push({ drillId: d.id, title: d.title, status: d.status, missing, retitled });
+  }
+  return out;
+}
+
 export function knowledgeRoutes({ db }) {
   const r = Router();
 
@@ -75,7 +106,7 @@ export function knowledgeRoutes({ db }) {
       const forManager = req.user.isManager;
       const rows = await db.many(`${SOURCE_LIST_SQL} ${forManager ? '' : `WHERE s.status = 'approved'`} ORDER BY s.updated_at DESC`);
       let sources = rows.map((row) => shapeSourceRow(row, { forManager }));
-      const { brand, subject, persona, status } = req.query;
+      const { brand, subject, persona, status, evidence } = req.query;
       const qtext = String(req.query.q || '').toLowerCase().trim();
       sources = sources.filter(
         (s) =>
@@ -83,6 +114,7 @@ export function knowledgeRoutes({ db }) {
           (!subject || s.subjects.includes(subject)) &&
           (!persona || s.personas.length === 0 || s.personas.includes(persona)) &&
           (!status || s.status === status) &&
+          (!evidence || s.evidenceBasis === evidence) &&
           (!qtext || s.title.toLowerCase().includes(qtext)),
       );
       res.json({ sources, coverage: await coverage(db) });
@@ -133,6 +165,7 @@ export function knowledgeRoutes({ db }) {
           personas: version.personas,
           asOfDate: version.as_of_date,
           caveats: version.caveats,
+          evidenceBasis: version.evidence_basis,
           content: version.content,
           changeNote: version.change_note,
           createdAt: version.created_at,
@@ -199,6 +232,24 @@ export function knowledgeRoutes({ db }) {
         return v;
       });
       res.status(201).json({ versionId: out.id, version: out.version });
+    }),
+  );
+
+  // Before approving a version: which drills rely on sections that it drops or retitles.
+  r.get(
+    '/:id/drill-impact',
+    requireManager,
+    route(async (req, res) => {
+      const source = await db.one(`SELECT * FROM knowledge_sources WHERE id = $1`, [req.params.id]).catch(() => null);
+      if (!source) throw notFound('That source was not found.');
+      const target = await db
+        .one(`SELECT id, content FROM knowledge_versions WHERE id = $1 AND source_id = $2`, [String(req.query.versionId || ''), source.id])
+        .catch(() => null);
+      if (!target) throw notFound('That version was not found.');
+      const current = source.approved_version_id
+        ? await db.one(`SELECT content FROM knowledge_versions WHERE id = $1`, [source.approved_version_id])
+        : null;
+      res.json({ drills: await drillImpact(db, source.id, current?.content || null, target.content) });
     }),
   );
 

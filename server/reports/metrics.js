@@ -3,7 +3,12 @@ import { COUNTED_REVIEW_STATUSES } from '../domain.js';
 import { weekStart } from '../lib/time.js';
 
 export const isCounted = (r) => r.mode === 'coached' && r.evaluation_id && COUNTED_REVIEW_STATUSES.includes(r.review_status);
-export const isFirstScored = (r) => isCounted(r) && r.attempt_number === 1;
+// The first coached answer for a drill and persona. Unscored practice never uses it up.
+export const isFirstScored = (r) => isCounted(r) && r.coached_number === 1;
+export const isRetry = (r) => r.mode === 'coached' && r.coached_number > 1;
+const liveCritical = (r) => (r.critical_failures || []).filter((c) => c.status === 'confirmed' || c.status === 'pending');
+const hasConfirmedCritical = (r) => (r.critical_failures || []).some((c) => c.status === 'confirmed');
+const hasPendingCritical = (r) => (r.critical_failures || []).some((c) => c.status === 'pending');
 
 const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 const round1 = (x) => (x === null ? null : Math.round(x * 10) / 10);
@@ -24,6 +29,16 @@ export function dimensionStats(rows, rubricDims, settings) {
   });
 }
 
+const challengeOf = (r) => (r.difficulty + r.skepticism + r.depth) / 3;
+const SUBJECT_WORDS = { product: 'product knowledge', competitive: 'competitive knowledge', sales_technique: 'sales technique' };
+
+function shares(rows, key) {
+  const out = {};
+  for (const r of rows) out[r[key]] = (out[r[key]] || 0) + 1;
+  for (const k of Object.keys(out)) out[k] = Math.round((out[k] / rows.length) * 100);
+  return out;
+}
+
 export function trendByWeek(rows) {
   const first = rows.filter(isFirstScored);
   const weeks = new Map();
@@ -34,17 +49,15 @@ export function trendByWeek(rows) {
   }
   const series = [...weeks.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([week, rs]) => {
-      const stages = {};
-      for (const r of rs) stages[r.stage] = (stages[r.stage] || 0) + 1;
-      return {
-        week,
-        n: rs.length,
-        average: round1(mean(rs.map((r) => r.overall_score))),
-        averageDifficulty: round1(mean(rs.map((r) => r.difficulty))),
-        stages,
-      };
-    });
+    .map(([week, rs]) => ({
+      week,
+      n: rs.length,
+      average: round1(mean(rs.map((r) => r.overall_score))),
+      averageDifficulty: round1(mean(rs.map((r) => r.difficulty))),
+      averageChallenge: round1(mean(rs.map(challengeOf))),
+      subjects: shares(rs, 'subject'),
+      rows: rs,
+    }));
   const solid = series.filter((w) => w.n >= 3);
   let statement;
   if (solid.length < 2) {
@@ -56,20 +69,53 @@ export function trendByWeek(rows) {
     const a = solid[0];
     const b = solid[solid.length - 1];
     const delta = round1(b.average - a.average);
-    const dDiff = round1(b.averageDifficulty - a.averageDifficulty);
     const dir = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
-    let text = `First-attempt average moved from ${a.average} (week of ${a.week}, ${a.n} answers) to ${b.average} (week of ${b.week}, ${b.n} answers).`;
-    if (Math.abs(dDiff) >= 0.5) {
-      text += ` Average challenge level also changed from ${a.averageDifficulty} to ${b.averageDifficulty}, so part of this change may reflect harder or easier drills rather than skill.`;
+    // Like-for-like: compare only answers on the same subject, stage, and difficulty in both weeks.
+    const key = (r) => `${r.subject}|${r.stage}|${r.difficulty}`;
+    const groupsA = new Map();
+    for (const r of a.rows) groupsA.set(key(r), [...(groupsA.get(key(r)) || []), r]);
+    let weighted = 0;
+    let weight = 0;
+    const seen = new Set();
+    for (const r of b.rows) {
+      const k = key(r);
+      if (seen.has(k) || !groupsA.has(k)) continue;
+      seen.add(k);
+      const inA = groupsA.get(k);
+      const inB = b.rows.filter((x) => key(x) === k);
+      const w = Math.min(inA.length, inB.length);
+      weighted += w * (mean(inB.map((x) => x.overall_score)) - mean(inA.map((x) => x.overall_score)));
+      weight += w;
     }
-    const stageShift = Object.keys({ ...a.stages, ...b.stages }).some((k) => Boolean(a.stages[k]) !== Boolean(b.stages[k]));
-    if (stageShift) text += ' The mix of sales stages practiced also changed between these weeks.';
-    statement = { kind: dir, delta, difficultyDelta: dDiff, text };
+    const comparableDelta = weight ? round1(weighted / weight) : null;
+    const challengeDelta = round1(b.averageChallenge - a.averageChallenge);
+    const subjectKeys = new Set([...Object.keys(a.subjects), ...Object.keys(b.subjects)]);
+    const mixChanged = [...subjectKeys].some((k) => Math.abs((a.subjects[k] || 0) - (b.subjects[k] || 0)) >= 25);
+    const signed = (x) => (x > 0 ? `+${x}` : `${x}`);
+    let text = `First-attempt average moved from ${a.average} (week of ${a.week}, ${a.n} answers) to ${b.average} (week of ${b.week}, ${b.n} answers), ${signed(delta)} points.`;
+    if (comparableDelta !== null) {
+      text += ` On comparable drills (same subject, stage, and difficulty in both weeks, ${weight} answer${weight === 1 ? '' : 's'} each), the change was ${signed(comparableDelta)}.`;
+    } else {
+      text += ' No drills in these two weeks share the same subject, stage, and difficulty, so the change may reflect different practice material rather than skill.';
+    }
+    if (Math.abs(challengeDelta) >= 0.5) {
+      text += ` The average challenge level moved from ${a.averageChallenge} to ${b.averageChallenge}, so part of the change may come from ${challengeDelta > 0 ? 'harder' : 'easier'} settings.`;
+    }
+    if (mixChanged) {
+      const describe = (w) =>
+        Object.entries(w.subjects)
+          .sort((x, y) => y[1] - x[1])
+          .map(([k, v]) => `${v}% ${SUBJECT_WORDS[k] || k}`)
+          .join(', ');
+      text += ` The subject mix also changed (${describe(a)} to ${describe(b)}).`;
+    }
+    statement = { kind: dir, delta, comparableDelta, comparableAnswers: weight, challengeDelta, mixChanged, text };
   }
-  return { series, statement };
+  return { series: series.map(({ rows: _rows, ...w }) => w), statement };
 }
 
-// Gains from retrying the same drill with the same persona: a like-for-like measure of learning.
+// Gains from retrying the same drill with the same persona, counting only retries at the same or harder
+// settings, so an easier retry is never reported as improvement.
 export function retryImprovement(exerciseAttempts) {
   const groups = new Map();
   for (const r of exerciseAttempts.filter(isCounted)) {
@@ -78,13 +124,17 @@ export function retryImprovement(exerciseAttempts) {
     groups.get(k).push(r);
   }
   const gains = [];
+  let easierExcluded = 0;
   for (const rs of groups.values()) {
-    const first = rs.find((r) => r.attempt_number === 1);
-    const later = rs.filter((r) => r.attempt_number > 1);
-    if (!first || later.length === 0) continue;
-    gains.push(Math.max(...later.map((r) => r.overall_score)) - first.overall_score);
+    const first = rs.find((r) => r.coached_number === 1);
+    if (!first) continue;
+    const retries = rs.filter((r) => r.coached_number > 1);
+    const comparable = retries.filter((r) => r.difficulty >= first.difficulty && r.skepticism >= first.skepticism && r.depth >= first.depth);
+    easierExcluded += retries.length - comparable.length;
+    if (comparable.length === 0) continue;
+    gains.push(Math.max(...comparable.map((r) => r.overall_score)) - first.overall_score);
   }
-  return { exercises: gains.length, averageGain: round1(mean(gains)) };
+  return { exercises: gains.length, averageGain: round1(mean(gains)), easierRetriesExcluded: easierExcluded };
 }
 
 export function engagementFor(rows) {
@@ -92,7 +142,7 @@ export function engagementFor(rows) {
   return {
     submitted: rows.length,
     coached: rows.filter((r) => r.mode === 'coached').length,
-    retries: rows.filter((r) => r.attempt_number > 1).length,
+    retries: rows.filter(isRetry).length,
     unscored: rows.filter((r) => r.mode === 'unscored').length,
     practiceDays: days.size,
   };
@@ -102,19 +152,19 @@ export function performanceFor(rows) {
   const first = rows.filter(isFirstScored);
   const coached = rows.filter((r) => r.mode === 'coached');
   const withEval = coached.filter((r) => r.evaluation_id);
-  const cfRows = withEval.filter((r) => (r.critical_failures || []).length > 0);
+  const cfRows = withEval.filter((r) => liveCritical(r).length > 0);
   return {
     firstAttemptAverage: round1(mean(first.map((r) => r.overall_score))),
     scoredFirstAttempts: first.length,
     metTarget: first.filter((r) => r.meets_target).length,
     criticalFailures: {
-      confirmed: cfRows.filter((r) => r.review_status === 'confirmed').length,
-      pending: cfRows.filter((r) => r.review_status === 'provisional').length,
+      confirmed: cfRows.filter((r) => r.review_status === 'confirmed' && hasConfirmedCritical(r)).length,
+      pending: cfRows.filter((r) => r.review_status === 'provisional' && hasPendingCritical(r)).length,
       disputed: cfRows.filter((r) => r.review_status === 'disputed').length,
     },
     pendingReviews: withEval.filter((r) => r.review_status === 'provisional').length,
     excluded: {
-      retries: rows.filter((r) => r.attempt_number > 1).length,
+      retries: rows.filter(isRetry).length,
       unscored: rows.filter((r) => r.mode === 'unscored').length,
       pendingReview: withEval.filter((r) => r.review_status === 'provisional').length,
       disputed: withEval.filter((r) => r.review_status === 'disputed').length,
@@ -136,7 +186,7 @@ export function followUpReasons({ rep, rows, lastPracticeAt, assignmentStats, di
   for (const d of dims.filter((x) => x.verdict === 'weakness')) {
     reasons.push({ kind: 'weakness', dimension: d.key, text: `Weak in ${d.label.toLowerCase()} (${d.average} across ${d.n} first attempts)` });
   }
-  const confirmedCf = rows.filter((r) => r.review_status === 'confirmed' && (r.critical_failures || []).length > 0).length;
+  const confirmedCf = rows.filter((r) => r.review_status === 'confirmed' && hasConfirmedCritical(r)).length;
   if (confirmedCf > 0) reasons.push({ kind: 'critical', text: `${confirmedCf} confirmed critical failure${confirmedCf === 1 ? '' : 's'}` });
   const stuck = rows.filter((r) => r.mode === 'coached' && !r.evaluation_id && ['failed', 'timed_out', 'superseded'].includes(r.run_status)).length;
   if (stuck > 0) reasons.push({ kind: 'coaching_failed', text: `${stuck} answer${stuck === 1 ? '' : 's'} still waiting for coaching to be retried` });

@@ -59,7 +59,9 @@ test('critical failures need verifiable quotes; otherwise they become review fla
   ];
   const ok = processEvaluation({ output: out, scenario, answer, sources, rubricDimensions: DEFAULT_DIMENSIONS, threshold: 70 });
   assert.equal(ok.criticalFailures.length, 1);
-  assert.equal(ok.overallScore, 0);
+  assert.equal(ok.criticalFailures[0].status, 'pending');
+  assert.equal(ok.overallScore, null, 'unknown until a manager confirms or rejects the failure');
+  assert.equal(ok.meetsTarget, false);
   assert.equal(ok.reviewStatus, 'provisional');
   out.critical_failures[0].source_quote = 'A sentence that is not in any source.';
   const flagged = processEvaluation({ output: out, scenario, answer, sources, rubricDimensions: DEFAULT_DIMENSIONS, threshold: 70 });
@@ -97,7 +99,8 @@ test('injection detection', () => {
 test('quote matching tolerates punctuation, case, quotes, and elisions', () => {
   const text = 'He said, “We’re just exploring options right now.” Then — nothing.';
   assert.ok(quoteAppearsIn("we're just exploring options", text));
-  assert.ok(quoteAppearsIn('He said ... options right now', text));
+  assert.ok(quoteAppearsIn("He said we're just ... options right now", text));
+  assert.ok(!quoteAppearsIn('He said ... options right now', text), 'elided fragments must be at least three words');
   assert.ok(!quoteAppearsIn('we are definitely buying', text));
   assert.equal(normalizeForMatch('**Bold** [link](https://x.y)'), 'bold link');
 });
@@ -145,6 +148,7 @@ test('strengths and weaknesses require enough evidence', () => {
     evaluation_id: 'e',
     review_status: 'final',
     attempt_number: n,
+    coached_number: n,
     overall_score: score,
     dimension_scores: [{ key: 'discovery', assessed: true, score }],
     day: '2026-10-14',

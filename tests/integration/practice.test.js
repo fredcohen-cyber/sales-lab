@@ -193,19 +193,72 @@ test('interrupted runs are swept so nothing waits forever', async () => {
   assert.equal(still.data.evaluation, null, 'late result from a swept run is discarded');
 });
 
-test('critical failure: guarantee scores zero, is provisional, and needs review', async () => {
+test('critical failure: a guarantee is pending until a manager decides, then scores zero', async () => {
   const d = await drillBySlug(h, 'ravenly-guarantee-ask');
-  const answer = 'Absolutely. I guarantee you will sign more cases in the first month. [[mock:guarantee]]';
+  const answer = 'Absolutely. I guarantee you will sign more cases in the first month. [[mock:gtee]]';
   const created = await submit(rep, d, answer);
   const done = await waitForCoaching(rep, created.data.attempt.id);
   const ev = done.evaluation;
-  assert.equal(ev.overallScore, 0);
+  assert.equal(ev.overallScore, null, 'no score is shown as final while the failure is unconfirmed');
   assert.ok(ev.weightedScore > 0);
   assert.equal(ev.criticalFailures.length, 1);
   assert.equal(ev.criticalFailures[0].type, 'unauthorized_guarantee');
+  assert.equal(ev.criticalFailures[0].status, 'pending');
   assert.ok(answer.includes(ev.criticalFailures[0].claimQuote));
   assert.equal(ev.reviewStatus, 'provisional');
   assert.equal(ev.meetsTarget, false);
+
+
+  assert.equal((await owner.post(`/api/evaluations/${ev.id}/confirm`, {})).status, 409, 'flagged items need a decision');
+  assert.equal((await owner.post(`/api/evaluations/${ev.id}/review`, {})).status, 409, 'every pending item needs a decision');
+  const confirmed = await owner.post(`/api/evaluations/${ev.id}/review`, { criticalFailures: { cf1: 'confirm' }, note: 'Clear guarantee.' });
+  assert.equal(confirmed.status, 200);
+  let after = (await rep.get(`/api/practice/attempts/${created.data.attempt.id}`)).data.evaluation;
+  assert.equal(after.overallScore, 0);
+  assert.equal(after.reviewStatus, 'confirmed');
+  assert.equal(after.criticalFailures[0].status, 'confirmed');
+
+  // A manager can change their mind: rejecting the failure restores the weighted score.
+  await owner.post(`/api/evaluations/${ev.id}/review`, { criticalFailures: { cf1: 'reject' } });
+  after = (await rep.get(`/api/practice/attempts/${created.data.attempt.id}`)).data.evaluation;
+  assert.equal(after.overallScore, ev.weightedScore);
+  assert.equal(after.criticalFailures[0].status, 'rejected');
+});
+
+test('a manager can turn a flag into a critical failure, or add one the coach missed', async () => {
+  const d = await drillBySlug(h, 'ravenly-clio-sync');
+  const answer = 'We sync with Clio both ways, and you will definitely get more retained clients. [[mock:unsupported]]';
+  const a = await submit(rep, d, answer);
+  const ev = (await waitForCoaching(rep, a.data.attempt.id)).evaluation;
+  assert.equal(ev.criticalFailures.length, 0);
+  const guarantee = ev.reviewFlags.find((f) => f.kind === 'possible_guarantee');
+  const unsupported = ev.reviewFlags.find((f) => f.kind === 'unsupported');
+  assert.ok(guarantee && unsupported, 'both flags are present');
+
+  const bad = await owner.post(`/api/evaluations/${ev.id}/review`, {
+    flags: { [guarantee.id]: 'critical', [unsupported.id]: 'dismiss' },
+    added: [{ type: 'invented_capability', claimQuote: 'words that are not in the answer at all', explanation: 'Made up.' }],
+  });
+  assert.equal(bad.status, 400, 'an added failure must quote the answer');
+  const ok = await owner.post(`/api/evaluations/${ev.id}/review`, {
+    flags: { [guarantee.id]: 'critical', [unsupported.id]: 'dismiss' },
+  });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.data.overallScore, 0);
+  const after = (await rep.get(`/api/practice/attempts/${a.data.attempt.id}`)).data.evaluation;
+  assert.equal(after.criticalFailures.length, 1);
+  assert.equal(after.criticalFailures[0].type, 'unauthorized_guarantee');
+  assert.equal(after.criticalFailures[0].origin, 'manager');
+  assert.equal(after.reviewFlags.find((f) => f.id === unsupported.id).status, 'dismissed');
+
+  const b = await submit(rep, d, 'Our Clio connection keeps matters in sync both ways, set up in a day.');
+  const evb = (await waitForCoaching(rep, b.data.attempt.id)).evaluation;
+  assert.equal(evb.reviewStatus, 'final');
+  const added = await owner.post(`/api/evaluations/${evb.id}/review`, {
+    added: [{ type: 'invented_capability', claimQuote: 'keeps matters in sync both ways', explanation: 'Two-way sync is not established.' }],
+  });
+  assert.equal(added.status, 200);
+  assert.equal(added.data.overallScore, 0);
 });
 
 test('a contradiction with a verifiable source quote is critical; an unverifiable one is only flagged', async () => {
@@ -220,6 +273,15 @@ test('a contradiction with a verifiable source quote is critical; an unverifiabl
   assert.ok(ev2.reviewFlags.some((f) => f.kind === 'unverified_critical'));
   assert.equal(ev2.reviewStatus, 'provisional');
   assert.ok(ev2.overallScore > 0);
+});
+
+test('a negated guarantee is never a critical failure', async () => {
+  const d = await drillBySlug(h, 'ravenly-guarantee-ask');
+  const a = await submit(rep, d, 'I can’t guarantee you will sign more cases, but we can measure every inquiry together. [[mock:gtee]]');
+  const ev = (await waitForCoaching(rep, a.data.attempt.id)).evaluation;
+  assert.equal(ev.criticalFailures.length, 0);
+  assert.ok(ev.reviewFlags.some((f) => f.kind === 'possible_guarantee'), 'held for a manager to check instead');
+  assert.ok(ev.overallScore > 0);
 });
 
 test('instructions inside an answer are treated as content and flagged', async () => {

@@ -230,6 +230,30 @@ test('the manager reviews Vic’s answer, adds a note, and sees him on the dashb
   await expect(vic.getByRole('heading', { name: 'Manager review' })).toHaveCount(0);
 });
 
+test('a possible critical failure waits for the manager, who confirms it in review', async () => {
+  await submitAnswer(vic, 'Absolutely. I guarantee you will sign more cases in the first month with Ravenly. [[mock:gtee]]');
+  await expect(vic.getByText('Possible critical failure, waiting for manager review')).toBeVisible({ timeout: 20_000 });
+  await expect(vic.getByLabel('Score pending manager review')).toBeVisible();
+  await expect(vic.getByText(/If your manager confirms it, this answer scores 0/)).toBeVisible();
+  state.cfAttemptUrl = new URL(vic.url()).pathname;
+  await shot(vic, '15a-critical-pending');
+
+  await owner.goto('/coaching');
+  await expect(owner.getByText(/possible critical failure to decide/)).toBeVisible();
+  await owner.goto(state.cfAttemptUrl);
+  const save = owner.getByRole('button', { name: 'Save review' });
+  await expect(save).toBeDisabled();
+  await owner.getByLabel('Confirm critical failure (score 0)').check();
+  await expect(save).toBeEnabled();
+  await shot(owner, '15b-review-decisions');
+  await save.click();
+  await expect(toast(owner, 'Review saved: critical failure confirmed')).toBeVisible();
+
+  await vic.reload();
+  await expect(score(vic)).toHaveText(/^0/);
+  await expect(vic.getByText('Critical failure', { exact: true })).toBeVisible();
+});
+
 test('learners see only their own records', async ({ browser }) => {
   const { dialog, link } = await addPerson(owner, ANA, 'am');
   await dialog.getByRole('button', { name: 'Done' }).click();
@@ -255,7 +279,9 @@ test('learners see only their own records', async ({ browser }) => {
   await ana.context().close();
 });
 
-test('signing out ends the session and returns to the sign-in page', async () => {
+test('signing out ends the session, clears unsent drafts, and returns to the sign-in page', async () => {
+  await vic.goto(state.drillUrl);
+  await vic.getByRole('textbox', { name: 'Your answer' }).fill('A private draft Vic has not submitted yet.');
   await vic.goto('/');
   await vic.getByRole('button', { name: 'Sign out' }).click();
   await expect(vic).toHaveURL(/\/login\?signedout=1/);
@@ -263,6 +289,8 @@ test('signing out ends the session and returns to the sign-in page', async () =>
   expect((await vic.request.get('/api/auth/me')).status()).toBe(401);
   await vic.goto('/progress');
   await expect(vic).toHaveURL(/\/login\?next=%2Fprogress/);
+  const keys = await vic.evaluate(() => Object.keys(window.localStorage).filter((k) => k.startsWith('sales-lab-draft:')));
+  expect(keys).toEqual([]);
   await signIn(vic, VIC.email, VIC.password);
   await expect(vic).toHaveURL(/\/progress$/);
   await expect(vic.getByRole('heading', { name: 'My Progress' })).toBeVisible();

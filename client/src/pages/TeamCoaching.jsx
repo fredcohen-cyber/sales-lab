@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { get } from '../api.js';
-import { BrandChip, Empty, ErrorNotice, fmtDateTime, Loading, ReviewBadge, useLoad } from '../components/ui.jsx';
+import { BrandChip, Empty, ErrorNotice, fmtDateTime, Loading, ReviewBadge, useLoad, attemptLabel, scoreText } from '../components/ui.jsx';
 
 const FILTERS = [
   ['pending', 'Pending review'],
@@ -73,14 +73,23 @@ export function TeamCoaching() {
                     <div className="row tiny" style={{ gap: 6, marginTop: 4 }}>
                       <BrandChip brand={i.brand} />
                       <span className="muted">
-                        {i.persona_label}, level {i.difficulty}, {i.attempt_number === 1 ? 'first attempt' : `retry ${i.attempt_number - 1}`}
+                        {i.persona_label}, level {i.difficulty}, {attemptLabel(i).toLowerCase()}
                       </span>
                     </div>
                   </td>
-                  <td className="num">{i.overall_score}</td>
+                  <td className="num">{scoreText(i)}</td>
                   <td className="small">
-                    {i.critical_count > 0 && <div style={{ color: 'var(--red)', fontWeight: 600 }}>{i.critical_count} critical failure{i.critical_count === 1 ? '' : 's'}</div>}
-                    {i.flag_count > 0 && <div>{i.flag_count} flagged claim{i.flag_count === 1 ? '' : 's'}</div>}
+                    {i.pending_critical_count > 0 && (
+                      <div style={{ color: 'var(--red)', fontWeight: 600 }}>
+                        {i.pending_critical_count} possible critical failure{i.pending_critical_count === 1 ? '' : 's'} to decide
+                      </div>
+                    )}
+                    {i.critical_count - i.pending_critical_count > 0 && (
+                      <div style={{ color: 'var(--red)' }}>
+                        {i.critical_count - i.pending_critical_count} confirmed critical failure{i.critical_count - i.pending_critical_count === 1 ? '' : 's'}
+                      </div>
+                    )}
+                    {i.flag_count > 0 && <div>{i.flag_count} flagged item{i.flag_count === 1 ? '' : 's'} to decide</div>}
                     {i.note_count > 0 && <div className="muted">{i.note_count} note{i.note_count === 1 ? '' : 's'}</div>}
                   </td>
                   <td>

@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth, useMeta } from './state.jsx';
 import { Shell } from './components/Shell.jsx';
-import { Loading } from './components/ui.jsx';
+import { Loading, Notice } from './components/ui.jsx';
 import { Login } from './pages/Login.jsx';
 import { SetPassword } from './pages/SetPassword.jsx';
 import { Home } from './pages/Home.jsx';
@@ -42,10 +42,31 @@ function ManagerOnly({ children }) {
   return children;
 }
 
+// Never a dead end: if the app's settings cannot load, say so and offer a retry and a way out.
 function MetaGate({ children }) {
-  const { meta } = useMeta();
-  if (!meta) return <div className="page"><Loading /></div>;
-  return children;
+  const { meta, metaError, reloadMeta } = useMeta();
+  const { logout } = useAuth();
+  if (meta) return children;
+  if (metaError) {
+    return (
+      <div className="auth">
+        <div className="auth-card stack">
+          <Notice kind="critical" title="Sales Lab could not load">
+            <p>{metaError.message || 'The server did not respond.'} Your saved work is not affected.</p>
+          </Notice>
+          <div className="row">
+            <button className="btn" onClick={() => reloadMeta()}>
+              Try again
+            </button>
+            <button className="btn btn-secondary" onClick={() => logout()}>
+              Sign out
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return <div className="page"><Loading /></div>;
 }
 
 export function App() {

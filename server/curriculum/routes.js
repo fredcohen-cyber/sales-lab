@@ -7,6 +7,9 @@ import { isUuid } from '../practice/routes.js';
 import { isValidDateString, nyDate } from '../lib/time.js';
 import { DIMENSION_KEYS, stageLabel } from '../domain.js';
 
+// Who a learning path is meant for: by experience, by role, or both.
+export const PATH_AUDIENCES = ['all', 'new_hire', 'experienced', 'ae', 'am', 'new_hire_ae', 'experienced_ae', 'new_hire_am', 'experienced_am'];
+
 const level = z.number().int().min(1).max(5);
 const itemSchema = z.object({
   drillId: z.string().uuid(),
@@ -269,7 +272,7 @@ export function curriculumRoutes({ db }) {
   const pathSchema = z.object({
     name: z.string().trim().min(2).max(140),
     description: z.string().max(2000).default(''),
-    audience: z.enum(['new_hire_ae', 'experienced_ae', 'am', 'all']).default('all'),
+    audience: z.enum(PATH_AUDIENCES).default('all'),
     items: z.array(itemSchema).min(1, 'Add at least one drill.').max(40),
   });
   r.post(

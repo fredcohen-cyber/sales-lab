@@ -11,6 +11,8 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SEED_SOURCES = [
   {
     slug: 'ravenly-sales-training',
+    // Public website, one demo account, and competitors' own claims, labeled passage by passage.
+    evidenceBasis: 'mixed',
     file: 'sources/ravenly-sales-training.md',
     title: 'Ravenly sales training and product reference',
     brand: 'ravenly',
@@ -25,6 +27,8 @@ const SEED_SOURCES = [
   },
   {
     slug: 'sales-playbook',
+    // The company's own sales guidance.
+    evidenceBasis: 'documented',
     file: 'sources/sales-playbook.md',
     title: 'Sales Playbook',
     brand: 'both',
@@ -118,9 +122,9 @@ export async function seed(db, config, { log = console.log } = {}) {
         const content = await readFile(path.join(HERE, s.file), 'utf8');
         const src = await q.one(`INSERT INTO knowledge_sources (slug, created_by) VALUES ($1, $2) RETURNING id`, [s.slug, owner.id]);
         const v = await q.one(
-          `INSERT INTO knowledge_versions (source_id, version, title, brand, subjects, personas, as_of_date, caveats, content, change_note, created_by, approved_at, approved_by)
-           VALUES ($1, 1, $2, $3, $4, '{}', $5, $6, $7, $8, $9, now(), $9) RETURNING id`,
-          [src.id, s.title, s.brand, s.subjects, s.asOfDate, s.caveats, content, s.changeNote, owner.id],
+          `INSERT INTO knowledge_versions (source_id, version, title, brand, subjects, personas, as_of_date, caveats, content, change_note, created_by, approved_at, approved_by, evidence_basis)
+           VALUES ($1, 1, $2, $3, $4, '{}', $5, $6, $7, $8, $9, now(), $9, $10) RETURNING id`,
+          [src.id, s.title, s.brand, s.subjects, s.asOfDate, s.caveats, content, s.changeNote, owner.id, s.evidenceBasis],
         );
         await q.query(`UPDATE knowledge_sources SET latest_version_id = $2, approved_version_id = $2, status = 'approved' WHERE id = $1`, [src.id, v.id]);
       }

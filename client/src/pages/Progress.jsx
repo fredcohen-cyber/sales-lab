@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { get } from '../api.js';
 import { useMeta } from '../state.jsx';
-import { Empty, ErrorNotice, fmtDateTime, Loading, ReviewBadge, RunBadge, Stat, useLoad } from '../components/ui.jsx';
+import { Empty, ErrorNotice, fmtDateTime, Loading, ReviewBadge, RunBadge, Stat, useLoad, attemptLabel, scoreText } from '../components/ui.jsx';
 import { TrendChart } from '../components/TrendChart.jsx';
 import { DimensionTable, Disclosures, FilterBar, filtersFromParams, queryFrom, SampleList, TrendNotes } from '../components/ReportParts.jsx';
 
@@ -36,8 +36,8 @@ export function AttemptTable({ attempts, showRep = false }) {
               </td>
               <td>{a.personaLabel}</td>
               <td className="num">{a.difficulty}</td>
-              <td>{a.attemptNumber === 1 ? 'First' : `Retry ${a.attemptNumber - 1}`}</td>
-              <td className="num">{a.mode === 'unscored' ? '—' : a.overallScore ?? '—'}</td>
+              <td>{attemptLabel(a, { short: true })}</td>
+              <td className="num">{scoreText(a)}</td>
               <td>
                 {a.mode === 'unscored' ? (
                   <span className="badge badge-neutral">Unscored practice</span>
@@ -47,6 +47,7 @@ export function AttemptTable({ attempts, showRep = false }) {
                   <RunBadge status={a.runStatus} />
                 )}
                 {a.criticalFailures > 0 && <span className="badge badge-critical" style={{ marginLeft: 6 }}>Critical failure</span>}
+                {a.pendingCriticalFailures > 0 && <span className="badge badge-warn" style={{ marginLeft: 6 }}>Possible critical failure</span>}
               </td>
             </tr>
           ))}

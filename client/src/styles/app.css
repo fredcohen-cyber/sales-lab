@@ -940,6 +940,11 @@ table.data .row-link:hover {
 .score-figure.zero {
   color: var(--red);
 }
+.score-figure.pending {
+  color: var(--ink-3);
+  min-width: 56px;
+  text-align: center;
+}
 .bar-track {
   position: relative;
   height: 8px;
@@ -1460,4 +1465,23 @@ dialog.modal::backdrop {
 }
 .trend-notes p {
   margin: 0;
+}
+
+/* manager review: one decision per flagged item */
+.review-item {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: 10px 12px 12px;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.review-item legend {
+  font-weight: 650;
+  font-size: 14.5px;
+  padding: 0 4px;
+}
+#review-title {
+  scroll-margin-top: 80px;
 }

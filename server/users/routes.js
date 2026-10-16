@@ -4,6 +4,7 @@ import { conflict, forbidden, HttpError, notFound, parseBody, route } from '../l
 import { audit, AUDIT_LABELS } from '../lib/audit.js';
 import { clientIp, requireManager } from '../auth/middleware.js';
 import { revokeAllSessions } from '../auth/sessions.js';
+import { clearFailures, lockoutState } from '../auth/throttle.js';
 import { createPasswordLink, linkUrl, revokeUnusedLinks } from './links.js';
 import { ALLOWED_EMAIL_DOMAINS, EXPERIENCE, ROLES } from '../domain.js';
 
@@ -166,6 +167,7 @@ export function userRoutes({ db, config }) {
       );
       res.json({
         user,
+        signIn: await lockoutState(db, user.email),
         sessions,
         links: links.map((l) => ({
           ...l,
@@ -292,11 +294,25 @@ export function userRoutes({ db, config }) {
     route(async (req, res) => {
       const ip = clientIp(req);
       const count = await db.tx(async (q) => {
-        const target = await q.one(`SELECT id FROM users WHERE id = $1`, [req.params.id]);
+        const target = await q.one(`SELECT id, is_owner FROM users WHERE id = $1`, [req.params.id]);
         if (!target) throw notFound('That person was not found.');
+        if (target.is_owner && target.id !== req.user.id) throw forbidden('Only the owner can revoke links for the owner account.');
         return revokeUnusedLinks(q, { userId: target.id, actorId: req.user.id, reason: 'revoked by manager', ip });
       });
       res.json({ revoked: count, user: await loadRosterUser(db, req.params.id) });
+    }),
+  );
+
+  // Lifts a sign-in pause caused by failed attempts (for example after someone else guessed at the account).
+  r.post(
+    '/:id/sign-in/clear',
+    route(async (req, res) => {
+      const ip = clientIp(req);
+      const target = await db.one(`SELECT id, email FROM users WHERE id = $1`, [req.params.id]).catch(() => null);
+      if (!target) throw notFound('That person was not found.');
+      const cleared = await clearFailures(db, target.email);
+      await audit(db, { actorId: req.user.id, action: 'auth.sign_in_cleared', targetUserId: target.id, entityType: 'user', entityId: target.id, details: { count: cleared }, ip });
+      res.json({ cleared, signIn: await lockoutState(db, target.email) });
     }),
   );
 
@@ -305,8 +321,9 @@ export function userRoutes({ db, config }) {
     route(async (req, res) => {
       const ip = clientIp(req);
       const count = await db.tx(async (q) => {
-        const target = await q.one(`SELECT id FROM users WHERE id = $1`, [req.params.id]);
+        const target = await q.one(`SELECT id, is_owner FROM users WHERE id = $1`, [req.params.id]);
         if (!target) throw notFound('That person was not found.');
+        if (target.is_owner && target.id !== req.user.id) throw forbidden('Only the owner can sign the owner account out.');
         const n = await revokeAllSessions(q, target.id, `signed out by ${req.user.name}`, {
           exceptSessionId: target.id === req.user.id ? req.session.id : null,
         });

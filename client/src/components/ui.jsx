@@ -320,3 +320,25 @@ export function personaLabel(meta, key) {
 export function stageLabel(meta, key) {
   return meta?.stages?.find((s) => s.key === key)?.label || key;
 }
+
+// "First attempt", "Retry 2", or "Unscored practice". Only coached answers are numbered, so unscored
+// practice never uses up the first attempt. Accepts API rows in either naming style.
+export function attemptLabel(a, { short = false } = {}) {
+  if (!a) return '';
+  if (a.mode === 'unscored') return short ? 'Unscored' : 'Unscored practice';
+  const n = a.coachedNumber ?? a.coached_number;
+  if (!n) return short ? '—' : 'Answer';
+  if (n === 1) return short ? 'First' : 'First attempt';
+  return `Retry ${n - 1}`;
+}
+
+// What to show for an answer's score: a number, or why there is none yet.
+export function scoreText(a) {
+  const mode = a.mode;
+  const score = a.overallScore ?? a.overall_score;
+  const status = a.reviewStatus ?? a.review_status;
+  if (mode === 'unscored') return '—';
+  if (status === 'disputed') return 'Disputed';
+  if (score === null || score === undefined) return status === 'provisional' ? 'Pending review' : '—';
+  return String(score);
+}

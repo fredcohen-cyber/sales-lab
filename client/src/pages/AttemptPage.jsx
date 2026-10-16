@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { get, post } from '../api.js';
 import { useAuth } from '../state.jsx';
-import { BrandChip, ErrorNotice, fmtDateTime, Loading, Modal, Notice, ReviewBadge, useToast } from '../components/ui.jsx';
+import { BrandChip, ErrorNotice, fmtDateTime, Loading, Modal, Notice, ReviewBadge, useToast, attemptLabel, scoreText } from '../components/ui.jsx';
 import { CheckIcon, RefreshIcon } from '../components/Icons.jsx';
-import { CoachingResult } from '../components/Coaching.jsx';
+import { CF_LABEL, CoachingResult, FLAG_LABEL } from '../components/Coaching.jsx';
 
 const POLL_MS = 1500;
 const EXPECTED_SECONDS = 40;
@@ -180,11 +180,12 @@ export function AttemptPage() {
               <ul className="feedback-list small">
                 {data.siblings.map((x) => (
                   <li key={x.id}>
-                    {x.id === attempt.id ? <strong>This answer</strong> : <Link to={`/attempts/${x.id}`}>{x.attempt_number === 1 ? 'First attempt' : `Retry ${x.attempt_number - 1}`}</Link>}
-                    {x.id === attempt.id && ` (${x.attempt_number === 1 ? 'first attempt' : `retry ${x.attempt_number - 1}`})`}
+                    {x.id === attempt.id ? <strong>This answer</strong> : <Link to={`/attempts/${x.id}`}>{attemptLabel(x)}</Link>}
+                    {x.id === attempt.id && ` (${attemptLabel(x).toLowerCase()})`}
                     <span className="muted">
                       {' '}
-                      {fmtDateTime(x.submitted_at)}. {x.mode === 'unscored' ? 'Unscored practice' : x.overall_score !== null ? `Score ${x.overall_score}` : 'No score'}
+                      {fmtDateTime(x.submitted_at)}.{' '}
+                      {x.mode === 'unscored' ? 'No score' : scoreText(x) === '—' ? 'No score yet' : /^\d+$/.test(scoreText(x)) ? `Score ${scoreText(x)}` : scoreText(x)}
                     </span>
                   </li>
                 ))}
@@ -211,6 +212,11 @@ export function AttemptPage() {
             />
           )}
 
+          {user.isManager && evaluation?.reviewStatus === 'provisional' && (
+            <Notice kind="warn" title="This evaluation needs your review" action={<a className="btn btn-small" href="#review-title">Go to the review</a>}>
+              <p>Flagged items stay out of reports until you decide them.</p>
+            </Notice>
+          )}
           {evaluation && <CoachingResult attempt={attempt} evaluation={evaluation} next={data.next} />}
 
           {data.notes.length > 0 && (
@@ -300,7 +306,7 @@ function CoachingStatus({ run, running, elapsed, overdue, stopped, coaching, onS
       ) : (
         <p className="small" style={{ margin: 0 }}>
           {coaching.retryBlockedReason === 'too_many_runs'
-            ? 'Coaching was retried several times. Your manager can review this answer.'
+            ? 'Coaching was retried several times in the last hour. Try again later, or ask your manager to restart it.'
             : coaching.retryBlockedReason === 'ai_not_configured'
               ? 'AI coaching is not set up right now.'
               : ''}
@@ -329,6 +335,30 @@ function UnscoredPanel({ attempt }) {
   );
 }
 
+const CF_TYPES = [
+  ['unauthorized_guarantee', 'Unauthorized guarantee'],
+  ['invented_capability', 'Invented capability'],
+  ['contradicts_approved_fact', 'Contradicts approved material'],
+];
+
+// Current decisions, so a review can be reopened and changed.
+function initialDecisions(ev) {
+  const cf = {};
+  for (const c of ev?.criticalFailures || []) if (c.status === 'confirmed' || c.status === 'rejected') cf[c.id] = c.status === 'confirmed' ? 'confirm' : 'reject';
+  const flags = {};
+  for (const f of ev?.reviewFlags || []) if (f.status === 'dismissed' || f.status === 'made_critical') flags[f.id] = f.status === 'made_critical' ? 'critical' : 'dismiss';
+  return { cf, flags, flagTypes: {} };
+}
+
+function Choice({ name, value, current, onChange, children }) {
+  return (
+    <label className="checkbox small">
+      <input type="radio" name={name} value={value} checked={current === value} onChange={() => onChange(value)} />
+      {children}
+    </label>
+  );
+}
+
 function ManagerReview({ data, onChange }) {
   const toast = useToast();
   const ev = data.evaluation;
@@ -337,6 +367,16 @@ function ManagerReview({ data, onChange }) {
   const [dispute, setDispute] = useState(false);
   const [disputeNote, setDisputeNote] = useState('');
   const [showRaw, setShowRaw] = useState(false);
+  const [decisions, setDecisions] = useState(() => initialDecisions(ev));
+  const [reviewNote, setReviewNote] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [added, setAdded] = useState({ type: 'unauthorized_guarantee', claimQuote: '', explanation: '' });
+  const [reviewError, setReviewError] = useState(null);
+
+  useEffect(() => {
+    setDecisions(initialDecisions(ev));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ev?.id, ev?.reviewedAt]);
 
   const act = async (fn, msg) => {
     setBusy(true);
@@ -344,8 +384,41 @@ function ManagerReview({ data, onChange }) {
       await fn();
       toast(msg);
       await onChange();
+      return true;
     } catch (e) {
       toast(e.message, { error: true });
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const cfs = (ev?.criticalFailures || []).filter((c) => c.status !== 'rejected' || c.origin === 'coach');
+  const flags = ev?.reviewFlags || [];
+  const coachCfs = cfs.filter((c) => !c.fromFlag);
+  const undecided = coachCfs.filter((c) => !decisions.cf[c.id]).length + flags.filter((f) => !decisions.flags[f.id]).length;
+  const itemCount = coachCfs.length + flags.length;
+  const addReady = !adding || (added.claimQuote.trim().length >= 3 && added.explanation.trim().length >= 3);
+
+  const saveReview = async () => {
+    setReviewError(null);
+    const body = {
+      criticalFailures: Object.fromEntries(coachCfs.filter((c) => decisions.cf[c.id]).map((c) => [c.id, decisions.cf[c.id]])),
+      flags: decisions.flags,
+      flagTypes: decisions.flagTypes,
+      added: adding ? [{ type: added.type, claimQuote: added.claimQuote.trim(), explanation: added.explanation.trim() }] : [],
+      note: reviewNote.trim(),
+    };
+    setBusy(true);
+    try {
+      const r = await post(`/evaluations/${ev.id}/review`, body);
+      toast(itemCount === 0 && !adding ? 'Evaluation confirmed' : r.overallScore === 0 ? 'Review saved: critical failure confirmed' : 'Review saved');
+      setAdding(false);
+      setAdded({ type: 'unauthorized_guarantee', claimQuote: '', explanation: '' });
+      setReviewNote('');
+      await onChange();
+    } catch (e) {
+      setReviewError(e.message);
     } finally {
       setBusy(false);
     }
@@ -362,15 +435,113 @@ function ManagerReview({ data, onChange }) {
       {ev ? (
         <>
           <p className="small muted" style={{ margin: 0 }}>
-            Confirming counts this evaluation in reports. Disputing removes it from averages and records your reason.
+            {itemCount > 0
+              ? 'Decide each flagged item. A confirmed critical failure sets the score to 0; anything you set aside does not count against the rep.'
+              : 'Confirming counts this evaluation in reports. Disputing removes it from averages and records your reason.'}
             {ev.reviewedAt ? ` Last reviewed by ${ev.reviewedByName} on ${fmtDateTime(ev.reviewedAt)}.` : ''}
           </p>
-          <div className="row">
-            {ev.reviewStatus !== 'confirmed' && (
-              <button className="btn btn-small" disabled={busy} onClick={() => act(() => post(`/evaluations/${ev.id}/confirm`, { note: '' }), 'Evaluation confirmed')}>
-                Confirm evaluation
+
+          {coachCfs.map((c) => (
+            <fieldset key={c.id} className="review-item">
+              <legend>
+                {CF_LABEL[c.type] || c.type}
+                <span className="tiny muted"> {c.origin === 'manager' ? 'added in review' : 'found by coaching'}</span>
+              </legend>
+              <p className="small" style={{ margin: 0 }}>{c.explanation}</p>
+              <span className="evidence">“{c.claimQuote}”</span>
+              {c.sourceQuote && <span className="quote-source">{c.sourceTitle ? `${c.sourceTitle}: ` : 'Approved material: '}“{c.sourceQuote}”</span>}
+              <div className="row">
+                <Choice name={`cf-${c.id}`} value="confirm" current={decisions.cf[c.id]} onChange={(v) => setDecisions((d) => ({ ...d, cf: { ...d.cf, [c.id]: v } }))}>
+                  Confirm critical failure (score 0)
+                </Choice>
+                <Choice name={`cf-${c.id}`} value="reject" current={decisions.cf[c.id]} onChange={(v) => setDecisions((d) => ({ ...d, cf: { ...d.cf, [c.id]: v } }))}>
+                  Not a critical failure
+                </Choice>
+              </div>
+            </fieldset>
+          ))}
+
+          {flags.map((f) => (
+            <fieldset key={f.id} className="review-item">
+              <legend>{FLAG_LABEL[f.kind] || 'Flag'}</legend>
+              <p className="small" style={{ margin: 0 }}>{f.note}</p>
+              {f.claimQuote && <span className="evidence">“{f.claimQuote}”</span>}
+              {f.sourceQuote && <span className="quote-source">Approved material: “{f.sourceQuote}”</span>}
+              <div className="row">
+                <Choice name={`f-${f.id}`} value="dismiss" current={decisions.flags[f.id]} onChange={(v) => setDecisions((d) => ({ ...d, flags: { ...d.flags, [f.id]: v } }))}>
+                  No action needed
+                </Choice>
+                {f.claimQuote && (
+                  <Choice name={`f-${f.id}`} value="critical" current={decisions.flags[f.id]} onChange={(v) => setDecisions((d) => ({ ...d, flags: { ...d.flags, [f.id]: v } }))}>
+                    Make it a critical failure
+                  </Choice>
+                )}
+              </div>
+              {decisions.flags[f.id] === 'critical' && f.status !== 'made_critical' && (
+                <div className="field" style={{ maxWidth: 320 }}>
+                  <label htmlFor={`ft-${f.id}`}>Type of critical failure</label>
+                  <select
+                    id={`ft-${f.id}`}
+                    value={decisions.flagTypes[f.id] || (f.kind === 'possible_guarantee' ? 'unauthorized_guarantee' : f.type || 'contradicts_approved_fact')}
+                    onChange={(e) => setDecisions((d) => ({ ...d, flagTypes: { ...d.flagTypes, [f.id]: e.target.value } }))}
+                  >
+                    {CF_TYPES.map(([k, l]) => (
+                      <option key={k} value={k}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </fieldset>
+          ))}
+
+          {adding ? (
+            <fieldset className="review-item">
+              <legend>Add a critical failure the coaching missed</legend>
+              <div className="field">
+                <label htmlFor="add-type">Type</label>
+                <select id="add-type" value={added.type} onChange={(e) => setAdded({ ...added, type: e.target.value })}>
+                  {CF_TYPES.map(([k, l]) => (
+                    <option key={k} value={k}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="add-quote">The rep’s exact words</label>
+                <input id="add-quote" type="text" value={added.claimQuote} onChange={(e) => setAdded({ ...added, claimQuote: e.target.value })} />
+                <span className="hint">Copy them from the answer; the quote is checked against it.</span>
+              </div>
+              <div className="field">
+                <label htmlFor="add-why">Why it is a critical failure</label>
+                <textarea id="add-why" rows={2} value={added.explanation} onChange={(e) => setAdded({ ...added, explanation: e.target.value })} />
+              </div>
+              <div>
+                <button type="button" className="btn btn-quiet btn-small" onClick={() => setAdding(false)}>
+                  Remove
+                </button>
+              </div>
+            </fieldset>
+          ) : (
+            <div>
+              <button type="button" className="btn btn-quiet btn-small" onClick={() => setAdding(true)}>
+                Add a critical failure the coaching missed
               </button>
-            )}
+            </div>
+          )}
+
+          <div className="field">
+            <label htmlFor="review-note">Review note (optional, kept with the review)</label>
+            <input id="review-note" type="text" value={reviewNote} maxLength={2000} onChange={(e) => setReviewNote(e.target.value)} />
+          </div>
+          {reviewError && <Notice kind="critical">{reviewError}</Notice>}
+          <div className="row">
+            <button className="btn btn-small" disabled={busy || undecided > 0 || !addReady} onClick={saveReview}>
+              {itemCount > 0 || adding ? 'Save review' : ev.reviewStatus === 'confirmed' ? 'Confirm again' : 'Confirm evaluation'}
+            </button>
+            {undecided > 0 && <span className="small muted">{undecided} item{undecided === 1 ? '' : 's'} still need a decision.</span>}
             {ev.reviewStatus !== 'disputed' && (
               <button className="btn btn-secondary btn-small" disabled={busy} onClick={() => setDispute(true)}>
                 Dispute evaluation
@@ -433,7 +604,7 @@ function ManagerReview({ data, onChange }) {
           </>
         }
       >
-        <p className="small">Disputed evaluations stay visible to the rep but are excluded from performance averages.</p>
+        <p className="small">Disputed evaluations stay visible to the rep but have no score that counts and are excluded from performance averages.</p>
         <div className="field">
           <label htmlFor="dispute-note">Reason</label>
           <textarea id="dispute-note" rows={3} value={disputeNote} onChange={(e) => setDisputeNote(e.target.value)} />

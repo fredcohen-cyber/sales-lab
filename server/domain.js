@@ -26,6 +26,14 @@ export const SUBJECTS = {
   competitive: 'Competitive knowledge',
 };
 
+// What kind of evidence a knowledge source holds. Coaching treats each differently.
+export const EVIDENCE_BASIS = {
+  documented: 'Documented facts and approved guidance',
+  public_claims: 'Public claims, not verified',
+  observed: 'Observed, not tested end to end',
+  mixed: 'Mixed, labeled passage by passage',
+};
+
 // Ordered by training priority. AM stages follow the AE stages.
 export const STAGES = [
   { key: 'cold_outreach', label: 'Cold outreach', track: 'ae' },

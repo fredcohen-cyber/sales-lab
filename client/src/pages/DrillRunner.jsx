@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { newRequestId, post } from '../api.js';
-import { useAuth, useMeta } from '../state.jsx';
+import { DRAFT_PREFIX, useAuth, useMeta } from '../state.jsx';
 import { BrandChip, ErrorNotice, fmtDate, LevelPicker, Loading, Notice } from '../components/ui.jsx';
 import { LockIcon } from '../components/Icons.jsx';
 
 const MAX = 6000;
 
+// Drafts are stored per person and cleared on sign-out (see clearDrafts in state.jsx).
 function draftKey(scope) {
-  return `sales-lab-draft:${scope}`;
+  return `${DRAFT_PREFIX}${scope}`;
 }
 function readDraft(scope) {
   try {
@@ -25,6 +26,16 @@ function writeDraft(scope, text) {
     /* storage unavailable: the draft simply is not remembered */
   }
 }
+
+const SOURCE_REASON = {
+  brand: 'covers a different brand',
+  subject: 'does not cover this subject',
+  persona: 'is for other buyer personas',
+  not_approved: 'not approved yet',
+  archived: 'archived',
+  missing: 'deleted',
+  sections_missing: 'its chosen sections are no longer in the approved version',
+};
 
 function levelsFromQuery(params) {
   const n = (k) => {
@@ -55,7 +66,7 @@ export function DrillRunner() {
   const requestId = useRef(null);
   const loadSeq = useRef(0);
 
-  const scope = assigned ? `item:${itemId}` : `drill:${drillId}:${persona || ''}`;
+  const scope = `${user.id}:${assigned ? `item:${itemId}` : `drill:${drillId}:${persona || ''}`}`;
 
   // Load the scenario. Free practice reloads when persona or levels change.
   useEffect(() => {
@@ -231,13 +242,29 @@ export function DrillRunner() {
                     {src.available ? (
                       <Link to={`/knowledge/${src.sourceId}`}>{src.title}</Link>
                     ) : (
-                      <span className="muted">{src.title} (not approved)</span>
+                      <span className="muted">
+                        {src.title || 'A source awaiting approval'} (not used: {SOURCE_REASON[src.reason] || 'not approved yet'})
+                      </span>
                     )}
-                    {src.asOfDate && <span className="muted">, as of {fmtDate(src.asOfDate)}</span>}
+                    {src.available && src.asOfDate && <span className="muted">, as of {fmtDate(src.asOfDate)}</span>}
                   </li>
                 ))}
               </ul>
             </div>
+          )}
+          {user.isManager && (preview.sourceDetails || []).some((d) => d.reason || d.missingSections?.length) && (
+            <Notice kind="warn" title="Source material needs attention (managers only)">
+              <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>
+                {preview.sourceDetails
+                  .filter((d) => d.reason || d.missingSections?.length)
+                  .map((d) => (
+                    <li key={d.sourceId}>
+                      {d.title}: {d.reason ? `not used, ${d.reasonText}.` : ''}
+                      {d.missingSections?.length ? ` Sections ${d.missingSections.join(', ')} are not in the approved version.` : ''}
+                    </li>
+                  ))}
+              </ul>
+            </Notice>
           )}
           {user.isManager && (
             <Link className="small" to={`/drills/${preview.drill.id}/edit`}>

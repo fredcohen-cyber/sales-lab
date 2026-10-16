@@ -31,6 +31,7 @@ export function Knowledge() {
         (!f('subject') || s.subjects.includes(f('subject'))) &&
         (!f('persona') || s.personas.length === 0 || s.personas.includes(f('persona'))) &&
         (!f('status') || s.status === f('status')) &&
+        (!f('evidence') || s.evidenceBasis === f('evidence')) &&
         (!t || s.title.toLowerCase().includes(t)),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -96,6 +97,17 @@ export function Knowledge() {
             ))}
           </select>
         </div>
+        <div className="field">
+          <label htmlFor="k-evidence">Evidence</label>
+          <select id="k-evidence" value={f('evidence')} onChange={(e) => set('evidence', e.target.value)}>
+            <option value="">All</option>
+            {Object.entries(meta.evidenceBasis).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </select>
+        </div>
         {user.isManager && (
           <div className="field">
             <label htmlFor="k-status">Approval</label>
@@ -120,6 +132,7 @@ export function Knowledge() {
                 <th>Brand</th>
                 <th>Subjects</th>
                 <th>Personas</th>
+                <th>Evidence</th>
                 <th>As of</th>
                 {user.isManager && <th>Approval</th>}
                 <th>Version</th>
@@ -138,6 +151,7 @@ export function Knowledge() {
                   </td>
                   <td className="small">{s.subjects.map((x) => meta.subjects[x]).join(', ')}</td>
                   <td className="small">{s.personas.length ? s.personas.map((p) => meta.personas.find((x) => x.key === p)?.label || p).join(', ') : 'All'}</td>
+                  <td className="small">{meta.evidenceBasis[s.evidenceBasis] || '—'}</td>
                   <td className="nowrap">{s.asOfDate ? fmtDate(s.asOfDate) : <span className="muted">Not dated</span>}</td>
                   {user.isManager && (
                     <td>

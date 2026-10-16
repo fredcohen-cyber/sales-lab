@@ -4,7 +4,8 @@ import { ProviderError, RUN_ERROR_MESSAGES } from './provider.js';
 import { loadSourceText } from '../knowledge/service.js';
 
 export const RUN_GRACE_MS = 10_000;
-export const MAX_RUNS_PER_ATTEMPT = 8;
+// Reps may start this many coaching runs per answer in any hour (managers are not limited).
+export const RUNS_PER_ATTEMPT_PER_HOUR = 6;
 export const MIN_SECONDS_BEFORE_SUPERSEDE = 20;
 
 // Start an evaluation run row for an attempt. Call inside the transaction that owns the attempt row lock.
@@ -19,6 +20,34 @@ export async function startRun(q, { attemptId, requestedBy, provider, config }) 
   );
   await q.query(`UPDATE attempts SET latest_run_id = $2 WHERE id = $1`, [attemptId, run.id]);
   return run;
+}
+
+// A small in-process queue so a burst of submissions cannot flood the AI service. A run that waits past
+// its own deadline fails honestly as "busy" and can be retried; nothing waits forever.
+const slots = { active: 0, waiting: [] };
+function acquireSlot(max, waitMs) {
+  if (slots.active < max) {
+    slots.active += 1;
+    return Promise.resolve(true);
+  }
+  return new Promise((resolve) => {
+    const entry = { resolve, timer: null };
+    entry.timer = setTimeout(() => {
+      const i = slots.waiting.indexOf(entry);
+      if (i >= 0) slots.waiting.splice(i, 1);
+      resolve(false);
+    }, Math.max(0, waitMs));
+    slots.waiting.push(entry);
+  });
+}
+function releaseSlot() {
+  const next = slots.waiting.shift();
+  if (next) {
+    clearTimeout(next.timer);
+    next.resolve(true);
+  } else {
+    slots.active = Math.max(0, slots.active - 1);
+  }
 }
 
 async function failRun(db, runId, err, log) {
@@ -101,9 +130,18 @@ export async function runEvaluation({ db, config, provider, runId, log = console
     const sources = await loadSourceText(db, attempt.source_versions);
     const request = buildCoachingRequest({ scenario: attempt.scenario, answer: attempt.answer, sources });
     await db.query(`UPDATE evaluation_runs SET prompt_version = $2 WHERE id = $1`, [runId, request.promptVersion]);
-    const remaining = new Date(run.deadline_at).getTime() - Date.now() - 2_000;
-    const timeoutMs = Math.max(1_000, Math.min(config.ai.timeoutMs, remaining));
-    const result = await provider.evaluate(request, { timeoutMs });
+    const deadline = new Date(run.deadline_at).getTime();
+    // Wait for a free slot only as long as still leaves the request a fair amount of its time limit.
+    const gotSlot = await acquireSlot(config.ai.maxConcurrent, deadline - Date.now() - Math.min(config.ai.timeoutMs, 60_000));
+    if (!gotSlot) throw new ProviderError('busy', RUN_ERROR_MESSAGES.busy);
+    let result;
+    try {
+      const remaining = deadline - Date.now() - 2_000;
+      const timeoutMs = Math.max(1_000, Math.min(config.ai.timeoutMs, remaining));
+      result = await provider.evaluate(request, { timeoutMs });
+    } finally {
+      releaseSlot();
+    }
     const processed = processEvaluation({
       output: result.output,
       scenario: attempt.scenario,

@@ -35,6 +35,41 @@ const components = {
   ),
 };
 
+// Before approving: drills that point at sections this version drops or retitles.
+function DrillImpact({ sourceId, versionId, open }) {
+  const [state, setState] = useState({ loading: false, drills: null, error: null });
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    setState({ loading: true, drills: null, error: null });
+    get(`/knowledge/${sourceId}/drill-impact?versionId=${versionId}`)
+      .then((d) => alive && setState({ loading: false, drills: d.drills, error: null }))
+      .catch((e) => alive && setState({ loading: false, drills: null, error: e }));
+    return () => {
+      alive = false;
+    };
+  }, [open, sourceId, versionId]);
+  if (state.loading) return <Loading label="Checking drills that use this source…" />;
+  if (state.error) return <p className="small muted">Could not check which drills use this source: {state.error.message}</p>;
+  if (!state.drills || state.drills.length === 0) return <p className="small muted">Every drill that uses this source still finds its sections in this version.</p>;
+  return (
+    <Notice kind="warn" title={`${state.drills.length} drill${state.drills.length === 1 ? '' : 's'} would lose or change their source sections`}>
+      <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>
+        {state.drills.map((d) => (
+          <li key={d.drillId}>
+            <Link to={`/drills/${d.drillId}/edit`}>{d.title}</Link>
+            {d.missing.length > 0 && `: missing ${d.missing.map((m) => `“${m.title}”`).join(', ')}`}
+            {d.retitled.length > 0 && `${d.missing.length ? ';' : ':'} retitled ${d.retitled.map((m) => `“${m.from}” is now “${m.to}”`).join(', ')}`}
+          </li>
+        ))}
+      </ul>
+      <p className="small" style={{ marginTop: 8 }}>
+        A drill whose chosen sections are all missing runs as unscored practice until you update its sources.
+      </p>
+    </Notice>
+  );
+}
+
 export function SourcePage() {
   const { id } = useParams();
   const [params] = useSearchParams();
@@ -78,6 +113,7 @@ export function SourcePage() {
                 {meta.subjects[s]}
               </span>
             ))}
+            {v.evidenceBasis && <span className="chip">{meta.evidenceBasis[v.evidenceBasis]}</span>}
             {src.status === 'archived' && <span className="badge badge-neutral">Archived</span>}
             {user.isManager && (v.isApproved ? <span className="badge badge-ok">Approved version</span> : <span className="badge badge-warn">Not the approved version</span>)}
           </div>
@@ -186,6 +222,7 @@ export function SourcePage() {
         }
       >
         <p>New coaching will check answers against version {v.version}. Answers already scored keep the version they were scored with.</p>
+        <DrillImpact sourceId={src.id} versionId={v.id} open={confirm === 'approve'} />
       </Modal>
       <Modal
         open={confirm === 'archive'}

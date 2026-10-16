@@ -20,6 +20,7 @@ export const RUN_ERROR_MESSAGES = {
   refusal: 'The AI declined to evaluate this answer, so no score was recorded. A manager can review it.',
   network: 'Sales Lab could not reach the AI service. Your answer is saved; retry in a minute.',
   interrupted: 'Coaching was interrupted before it finished. Your answer is saved; retry coaching.',
+  busy: 'Coaching is busy with other answers right now. Your answer is saved; retry in a minute.',
   internal: 'Something went wrong while recording coaching. Your answer is saved; retry coaching.',
 };
 
@@ -199,7 +200,7 @@ function mockProvider() {
       const realSourceQuote = sourceMatch ? sourceMatch[1].replace(/[*_`#>|]/g, '').trim().split(/\s+/).slice(0, 8).join(' ') : '';
       const critical = [];
       const claims = [];
-      if (answer.includes('[[mock:guarantee]]')) {
+      if (answer.includes('[[mock:gtee]]')) {
         const sentence = /[^.!?]*guarantee[^.!?]*/i.exec(answer)?.[0]?.trim() || quote;
         critical.push({ type: 'unauthorized_guarantee', claim_quote: sentence, explanation: 'Promises a commercial result as certain.' });
       }

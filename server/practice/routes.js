@@ -5,6 +5,7 @@ import { previewOf } from './scenario.js';
 import { attemptView, createAttempt, resolvePractice, retryCoaching } from './service.js';
 import { scheduleEvaluation } from '../ai/evaluate.js';
 import { UNAVAILABLE_TEXT } from '../drills/service.js';
+import { FIT_TEXT } from '../knowledge/service.js';
 
 const level = z.number().int().min(1).max(5).optional();
 const practiceInput = {
@@ -48,6 +49,16 @@ export function practiceRoutes({ db, config, provider, log }) {
           reason: p.unavailableReason,
           message: p.unavailableReason ? UNAVAILABLE_TEXT[p.unavailableReason] : null,
         },
+        // Managers also see why a source is not used and which chosen sections are missing.
+        sourceDetails: req.user.isManager
+          ? p.sources.map((s) => ({
+              sourceId: s.sourceId,
+              title: s.title || s.latestTitle,
+              reason: s.reason,
+              reasonText: s.reason ? FIT_TEXT[s.reason] : null,
+              missingSections: s.missingSections,
+            }))
+          : undefined,
       });
     }),
   );
@@ -100,9 +111,9 @@ export function practiceRoutes({ db, config, provider, log }) {
       params.push(limit);
       const rows = await db.many(
         `SELECT a.id, a.learner_id, u.name AS learner_name, a.drill_id, a.scenario->>'title' AS drill_title, a.stage, a.brand, a.persona,
-                a.scenario->'persona'->>'label' AS persona_label, a.difficulty, a.skepticism, a.depth, a.mode, a.attempt_number,
+                a.scenario->'persona'->>'label' AS persona_label, a.difficulty, a.skepticism, a.depth, a.mode, a.attempt_number, a.coached_number,
                 a.submitted_at, a.assignment_item_id, e.overall_score, e.review_status, e.meets_target,
-                jsonb_array_length(COALESCE(e.critical_failures, '[]'::jsonb)) AS critical_count,
+                (SELECT count(*) FROM jsonb_array_elements(COALESCE(e.critical_failures, '[]'::jsonb)) c WHERE c->>'status' = 'confirmed') AS critical_count,
                 r.status AS run_status
            FROM attempts a
            JOIN users u ON u.id = a.learner_id

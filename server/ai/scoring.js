@@ -1,6 +1,6 @@
 import { evaluationOutputSchema } from './schema.js';
 import { ProviderError, RUN_ERROR_MESSAGES } from './provider.js';
-import { quoteAppearsIn } from '../lib/text.js';
+import { quoteAppearsIn, sentenceContaining } from '../lib/text.js';
 
 const NEGATION = /\b(not|never|no one|nobody|cannot|can't|can not|won't|wouldn't|don't|do not|isn't|aren't|without|no)\b[^.!?]{0,40}$/i;
 const GUARANTEE = /\b(guarantee[ds]?|guaranteeing|i promise|we promise|promise you|you will definitely|you'll definitely|will definitely|100% (?:sure|certain)|risk[- ]free results?)\b/i;
@@ -26,6 +26,13 @@ export function detectGuarantees(answer) {
     hits.push(raw.length > 300 ? raw.slice(0, 300) : raw);
   }
   return hits;
+}
+
+// "We can't guarantee more cases" mentions a guarantee but declines to give one.
+export function isNegatedGuarantee(sentence) {
+  const s = String(sentence || '').replace(/[\u2018\u2019]/g, "'");
+  const m = GUARANTEE.exec(s);
+  return Boolean(m) && NEGATION.test(s.slice(0, m.index));
 }
 
 export function detectInjection(answer) {
@@ -54,6 +61,8 @@ export function processEvaluation({ output, scenario, answer, sources, rubricDim
   if (missing.length) throw invalid(`missing dimensions: ${missing.join(', ')}`);
 
   const inAnswer = (q) => Boolean(q && q.trim()) && quoteAppearsIn(q, answer);
+  // Critical failures need an exact, contiguous quote (short elisions only) of the rep's words and the source.
+  const strictlyInAnswer = (q) => Boolean(q && q.trim()) && quoteAppearsIn(q, answer, { strict: true });
   let droppedQuotes = 0;
 
   const dimensionScores = rubricDimensions.map((d) => {
@@ -86,19 +95,31 @@ export function processEvaluation({ output, scenario, answer, sources, rubricDim
   const criticalFailures = [];
 
   for (const cf of ev.critical_failures) {
-    if (!inAnswer(cf.claim_quote)) {
-      notes.push('A critical-failure claim was not found in the answer and was discarded.');
+    if (!strictlyInAnswer(cf.claim_quote)) {
+      notes.push('A critical-failure claim did not match the answer word for word and was discarded.');
       continue;
     }
-    if (cf.type !== 'unauthorized_guarantee') {
+    if (cf.type === 'unauthorized_guarantee') {
+      const sentence = sentenceContaining(answer, cf.claim_quote);
+      if (sentence && isNegatedGuarantee(sentence)) {
+        reviewFlags.push({
+          kind: 'possible_guarantee',
+          claimQuote: cf.claim_quote,
+          note: `${cf.explanation} Coaching called this a guarantee, but the sentence appears to decline to guarantee results, so it was not counted as a critical failure. A manager should check it.`,
+        });
+        continue;
+      }
+    } else {
       const scoped = cf.source_ref && sourceTextByRef.has(cf.source_ref) ? sourceTextByRef.get(cf.source_ref) : allSourceText;
-      const sourceOk = Boolean(cf.source_quote) && (quoteAppearsIn(cf.source_quote, scoped) || quoteAppearsIn(cf.source_quote, allSourceText));
+      const sourceOk =
+        Boolean(cf.source_quote) &&
+        (quoteAppearsIn(cf.source_quote, scoped, { strict: true }) || quoteAppearsIn(cf.source_quote, allSourceText, { strict: true }));
       if (!sourceOk) {
         reviewFlags.push({
           kind: 'unverified_critical',
           type: cf.type,
           claimQuote: cf.claim_quote,
-          note: `${cf.explanation} The cited source passage could not be found in the approved material, so this was not counted as a critical failure. A manager should check it.`,
+          note: `${cf.explanation} The cited source passage could not be found word for word in the approved material, so this was not counted as a critical failure. A manager should check it.`,
         });
         continue;
       }
@@ -110,6 +131,8 @@ export function processEvaluation({ output, scenario, answer, sources, rubricDim
       sourceTitle: cf.source_ref ? sourceTitle(cf.source_ref) : null,
       sourceQuote: cf.type === 'unauthorized_guarantee' ? cf.source_quote || null : cf.source_quote,
       explanation: cf.explanation,
+      origin: 'coach',
+      status: 'pending',
     });
   }
 
@@ -117,7 +140,18 @@ export function processEvaluation({ output, scenario, answer, sources, rubricDim
   for (const c of ev.claims) {
     if (!inAnswer(c.claim_quote) || flaggedQuotes.has(c.claim_quote)) continue;
     const sourceQuoteOk = c.source_quote ? quoteAppearsIn(c.source_quote, allSourceText) : false;
-    if (c.status === 'unsupported' || c.status === 'uncertain') {
+    if (c.status === 'overstated') {
+      reviewFlags.push({
+        kind: 'overstated',
+        claimQuote: c.claim_quote,
+        sourceRef: c.source_ref || null,
+        sourceQuote: sourceQuoteOk ? c.source_quote : null,
+        note:
+          c.note ||
+          'The approved material supports this only as a public claim, an untested observation, or a point to confirm, but the answer states it as established fact.',
+      });
+      flaggedQuotes.add(c.claim_quote);
+    } else if (c.status === 'unsupported' || c.status === 'uncertain') {
       reviewFlags.push({
         kind: c.status,
         claimQuote: c.claim_quote,
@@ -142,7 +176,12 @@ export function processEvaluation({ output, scenario, answer, sources, rubricDim
     }
   }
 
-  const coveredGuarantee = (s) => [...flaggedQuotes].some((q) => quoteAppearsIn(q, s) || quoteAppearsIn(s, q));
+  // Skip a sentence only if a guarantee finding already covers it; other claims in the same sentence do not.
+  const guaranteeQuotes = [
+    ...criticalFailures.filter((c) => c.type === 'unauthorized_guarantee'),
+    ...reviewFlags.filter((f) => f.kind === 'possible_guarantee' || f.type === 'unauthorized_guarantee'),
+  ].map((x) => x.claimQuote);
+  const coveredGuarantee = (s) => guaranteeQuotes.some((q) => quoteAppearsIn(q, s) || quoteAppearsIn(s, q));
   for (const s of detectGuarantees(answer)) {
     if (coveredGuarantee(s)) continue;
     reviewFlags.push({
@@ -175,7 +214,18 @@ export function processEvaluation({ output, scenario, answer, sources, rubricDim
     },
   };
 
-  const overallScore = criticalFailures.length ? 0 : weightedScore;
+  criticalFailures.forEach((c, i) => {
+    c.id = `cf${i + 1}`;
+  });
+  reviewFlags.forEach((f, i) => {
+    f.id = `f${i + 1}`;
+    f.status = 'open';
+  });
+
+  // A critical failure counts only once a manager confirms it. Until then the overall score is unknown:
+  // it becomes 0 if the failure is confirmed and the weighted score if it is rejected.
+  const pendingCritical = criticalFailures.length > 0;
+  const overallScore = pendingCritical ? null : weightedScore;
   const reviewStatus = criticalFailures.length || reviewFlags.length ? 'provisional' : 'final';
   return {
     dimensionScores,
@@ -184,8 +234,87 @@ export function processEvaluation({ output, scenario, answer, sources, rubricDim
     criticalFailures,
     reviewFlags,
     reviewStatus,
-    meetsTarget: criticalFailures.length === 0 && overallScore >= threshold,
+    meetsTarget: !pendingCritical && weightedScore >= threshold,
     feedback,
     notes,
+  };
+}
+
+// Applies a manager's decisions to an evaluation's critical failures and flags. Pure function.
+// decisions: { criticalFailures: { [id]: 'confirm' | 'reject' }, flags: { [id]: 'dismiss' | 'critical' },
+//              flagTypes: { [id]: type }, added: [{ type, claimQuote, explanation }] }
+export function applyReviewDecisions(ev, decisions, { answer, threshold, reviewerName }) {
+  const problems = [];
+  const cfs = (ev.critical_failures || []).map((c) => ({ ...c }));
+  const flags = (ev.review_flags || []).map((f) => ({ ...f }));
+  const cfDecisions = decisions.criticalFailures || {};
+  const flagDecisions = decisions.flags || {};
+  for (const [id, d] of Object.entries(cfDecisions)) {
+    const c = cfs.find((x) => x.id === id);
+    if (!c) problems.push(`Unknown critical failure ${id}.`);
+    else c.status = d === 'confirm' ? 'confirmed' : 'rejected';
+  }
+  let nextId = cfs.reduce((n, c) => Math.max(n, Number.parseInt(String(c.id).replace(/\D/g, ''), 10) || 0), 0) + 1;
+  for (const [id, d] of Object.entries(flagDecisions)) {
+    const f = flags.find((x) => x.id === id);
+    if (!f) {
+      problems.push(`Unknown flag ${id}.`);
+      continue;
+    }
+    if (d === 'critical') {
+      if (f.status === 'made_critical') continue;
+      if (!f.claimQuote) {
+        problems.push('That flag has no quoted claim, so it cannot become a critical failure.');
+        continue;
+      }
+      const type = decisions.flagTypes?.[id] || (f.kind === 'possible_guarantee' ? 'unauthorized_guarantee' : f.type || 'contradicts_approved_fact');
+      f.status = 'made_critical';
+      cfs.push({
+        id: `cf${nextId++}`,
+        type,
+        claimQuote: f.claimQuote,
+        sourceRef: f.sourceRef || null,
+        sourceQuote: f.sourceQuote || null,
+        explanation: decisions.flagExplanations?.[id] || f.note,
+        origin: 'manager',
+        status: 'confirmed',
+        fromFlag: id,
+        confirmedBy: reviewerName,
+      });
+    } else {
+      // Dismissing a flag that was turned into a critical failure earlier removes that failure too.
+      if (f.status === 'made_critical') {
+        for (const c of cfs) if (c.fromFlag === id) c.status = 'rejected';
+      }
+      f.status = 'dismissed';
+    }
+  }
+  for (const add of decisions.added || []) {
+    if (!quoteAppearsIn(add.claimQuote, answer)) {
+      problems.push('A critical failure must quote words that appear in the answer.');
+      continue;
+    }
+    cfs.push({
+      id: `cf${nextId++}`,
+      type: add.type,
+      claimQuote: add.claimQuote,
+      sourceRef: null,
+      sourceQuote: null,
+      explanation: add.explanation,
+      origin: 'manager',
+      status: 'confirmed',
+      confirmedBy: reviewerName,
+    });
+  }
+  const unresolved = cfs.filter((c) => c.status === 'pending').length + flags.filter((f) => f.status === 'open').length;
+  const confirmed = cfs.filter((c) => c.status === 'confirmed').length;
+  const overallScore = confirmed > 0 ? 0 : ev.weighted_score;
+  return {
+    problems,
+    unresolved,
+    criticalFailures: cfs,
+    reviewFlags: flags,
+    overallScore,
+    meetsTarget: confirmed === 0 && overallScore >= threshold,
   };
 }

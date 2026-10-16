@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { get } from '../api.js';
 import { useAuth } from '../state.jsx';
-import { Empty, ErrorNotice, fmtDate, fmtRelative, Loading, Notice, ReviewBadge, RunBadge, Stat, useLoad } from '../components/ui.jsx';
+import { Empty, ErrorNotice, fmtDate, fmtRelative, Loading, Notice, ReviewBadge, RunBadge, Stat, useLoad, attemptLabel, scoreText } from '../components/ui.jsx';
 
 export function NextUpCard({ next }) {
   if (!next) return null;
@@ -98,8 +98,8 @@ export function Home() {
                           </Link>
                         </td>
                         <td>{fmtRelative(r.submitted_at)}</td>
-                        <td className="num">{r.attempt_number === 1 ? 'First' : `Retry ${r.attempt_number - 1}`}</td>
-                        <td className="num">{r.mode === 'unscored' ? '—' : r.overall_score ?? '—'}</td>
+                        <td>{attemptLabel(r, { short: true })}</td>
+                        <td className="num">{scoreText(r)}</td>
                         <td>{r.mode === 'unscored' ? <span className="badge badge-neutral">Unscored practice</span> : r.review_status ? <ReviewBadge status={r.review_status} /> : <RunBadge status={r.run_status} />}</td>
                       </tr>
                     ))}

@@ -30,12 +30,15 @@ export function buildScenario({ drill, persona, settings, rubricDimensions, sour
       depth: DEPTH_TEXT[settings.depth],
     },
     assessedDimensions: assessed.map((d) => ({ key: d.key, label: d.label, weight: d.weight, description: d.description })),
+    // Titles of sources that are not approved are never frozen into what learners can see.
     sources: sources.map((s) => ({
       sourceId: s.sourceId,
       title: s.title,
       available: s.available,
+      reason: s.reason || null,
       version: s.version,
       asOfDate: s.asOfDate,
+      evidenceBasis: s.evidenceBasis || null,
       sections: s.sections,
     })),
   };

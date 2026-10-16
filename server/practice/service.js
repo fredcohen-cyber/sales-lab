@@ -1,9 +1,10 @@
 import { conflict, forbidden, HttpError, notFound } from '../lib/errors.js';
 import { aiConfigured } from '../config.js';
-import { DRILL_VERSION_SQL } from '../drills/service.js';
+import { availabilityReason, DRILL_VERSION_SQL, UNAVAILABLE_TEXT } from '../drills/service.js';
 import { resolveSourceRefs } from '../knowledge/service.js';
 import { buildScenario } from './scenario.js';
-import { MAX_RUNS_PER_ATTEMPT, MIN_SECONDS_BEFORE_SUPERSEDE, startRun } from '../ai/evaluate.js';
+import { MIN_SECONDS_BEFORE_SUPERSEDE, RUNS_PER_ATTEMPT_PER_HOUR, startRun } from '../ai/evaluate.js';
+import { audit } from '../lib/audit.js';
 import { RUN_ERROR_MESSAGES } from '../ai/provider.js';
 import { nyDate } from '../lib/time.js';
 
@@ -74,13 +75,26 @@ export async function resolvePractice(q, config, user, input) {
   }
   const persona = await loadPersona(q, personaKey);
   const rubric = await currentRubric(q);
-  const sources = await resolveSourceRefs(q, drill.source_refs);
+  const sources = await resolveSourceRefs(q, drill.source_refs, drill, personaKey);
   const available = sources.filter((s) => s.available);
-  let unavailableReason = null;
-  if (!aiConfigured(config)) unavailableReason = 'ai_not_configured';
-  else if (available.length === 0) unavailableReason = 'no_approved_sources';
+  const unavailableReason = availabilityReason(config, sources);
   const scenario = buildScenario({ drill, persona, settings, rubricDimensions: rubric.dimensions, sources });
   return { drill, persona, settings, rubric, sources, available, scenario, assigned, coachingAvailable: !unavailableReason, unavailableReason };
+}
+
+// Bounds paid AI calls per person: new coached answers plus retries, across all their answers.
+async function checkCoachingRate(q, config, user) {
+  const row = await q.one(
+    `SELECT count(*) AS n FROM evaluation_runs WHERE requested_by = $1 AND started_at > now() - interval '1 hour'`,
+    [user.id],
+  );
+  if (row.n >= config.ai.runsPerUserPerHour) {
+    throw new HttpError(
+      429,
+      'coaching_rate_limited',
+      'You have requested coaching many times in the last hour. Your work is saved; try again in a few minutes.',
+    );
+  }
 }
 
 export async function createAttempt(db, config, user, body, { provider }) {
@@ -99,10 +113,11 @@ export async function createAttempt(db, config, user, body, { provider }) {
       if (locked) throw new HttpError(409, 'out_of_order', 'Finish the earlier exercises in this assignment first.');
     }
     if (body.mode === 'coached' && !ctx.coachingAvailable) {
-      throw conflict('coaching_unavailable', ctx.unavailableReason === 'ai_not_configured' ? RUN_ERROR_MESSAGES.ai_not_configured : 'This drill has no approved source material yet.', {
+      throw conflict('coaching_unavailable', ctx.unavailableReason === 'ai_not_configured' ? RUN_ERROR_MESSAGES.ai_not_configured : UNAVAILABLE_TEXT[ctx.unavailableReason], {
         reason: ctx.unavailableReason,
       });
     }
+    if (body.mode === 'coached') await checkCoachingRate(q, config, user);
     if (body.mode === 'unscored' && ctx.coachingAvailable) {
       throw conflict('coaching_available', 'Coaching is available for this drill, so submit it for coaching.');
     }
@@ -115,7 +130,9 @@ export async function createAttempt(db, config, user, body, { provider }) {
     const dup = await q.one(`SELECT id FROM attempts WHERE learner_id = $1 AND client_request_id = $2`, [user.id, body.clientRequestId]);
     if (dup) return { attemptId: dup.id, runId: null, duplicate: true };
     const num = await q.one(
-      `SELECT COALESCE(max(attempt_number), 0) + 1 AS n FROM attempts WHERE learner_id = $1 AND drill_id = $2 AND persona = $3`,
+      `SELECT COALESCE(max(attempt_number), 0) + 1 AS n,
+              COALESCE(max(coached_number), 0) + 1 AS coached
+         FROM attempts WHERE learner_id = $1 AND drill_id = $2 AND persona = $3`,
       [user.id, ctx.drill.id, ctx.persona.key],
     );
     const sourceVersions = ctx.available.map((s) => ({
@@ -125,12 +142,14 @@ export async function createAttempt(db, config, user, body, { provider }) {
       title: s.title,
       asOfDate: s.asOfDate,
       caveats: s.caveats,
+      evidenceBasis: s.evidenceBasis,
       sections: s.sections,
     }));
     const attempt = await q.one(
       `INSERT INTO attempts (learner_id, learner_role, drill_id, drill_version_id, persona, difficulty, skepticism, depth, brand, stage,
-         assignment_item_id, mode, unscored_reason, attempt_number, scenario, rubric_version_id, source_versions, answer, client_request_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING id`,
+         assignment_item_id, mode, unscored_reason, attempt_number, scenario, rubric_version_id, source_versions, answer, client_request_id,
+         coached_number)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) RETURNING id`,
       [
         user.id,
         user.role,
@@ -151,6 +170,7 @@ export async function createAttempt(db, config, user, body, { provider }) {
         JSON.stringify(sourceVersions),
         answer,
         body.clientRequestId,
+        body.mode === 'coached' ? num.coached : null,
       ],
     );
     let runId = null;
@@ -162,17 +182,20 @@ export async function createAttempt(db, config, user, body, { provider }) {
   });
 }
 
-function retryState(attempt, latestRun, runCount, config) {
+// Reps can retry coaching a few times an hour per answer; managers can always restart it.
+function retryState(attempt, latestRun, recentRuns, config, viewer) {
   if (attempt.mode !== 'coached') return { canRetry: false, reason: 'unscored' };
   if (attempt.evaluation_id) return { canRetry: false, reason: 'already_coached' };
   if (!aiConfigured(config)) return { canRetry: false, reason: 'ai_not_configured' };
-  if (runCount >= MAX_RUNS_PER_ATTEMPT) return { canRetry: false, reason: 'too_many_runs' };
   if (latestRun?.status === 'running') {
     const ageSec = (Date.now() - new Date(latestRun.started_at).getTime()) / 1000;
     if (ageSec < MIN_SECONDS_BEFORE_SUPERSEDE) return { canRetry: false, reason: 'in_progress', retryInSeconds: Math.ceil(MIN_SECONDS_BEFORE_SUPERSEDE - ageSec) };
   }
+  if (!viewer.isManager && recentRuns >= RUNS_PER_ATTEMPT_PER_HOUR) return { canRetry: false, reason: 'too_many_runs' };
   return { canRetry: true, reason: null };
 }
+
+const RECENT_RUNS_SQL = `SELECT count(*) AS n FROM evaluation_runs WHERE attempt_id = $1 AND started_at > now() - interval '1 hour'`;
 
 export async function retryCoaching(db, config, user, attemptId, { provider }) {
   return db.tx(async (q) => {
@@ -180,22 +203,26 @@ export async function retryCoaching(db, config, user, attemptId, { provider }) {
     if (!attempt) throw notFound('That answer was not found.');
     if (attempt.learner_id !== user.id && !user.isManager) throw notFound('That answer was not found.');
     const latest = attempt.latest_run_id ? await q.one(`SELECT * FROM evaluation_runs WHERE id = $1`, [attempt.latest_run_id]) : null;
-    const count = await q.one(`SELECT count(*) AS n FROM evaluation_runs WHERE attempt_id = $1`, [attempt.id]);
-    const state = retryState(attempt, latest, count.n, config);
+    const recent = await q.one(RECENT_RUNS_SQL, [attempt.id]);
+    const state = retryState(attempt, latest, recent.n, config, user);
     if (!state.canRetry) {
       const messages = {
         unscored: 'This was unscored practice, so there is no coaching to retry.',
         already_coached: 'This answer already has coaching.',
         ai_not_configured: RUN_ERROR_MESSAGES.ai_not_configured,
-        too_many_runs: 'Coaching has been retried several times for this answer. Ask your manager to take a look.',
+        too_many_runs: 'Coaching was retried several times in the last hour. Try again later, or ask your manager to restart it.',
         in_progress: `Coaching is still running. You can retry in ${state.retryInSeconds} seconds if it has not finished.`,
       };
       throw conflict(`retry_${state.reason}`, messages[state.reason], { retryInSeconds: state.retryInSeconds });
     }
+    await checkCoachingRate(q, config, user);
     if (latest?.status === 'running') {
       await q.query(`UPDATE evaluation_runs SET status = 'superseded', finished_at = now(), error_code = 'superseded' WHERE id = $1 AND status = 'running'`, [latest.id]);
     }
     const run = await startRun(q, { attemptId: attempt.id, requestedBy: user.id, provider, config });
+    if (attempt.learner_id !== user.id) {
+      await audit(q, { actorId: user.id, action: 'coaching.restarted', targetUserId: attempt.learner_id, entityType: 'attempt', entityId: attempt.id });
+    }
     return { attemptId: attempt.id, runId: run.id };
   });
 }
@@ -266,7 +293,8 @@ export async function attemptView(db, config, viewer, attemptId) {
       `SELECT a.*, u.name AS learner_name, u.role AS learner_current_role, u.email AS learner_email,
               to_jsonb(r) AS latest_run_json,
               CASE WHEN e.id IS NULL THEN NULL ELSE to_jsonb(e) || jsonb_build_object('reviewed_by_name', rv.name) END AS evaluation_json,
-              (SELECT count(*) FROM evaluation_runs x WHERE x.attempt_id = a.id) AS run_count
+              (SELECT count(*) FROM evaluation_runs x WHERE x.attempt_id = a.id) AS run_count,
+              (SELECT count(*) FROM evaluation_runs x WHERE x.attempt_id = a.id AND x.started_at > now() - interval '1 hour') AS recent_run_count
          FROM attempts a
          JOIN users u ON u.id = a.learner_id
          LEFT JOIN evaluation_runs r ON r.id = a.latest_run_id
@@ -286,7 +314,7 @@ export async function attemptView(db, config, viewer, attemptId) {
     [a.id],
   );
   const siblings = await db.many(
-    `SELECT a.id, a.attempt_number, a.submitted_at, a.mode, e.overall_score, e.review_status
+    `SELECT a.id, a.attempt_number, a.coached_number, a.submitted_at, a.mode, e.overall_score, e.review_status
        FROM attempts a LEFT JOIN evaluations e ON e.id = a.evaluation_id
       WHERE a.learner_id = $1 AND a.drill_id = $2 AND a.persona = $3 ORDER BY a.attempt_number`,
     [a.learner_id, a.drill_id, a.persona],
@@ -300,7 +328,7 @@ export async function attemptView(db, config, viewer, attemptId) {
       [a.assignment_item_id],
     );
   }
-  const retry = retryState(a, latestRun, runCount, config);
+  const retry = retryState(a, latestRun, a.recent_run_count, config, viewer);
   return {
     attempt: {
       id: a.id,
@@ -312,7 +340,9 @@ export async function attemptView(db, config, viewer, attemptId) {
       mode: a.mode,
       unscoredReason: a.unscored_reason,
       attemptNumber: a.attempt_number,
-      isFirstAttempt: a.attempt_number === 1,
+      coachedNumber: a.coached_number,
+      // The first coached answer is the first attempt; unscored practice never uses it up.
+      isFirstAttempt: a.coached_number === 1,
       scenario: a.scenario,
       sourceVersions: (a.source_versions || []).map(({ caveats, ...s }) => ({ ...s, caveats })),
       answer: a.answer,

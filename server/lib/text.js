@@ -26,23 +26,64 @@ export function normalizeForMatch(s) {
     .trim();
 }
 
-// True when the quote appears in the text, tolerating punctuation/case differences and "..." elisions.
-export function quoteAppearsIn(quote, text) {
+// Whole words for matching: hyphens and slashes separate words, so "risk-free" matches "risk free".
+export function matchWords(s) {
+  return normalizeForMatch(s)
+    .replace(/[-/]+/g, ' ')
+    .split(' ')
+    .filter(Boolean);
+}
+
+function indexOfWords(hay, needle, from, lastStart) {
+  const end = Math.min(hay.length - needle.length, lastStart);
+  outer: for (let i = Math.max(0, from); i <= end; i += 1) {
+    for (let j = 0; j < needle.length; j += 1) if (hay[i + j] !== needle[j]) continue outer;
+    return i;
+  }
+  return -1;
+}
+
+// True when the quote appears in the text as whole words, tolerating case and punctuation differences.
+// A quote may elide words with "..." but only between substantial fragments that sit close together in
+// order, so a quote cannot be stitched from scattered words. Strict mode, used for critical failures,
+// requires longer fragments, smaller gaps, and at least two words overall.
+export function quoteAppearsIn(quote, text, { strict = false } = {}) {
   const q = String(quote || '').trim();
   if (!q) return false;
-  const hay = normalizeForMatch(text);
   const fragments = q
-    .split(/\.\.\.|…|\[\.\.\.\]/)
-    .map((f) => normalizeForMatch(f))
+    .split(/\.\.\.|…|\[\.\.\.\]|\[…\]/)
+    .map(matchWords)
     .filter((f) => f.length > 0);
   if (fragments.length === 0) return false;
-  let from = 0;
-  for (const frag of fragments) {
-    const at = hay.indexOf(frag, from);
-    if (at === -1) return false;
-    from = at + frag.length;
+  const totalWords = fragments.reduce((n, f) => n + f.length, 0);
+  if (strict && totalWords < 2) return false;
+  if (fragments.length > 1) {
+    const minWords = strict ? 4 : 3;
+    if (fragments.some((f) => f.length < minWords)) return false;
   }
-  return true;
+  const maxGap = strict ? 12 : 30;
+  const hay = matchWords(text);
+  const placeFrom = (fi, from, lastStart) => {
+    if (fi === fragments.length) return true;
+    let start = from;
+    for (;;) {
+      const at = indexOfWords(hay, fragments[fi], start, lastStart);
+      if (at === -1) return false;
+      const next = at + fragments[fi].length;
+      if (placeFrom(fi + 1, next, next + maxGap)) return true;
+      start = at + 1;
+    }
+  };
+  return placeFrom(0, 0, Infinity);
+}
+
+// The sentence of the text that contains the quote, if any (for checks such as negated guarantees).
+export function sentenceContaining(text, quote) {
+  const parts = String(text || '')
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+  return parts.find((sentence) => quoteAppearsIn(quote, sentence)) || null;
 }
 
 export function slugify(s) {

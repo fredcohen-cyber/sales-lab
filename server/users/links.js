@@ -2,6 +2,7 @@ import { hashToken, looksLikeToken, newToken } from '../lib/tokens.js';
 import { hashPassword, passwordProblem } from '../lib/passwords.js';
 import { audit } from '../lib/audit.js';
 import { revokeAllSessions } from '../auth/sessions.js';
+import { clearFailures } from '../auth/throttle.js';
 import { HttpError } from '../lib/errors.js';
 import { LINK_TTL_HOURS } from '../domain.js';
 
@@ -108,6 +109,8 @@ export async function consumeLink(db, token, password, { ip }) {
       [row.user_id, row.id],
     );
     const revoked = await revokeAllSessions(q, row.user_id, 'password changed');
+    // A new password from a manager's link also lifts any sign-in pause from earlier failed attempts.
+    await clearFailures(q, row.email);
     await audit(q, {
       actorId: row.user_id,
       action: 'link.used',

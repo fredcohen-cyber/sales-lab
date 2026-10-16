@@ -1,0 +1,266 @@
+// Fixes from the independent security and requirements reviews.
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
+import { addUser, drillBySlug, ownerClient, PASSWORD, startTestApp, submit, waitForCoaching } from '../helpers.js';
+
+let h;
+let owner;
+before(async () => {
+  // Trust one proxy hop so tests can present different client addresses with X-Forwarded-For.
+  h = await startTestApp({ dbName: 'saleslab_test_hardening', env: { TRUST_PROXY: '1' } });
+  owner = await ownerClient(h);
+});
+after(() => h.close());
+
+const from = (ip) => ({ headers: { 'x-forwarded-for': ip } });
+const login = (c, email, password, ip) => c.post('/api/auth/login', { email, password }, from(ip));
+
+test('parallel guesses cannot get past the sign-in limit', async () => {
+  const { user } = await addUser(h, owner, { name: 'Pat Parallel', email: 'pat@omnizant.com' });
+  const burst = await Promise.all(Array.from({ length: 30 }, (_, i) => login(h.client(), user.email, `wrong-guess-${i}`, '10.0.0.1')));
+  let evaluated = burst.filter((r) => r.status === 401).length;
+  assert.ok(evaluated <= 5, `at most 5 guesses reach the password check (got ${evaluated})`);
+  assert.ok(burst.filter((r) => r.status === 429).length >= 25);
+  // Later guesses only use up what is left of the same allowance.
+  for (let i = 0; i < 10; i += 1) if ((await login(h.client(), user.email, `wrong-seq-${i}`, '10.0.0.1')).status === 401) evaluated += 1;
+  assert.equal(evaluated, 5, 'five guesses in total, however they are sent');
+  assert.equal((await login(h.client(), user.email, PASSWORD, '10.0.0.1')).status, 429);
+  // The person themselves, from their own address, is not locked out by someone else's guesses.
+  assert.equal((await login(h.client(), user.email, PASSWORD, '10.0.0.2')).status, 200);
+});
+
+test('blocked requests do not extend a lockout, and a manager can allow sign-in again', async () => {
+  const { user } = await addUser(h, owner, { name: 'Lee Lockout', email: 'lee@ravenly.com' });
+  for (let i = 0; i < 5; i += 1) assert.equal((await login(h.client(), user.email, 'nope-nope-nope', '10.0.1.1')).status, 401);
+  for (let i = 0; i < 20; i += 1) assert.equal((await login(h.client(), user.email, 'nope-nope-nope', '10.0.1.1')).status, 429);
+  const detail = await owner.get(`/api/users/${user.id}`);
+  assert.equal(detail.data.signIn.paused, true);
+  assert.equal(detail.data.signIn.recentFailures, 5, 'blocked requests are not counted as failures');
+  const cleared = await owner.post(`/api/users/${user.id}/sign-in/clear`, {});
+  assert.equal(cleared.status, 200);
+  assert.equal(cleared.data.signIn.paused, false);
+  assert.equal((await login(h.client(), user.email, PASSWORD, '10.0.1.1')).status, 200);
+  const activity = (await owner.get(`/api/users/${user.id}`)).data.activity.map((e) => e.action);
+  assert.ok(activity.includes('auth.sign_in_cleared'));
+});
+
+test('a new password from a reset link lifts the sign-in pause', async () => {
+  const { user } = await addUser(h, owner, { name: 'Rory Reset', email: 'rory@omnizant.com' });
+  for (let i = 0; i < 5; i += 1) await login(h.client(), user.email, 'still-wrong-pw', '10.0.2.1');
+  assert.equal((await login(h.client(), user.email, PASSWORD, '10.0.2.1')).status, 429);
+  const link = await owner.post(`/api/users/${user.id}/links`, {});
+  const token = link.data.link.url.split('/').pop();
+  assert.equal((await h.client().post(`/api/auth/link/${token}`, { password: 'a brand new passphrase' })).status, 200);
+  assert.equal((await login(h.client(), user.email, 'a brand new passphrase', '10.0.2.1')).status, 200);
+});
+
+test('changing a password with a borrowed session is throttled and audited', async () => {
+  const { client, user } = await addUser(h, owner, { name: 'Cam Change', email: 'cam@ravenly.com' });
+  for (let i = 0; i < 5; i += 1) {
+    const r = await client.post('/api/auth/password', { currentPassword: `guess-${i}-xxxxx`, newPassword: 'another long passphrase' }, from('10.0.3.1'));
+    assert.equal(r.status, 400);
+  }
+  const blocked = await client.post('/api/auth/password', { currentPassword: PASSWORD, newPassword: 'another long passphrase' }, from('10.0.3.1'));
+  assert.equal(blocked.status, 429);
+  const activity = (await owner.get(`/api/users/${user.id}`)).data.activity.map((e) => e.action);
+  assert.ok(activity.includes('auth.password_change_failed'));
+});
+
+test('a sign-in racing a deactivation never leaves a working session', async () => {
+  for (let round = 0; round < 3; round += 1) {
+    const email = `race${round}@omnizant.com`;
+    const { user } = await addUser(h, owner, { name: `Race ${round}`, email });
+    const c = h.client();
+    const [signIn] = await Promise.all([login(c, email, PASSWORD, `10.0.4.${round}`), owner.post(`/api/users/${user.id}/deactivate`, {})]);
+    assert.ok([200, 401].includes(signIn.status));
+    assert.equal((await c.get('/api/auth/me')).status, 401, 'no session survives deactivation');
+    await owner.post(`/api/users/${user.id}/reactivate`, {});
+    assert.equal((await c.get('/api/auth/me')).status, 401, 'reactivation does not restore it');
+  }
+});
+
+test('only the owner can sign the owner out or revoke the owner’s links', async () => {
+  const { client: mgr } = await addUser(h, owner, { name: 'Mia Manager', email: 'mia@omnizant.com', role: 'manager' });
+  const ownerId = (await owner.get('/api/auth/me')).data.user.id;
+  assert.equal((await mgr.post(`/api/users/${ownerId}/sessions/revoke`, {})).status, 403);
+  assert.equal((await mgr.post(`/api/users/${ownerId}/links/revoke`, {})).status, 403);
+  assert.equal((await owner.get('/api/auth/me')).status, 200);
+});
+
+async function createDrill(body) {
+  const base = {
+    title: 'Omnizant pricing question',
+    brand: 'omnizant',
+    subject: 'product',
+    stage: 'pricing',
+    roles: ['ae'],
+    personas: ['managing_partner'],
+    situation: 'A managing partner asks what Omnizant costs for a firm of twelve attorneys.',
+    buyerLine: 'What does Omnizant cost for a firm our size?',
+    objective: 'Answer without inventing prices and move to discovery.',
+    goodLooksLike: 'Does not invent a price. Asks about firm size and needs.',
+    assessedDimensions: ['product_accuracy', 'advancing'],
+    defaults: { difficulty: 3, skepticism: 3, depth: 3 },
+    sourceRefs: [],
+    ...body,
+  };
+  const r = await owner.post('/api/drills', base);
+  assert.equal(r.status, 201, JSON.stringify(r.data));
+  return r.data.id;
+}
+
+test('coaching needs a relevant source: technique material cannot score an Omnizant product drill', async () => {
+  const playbook = await h.db.one(`SELECT id FROM knowledge_sources WHERE slug = 'sales-playbook'`);
+  const id = await createDrill({ sourceRefs: [{ sourceId: playbook.id, sections: [] }] });
+  const { client: rep } = await addUser(h, owner, { name: 'Omar Omni', email: 'omar@omnizant.com' });
+  const preview = await rep.post('/api/practice/preview', { drillId: id });
+  assert.equal(preview.status, 200);
+  assert.equal(preview.data.coaching.available, false);
+  assert.equal(preview.data.coaching.reason, 'no_relevant_sources');
+  const coached = await rep.post('/api/practice/attempts', { clientRequestId: randomUUID(), drillId: id, mode: 'coached', answer: 'It depends on your firm. How many attorneys handle intake today?' });
+  assert.equal(coached.status, 409);
+  const unscored = await rep.post('/api/practice/attempts', { clientRequestId: randomUUID(), drillId: id, mode: 'unscored', answer: 'It depends on your firm. How many attorneys handle intake today?' });
+  assert.equal(unscored.status, 201);
+  assert.equal(unscored.data.attempt.mode, 'unscored');
+  const listed = (await rep.get('/api/drills')).data.drills.find((d) => d.id === id);
+  assert.equal(listed.coaching.available, false);
+  assert.equal(listed.coaching.reason, 'no_relevant_sources');
+});
+
+test('learners never see the titles of sources that are not approved', async () => {
+  const draft = await owner.post('/api/knowledge', {
+    title: 'Secret Omnizant pricing draft',
+    brand: 'omnizant',
+    subjects: ['product'],
+    content: '# Draft\n\n## 01 · Pricing\n\nNot final.',
+  });
+  assert.equal(draft.status, 201);
+  const id = await createDrill({ title: 'Draft source drill', sourceRefs: [{ sourceId: draft.data.id, sections: [] }] });
+  const { client: rep } = await addUser(h, owner, { name: 'Tia Titles', email: 'tia@ravenly.com' });
+  const detail = await rep.get(`/api/drills/${id}`);
+  assert.equal(detail.status, 200);
+  assert.equal(detail.data.drill.sources[0].title, null);
+  const preview = await rep.post('/api/practice/preview', { drillId: id });
+  assert.ok(!JSON.stringify(preview.data).includes('Secret Omnizant pricing draft'));
+  const mgrView = await owner.get(`/api/drills/${id}`);
+  assert.equal(mgrView.data.drill.sources[0].title, 'Secret Omnizant pricing draft');
+});
+
+test('unscored practice does not use up the first attempt', async () => {
+  const draft = await owner.post('/api/knowledge', {
+    title: 'Omnizant product facts',
+    brand: 'omnizant',
+    subjects: ['product'],
+    evidenceBasis: 'documented',
+    content: '# Omnizant facts\n\n## 01 · Pricing\n\nPricing depends on firm size and is quoted after discovery.',
+  });
+  const id = await createDrill({ title: 'First attempt drill', sourceRefs: [{ sourceId: draft.data.id, sections: [] }] });
+  const { client: rep, user } = await addUser(h, owner, { name: 'Una Unscored', email: 'una@omnizant.com' });
+  const answer = 'Pricing depends on your firm size. How many attorneys are on intake today?';
+  const u = await rep.post('/api/practice/attempts', { clientRequestId: randomUUID(), drillId: id, mode: 'unscored', answer });
+  assert.equal(u.status, 201);
+  const approve = await owner.post(`/api/knowledge/${draft.data.id}/approve`, { versionId: (await owner.get(`/api/knowledge/${draft.data.id}`)).data.version.id });
+  assert.equal(approve.status, 200);
+  const drill = await h.db.one(`SELECT id, current_version_id AS version_id, ARRAY['managing_partner'] AS personas FROM drills WHERE id = $1`, [id]);
+  const c = await submit(rep, drill, answer);
+  assert.equal(c.status, 201, JSON.stringify(c.data));
+  assert.equal(c.data.attempt.isFirstAttempt, true);
+  assert.equal(c.data.attempt.coachedNumber, 1);
+  await waitForCoaching(rep, c.data.attempt.id);
+  const report = await owner.get(`/api/reports/rep/${user.id}?period=7`);
+  assert.equal(report.data.reps[0].performance.scoredFirstAttempts, 1);
+});
+
+test('reports keep answers under the role the person had when they wrote them', async () => {
+  const { client: rep, user } = await addUser(h, owner, { name: 'Rho Rolechange', email: 'rho@ravenly.com', role: 'am' });
+  const d = await drillBySlug(h, 'am-qbr-value');
+  const a = await submit(rep, d, 'Let us look at what changed since launch: how many inquiries came in after hours, and how many became consults?');
+  await waitForCoaching(rep, a.data.attempt.id);
+  assert.equal((await owner.patch(`/api/users/${user.id}`, { role: 'ae' })).status, 200);
+  let summary = (await owner.get('/api/reports/summary?period=7')).data;
+  const amRow = summary.reps.find((r) => r.id === user.id);
+  assert.deepEqual(amRow.rolesPracticed, ['am']);
+  assert.ok(summary.groups.am.engagement.submitted >= 1, 'the AM-era answer stays in the AM column');
+  assert.ok(summary.disclosures.some((x) => x.includes('changed role')));
+  const amOnly = (await owner.get('/api/reports/summary?period=7&role=am')).data;
+  assert.ok(amOnly.reps.some((r) => r.id === user.id), 'visible in the AM view by the role they had');
+  assert.equal((await owner.patch(`/api/users/${user.id}`, { role: 'manager' })).status, 200);
+  summary = (await owner.get('/api/reports/summary?period=7')).data;
+  assert.ok(summary.reps.some((r) => r.id === user.id), 'a rep promoted to manager keeps their practice history');
+  const csv = await owner.get('/api/reports/export.csv?type=attempts&period=7');
+  assert.ok(String(csv.data).includes('Role at the time'));
+});
+
+test('CSV exports carry the reporting notes', async () => {
+  const csv = await owner.get('/api/reports/export.csv?type=reps&period=90');
+  const text = String(csv.data);
+  assert.ok(text.includes('Reporting history begins on'), 'incomplete history is disclosed in the file');
+  assert.ok(text.includes('not employment decisions'));
+});
+
+test('learning paths can target new or experienced account managers', async () => {
+  const d = await drillBySlug(h, 'am-adoption-email');
+  const r = await owner.post('/api/paths', {
+    name: 'New AM onboarding',
+    audience: 'new_hire_am',
+    items: [{ drillId: d.id, persona: d.personas[0], difficulty: 2, skepticism: 2, depth: 2 }],
+  });
+  assert.equal(r.status, 201, JSON.stringify(r.data));
+});
+
+test('approving a source version warns about drills whose sections would disappear', async () => {
+  const ravenly = await h.db.one(`SELECT id FROM knowledge_sources WHERE slug = 'ravenly-sales-training'`);
+  const v = await owner.post(`/api/knowledge/${ravenly.id}/versions`, {
+    title: 'Ravenly sales training and product reference',
+    brand: 'ravenly',
+    subjects: ['product', 'competitive', 'sales_technique'],
+    evidenceBasis: 'mixed',
+    content: '# Ravenly\n\n## 01 · How to use this guide\n\nShort replacement text.',
+  });
+  assert.equal(v.status, 201);
+  const impact = await owner.get(`/api/knowledge/${ravenly.id}/drill-impact?versionId=${v.data.versionId}`);
+  assert.equal(impact.status, 200);
+  assert.ok(impact.data.drills.length > 0);
+  assert.ok(impact.data.drills.every((d) => d.missing.length > 0 || d.retitled.length > 0));
+});
+
+test('sources record their evidence basis and can be filtered by it', async () => {
+  const r = await owner.post('/api/knowledge', {
+    title: 'Competitor claims roundup',
+    brand: 'ravenly',
+    subjects: ['competitive'],
+    evidenceBasis: 'public_claims',
+    content: '# Claims\n\n## 01 · Intaker\n\nIntaker says its AI agent follows up automatically.',
+  });
+  assert.equal(r.status, 201);
+  const list = await owner.get('/api/knowledge?evidence=public_claims');
+  assert.ok(list.data.sources.some((s) => s.id === r.data.id && s.evidenceBasis === 'public_claims'));
+  assert.ok(list.data.sources.every((s) => s.evidenceBasis === 'public_claims'));
+});
+
+test('reps can retry coaching a few times an hour; a manager can always restart it', async () => {
+  const { client: rep } = await addUser(h, owner, { name: 'Ty Tries', email: 'ty@omnizant.com' });
+  const d = await drillBySlug(h, 'just-looking');
+  h.provider.behavior = 'fail';
+  try {
+    const a = await submit(rep, d, 'Totally fair. What prompted you to start looking now, and what would a good outcome look like?');
+    const id = a.data.attempt.id;
+    await waitForCoaching(rep, id);
+    for (let i = 1; i < 6; i += 1) {
+      const r = await rep.post(`/api/practice/attempts/${id}/evaluate`, {});
+      assert.equal(r.status, 202, `retry ${i}: ${JSON.stringify(r.data)}`);
+      await waitForCoaching(rep, id);
+    }
+    const blocked = await rep.post(`/api/practice/attempts/${id}/evaluate`, {});
+    assert.equal(blocked.status, 409);
+    assert.equal(blocked.data.error.code, 'retry_too_many_runs');
+    h.provider.behavior = null;
+    const restarted = await owner.post(`/api/practice/attempts/${id}/evaluate`, {});
+    assert.equal(restarted.status, 202);
+    const done = await waitForCoaching(rep, id);
+    assert.ok(done.evaluation, 'the manager restart produced coaching');
+  } finally {
+    h.provider.behavior = null;
+  }
+});

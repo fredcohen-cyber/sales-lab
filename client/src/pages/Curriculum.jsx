@@ -233,6 +233,18 @@ function TeamAssignments() {
   );
 }
 
+export const PATH_AUDIENCE_LABELS = {
+  all: 'Everyone',
+  new_hire: 'New hires (AEs and AMs)',
+  experienced: 'Experienced reps (AEs and AMs)',
+  ae: 'Account executives',
+  am: 'Account managers',
+  new_hire_ae: 'New-hire AEs',
+  experienced_ae: 'Experienced AEs',
+  new_hire_am: 'New-hire AMs',
+  experienced_am: 'Experienced AMs',
+};
+
 function AssignForm({ onDone }) {
   const { meta } = useMeta();
   const toast = useToast();
@@ -284,7 +296,20 @@ function AssignForm({ onDone }) {
     }
   };
 
-  if (users.loading || drills.loading || paths.loading) return <Loading />;
+  const failed = [users, drills, paths].find((x) => x.error && !x.data);
+  if (failed) {
+    return (
+      <ErrorNotice
+        error={failed.error}
+        retry={() => {
+          users.reload();
+          drills.reload();
+          paths.reload();
+        }}
+      />
+    );
+  }
+  if (!users.data || !drills.data || !paths.data) return <Loading />;
   return (
     <form className="stack-lg" onSubmit={submit}>
       {targetDim && (
@@ -369,7 +394,7 @@ function Paths() {
       toast(e.message, { error: true });
     }
   };
-  const AUD = { new_hire_ae: 'New-hire AEs', experienced_ae: 'Experienced AEs', am: 'Account managers', all: 'Everyone' };
+  const AUD = PATH_AUDIENCE_LABELS;
   if (loading && !data) return <Loading />;
   if (error) return <ErrorNotice error={error} retry={reload} />;
   if (editing) {
@@ -392,6 +417,7 @@ function Paths() {
         <Field label="Description" id="p-desc">
           <textarea id="p-desc" rows={2} value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
         </Field>
+        {drills.error && !drills.data && <ErrorNotice error={drills.error} retry={drills.reload} />}
         {drills.data && <ItemsBuilder items={editing.items} onChange={(items) => setEditing({ ...editing, items })} drills={drills.data.drills} />}
         <div className="row">
           <button className="btn" onClick={save} disabled={!editing.name.trim() || editing.items.length === 0}>

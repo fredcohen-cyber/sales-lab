@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Brand } from './Brand.jsx';
+import { ErrorBoundary } from './ErrorBoundary.jsx';
 import { useAuth } from '../state.jsx';
 import { api } from '../api.js';
 import {
@@ -96,7 +97,10 @@ export function Shell() {
         </div>
       </aside>
       <main className="main" id="main" tabIndex={-1}>
-        <Outlet />
+        {/* Keyed by page so moving to another page clears a rendering error; the menu stays usable. */}
+        <ErrorBoundary key={location.pathname}>
+          <Outlet />
+        </ErrorBoundary>
       </main>
     </div>
   );
