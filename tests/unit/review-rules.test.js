@@ -6,7 +6,8 @@ import { applyReviewDecisions, isNegatedGuarantee, processEvaluation } from '../
 import { DEFAULT_DIMENSIONS } from '../../server/domain.js';
 import { quoteAppearsIn } from '../../server/lib/text.js';
 import { retryImprovement, trendByWeek } from '../../server/reports/metrics.js';
-import { sourceFit } from '../../server/knowledge/service.js';
+import { mapSections, sourceFit } from '../../server/knowledge/service.js';
+import { availabilityReason } from '../../server/drills/service.js';
 
 test('quotes cannot be stitched together from scattered words', () => {
   const answer = 'We do not have a native Clio connector yet, but our Zapier route works. I can’t guarantee you’ll sign more cases.';
@@ -132,4 +133,48 @@ test('source relevance: brand, subject, and persona', () => {
   assert.deepEqual(sourceFit(ravenly, { brand: 'omnizant', subject: 'product' }).reasons, ['brand']);
   const mpOnly = { brand: 'both', subjects: ['sales_technique'], personas: ['managing_partner'] };
   assert.deepEqual(sourceFit(mpOnly, { brand: 'both', subject: 'sales_technique', persona: 'solo_attorney' }).reasons, ['persona']);
+});
+
+test('quote matching stays fast on hostile input and refuses long elided quotes', () => {
+  const text = Array.from({ length: 1200 }, (_, i) => ['the', 'cat', 'sat', 'on', 'mat'][i % 5]).join(' ');
+  const many = Array.from({ length: 8 }, () => 'the cat sat on').join(' ... ') + ' ... zebra stripes here';
+  let t = Date.now();
+  assert.equal(quoteAppearsIn(many, text), false);
+  const four = Array.from({ length: 3 }, () => 'the cat sat on').join(' ... ') + ' ... zebra stripes here';
+  assert.equal(quoteAppearsIn(four, text), false);
+  assert.ok(Date.now() - t < 200, 'no backtracking blow-up');
+  assert.equal(quoteAppearsIn('I can tell you that ... offer a native Clio connector', 'I can tell you that we do not offer a native Clio connector', { strict: true }), false);
+});
+
+
+test('drill sections follow their titles when a source is renumbered', () => {
+  const v1 = [
+    { key: 's1', title: '01 · How to use this guide' },
+    { key: 's2', title: '02 · Pricing' },
+    { key: 's3', title: '03 · Integrations' },
+  ];
+  const v2 = [
+    { key: 's1', title: '01 · How to use this guide' },
+    { key: 's2', title: '02 · What changed this quarter' },
+    { key: 's3', title: '03 · Pricing' },
+    { key: 's4', title: '04 · Integrations and data' },
+  ];
+  const { matched, missing } = mapSections(['s2', 's3'], v1, v2);
+  assert.deepEqual(matched.map((s) => s.key), ['s3'], 'pricing found under its new number');
+  assert.equal(missing.length, 1);
+  assert.equal(missing[0].why, 'retitled', 'a number that now holds different material is not used');
+  assert.equal(missing[0].nowTitle, '03 · Pricing');
+  const legacy = mapSections(['s2'], null, v2);
+  assert.deepEqual(legacy.matched.map((s) => s.key), ['s2'], 'without the authored version, keys are used as they are');
+});
+
+test('a drill about both brands needs product material for both', () => {
+  const cfg = { ai: { provider: 'mock' } };
+  const ravenlyOnly = [{ available: true, primary: true, brand: 'ravenly', reason: null }];
+  assert.equal(availabilityReason(cfg, ravenlyOnly, { brand: 'both', subject: 'product' }), 'no_relevant_sources');
+  const both = [...ravenlyOnly, { available: true, primary: true, brand: 'omnizant', reason: null }];
+  assert.equal(availabilityReason(cfg, both, { brand: 'both', subject: 'product' }), null);
+  assert.equal(availabilityReason(cfg, ravenlyOnly, { brand: 'both', subject: 'sales_technique' }), null);
+  const gone = [{ available: false, primary: false, brand: 'ravenly', reason: 'sections_missing' }];
+  assert.equal(availabilityReason(cfg, gone, { brand: 'ravenly', subject: 'product' }), 'sections_missing');
 });

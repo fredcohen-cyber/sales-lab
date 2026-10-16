@@ -57,14 +57,14 @@ function DrillImpact({ sourceId, versionId, open }) {
       <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>
         {state.drills.map((d) => (
           <li key={d.drillId}>
-            <Link to={`/drills/${d.drillId}/edit`}>{d.title}</Link>
-            {d.missing.length > 0 && `: missing ${d.missing.map((m) => `“${m.title}”`).join(', ')}`}
-            {d.retitled.length > 0 && `${d.missing.length ? ';' : ':'} retitled ${d.retitled.map((m) => `“${m.from}” is now “${m.to}”`).join(', ')}`}
+            <Link to={`/drills/${d.drillId}/edit`}>{d.title}</Link>:{' '}
+            {d.missing.map((m) => (m.why === 'retitled' ? `“${m.title}” is now titled “${m.nowTitle}”` : `“${m.title}” is gone`)).join('; ')}
+            {d.allMissing ? '. This drill would run as unscored practice.' : '.'}
           </li>
         ))}
       </ul>
       <p className="small" style={{ marginTop: 8 }}>
-        A drill whose chosen sections are all missing runs as unscored practice until you update its sources.
+        Sections are matched by title, so renumbering alone is fine. Missing or retitled sections are not used for coaching until you update the drill.
       </p>
     </Notice>
   );

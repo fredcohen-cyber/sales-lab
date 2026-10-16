@@ -9,9 +9,10 @@ export const RUNS_PER_ATTEMPT_PER_HOUR = 6;
 export const MIN_SECONDS_BEFORE_SUPERSEDE = 20;
 
 // Start an evaluation run row for an attempt. Call inside the transaction that owns the attempt row lock.
+// The first deadline allows for waiting in the queue; it is reset to the time limit when the AI request starts.
 export async function startRun(q, { attemptId, requestedBy, provider, config }) {
   const next = await q.one(`SELECT COALESCE(max(run_number), 0) + 1 AS n FROM evaluation_runs WHERE attempt_id = $1`, [attemptId]);
-  const deadlineMs = config.ai.timeoutMs + RUN_GRACE_MS;
+  const deadlineMs = config.ai.queueWaitMs + config.ai.timeoutMs + RUN_GRACE_MS;
   const run = await q.one(
     `INSERT INTO evaluation_runs (attempt_id, run_number, status, requested_by, provider, model, deadline_at)
      VALUES ($1, $2, 'running', $3, $4, $5, now() + make_interval(secs => $6))
@@ -22,16 +23,16 @@ export async function startRun(q, { attemptId, requestedBy, provider, config }) 
   return run;
 }
 
-// A small in-process queue so a burst of submissions cannot flood the AI service. A run that waits past
-// its own deadline fails honestly as "busy" and can be retried; nothing waits forever.
+// A small in-process queue so a burst of submissions cannot flood the AI service. Queued runs wait
+// their turn (up to AI_QUEUE_WAIT_MS); their time limit starts only when their request is sent.
 const slots = { active: 0, waiting: [] };
-function acquireSlot(max, waitMs) {
-  if (slots.active < max) {
+function acquireSlot(max, waitMs, runId) {
+  if (slots.active < max && slots.waiting.length === 0) {
     slots.active += 1;
     return Promise.resolve(true);
   }
   return new Promise((resolve) => {
-    const entry = { resolve, timer: null };
+    const entry = { resolve, runId, timer: null };
     entry.timer = setTimeout(() => {
       const i = slots.waiting.indexOf(entry);
       if (i >= 0) slots.waiting.splice(i, 1);
@@ -48,6 +49,18 @@ function releaseSlot() {
   } else {
     slots.active = Math.max(0, slots.active - 1);
   }
+}
+
+// In-flight AI requests, so a superseded run gives its slot back at once.
+const inProgress = new Map();
+export function abortRun(runId) {
+  const i = slots.waiting.findIndex((e) => e.runId === runId);
+  if (i >= 0) {
+    const [entry] = slots.waiting.splice(i, 1);
+    clearTimeout(entry.timer);
+    entry.resolve(false);
+  }
+  inProgress.get(runId)?.abort();
 }
 
 async function failRun(db, runId, err, log) {
@@ -131,15 +144,22 @@ export async function runEvaluation({ db, config, provider, runId, log = console
     const request = buildCoachingRequest({ scenario: attempt.scenario, answer: attempt.answer, sources });
     await db.query(`UPDATE evaluation_runs SET prompt_version = $2 WHERE id = $1`, [runId, request.promptVersion]);
     const deadline = new Date(run.deadline_at).getTime();
-    // Wait for a free slot only as long as still leaves the request a fair amount of its time limit.
-    const gotSlot = await acquireSlot(config.ai.maxConcurrent, deadline - Date.now() - Math.min(config.ai.timeoutMs, 60_000));
+    const gotSlot = await acquireSlot(config.ai.maxConcurrent, deadline - Date.now() - config.ai.timeoutMs - RUN_GRACE_MS, runId);
     if (!gotSlot) throw new ProviderError('busy', RUN_ERROR_MESSAGES.busy);
     let result;
+    const controller = new AbortController();
     try {
-      const remaining = deadline - Date.now() - 2_000;
-      const timeoutMs = Math.max(1_000, Math.min(config.ai.timeoutMs, remaining));
-      result = await provider.evaluate(request, { timeoutMs });
+      // The time limit starts now that the request can actually be sent.
+      const started = await db.one(
+        `UPDATE evaluation_runs SET call_started_at = now(), deadline_at = now() + make_interval(secs => $2)
+          WHERE id = $1 AND status = 'running' RETURNING id`,
+        [runId, (config.ai.timeoutMs + RUN_GRACE_MS) / 1000],
+      );
+      if (!started) return; // superseded or swept while it waited
+      inProgress.set(runId, controller);
+      result = await provider.evaluate(request, { timeoutMs: config.ai.timeoutMs, signal: controller.signal });
     } finally {
+      inProgress.delete(runId);
       releaseSlot();
     }
     const processed = processEvaluation({

@@ -92,10 +92,15 @@ export async function loadAssignments(q, { learnerId = null, status = null, assi
         state,
         completedAt: i.completed_at,
         completedAttemptId: i.completed_attempt_id,
-        proficiency:
-          i.completed_at && i.completed_review_status !== 'disputed'
-            ? { score: i.completed_score, metTarget: i.completed_meets_target, reviewStatus: i.completed_review_status }
-            : null,
+        // Completion and proficiency stay separate: a completed exercise shows a target verdict only once
+        // its evaluation counts (final or confirmed).
+        proficiency: i.completed_at
+          ? {
+              score: i.completed_score,
+              metTarget: ['final', 'confirmed'].includes(i.completed_review_status) ? i.completed_meets_target : null,
+              reviewStatus: i.completed_review_status,
+            }
+          : null,
         lastAttempt: i.last_attempt_id
           ? { id: i.last_attempt_id, at: i.last_attempt_at, runStatus: i.last_run_status, score: i.last_score, reviewStatus: i.last_review_status }
           : null,

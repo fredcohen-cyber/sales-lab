@@ -55,8 +55,10 @@ export function loadConfig(env = process.env) {
       model: (env.AI_MODEL || defaultModel).trim(),
       timeoutMs: intFrom(env.AI_TIMEOUT_MS, 90_000),
       maxOutputTokens: intFrom(env.AI_MAX_OUTPUT_TOKENS, 4_000),
-      // At most this many coaching requests run at once; more wait briefly in a queue.
-      maxConcurrent: intFrom(env.AI_MAX_CONCURRENT, 4),
+      // At most this many coaching requests run at once; more wait their turn in a queue.
+      maxConcurrent: intFrom(env.AI_MAX_CONCURRENT, 8),
+      // How long a coaching request may wait for a free slot before it fails as "busy".
+      queueWaitMs: intFrom(env.AI_QUEUE_WAIT_MS, 300_000),
       // Coaching runs one person may start per hour (new answers plus retries).
       runsPerUserPerHour: intFrom(env.AI_RUNS_PER_USER_PER_HOUR, 60),
     },

@@ -106,7 +106,8 @@ export function AttemptPage() {
   const run = coaching.run;
   const running = run?.status === 'running';
   const serverNow = now + offset.current;
-  const elapsed = running ? Math.max(0, Math.round((serverNow - new Date(run.startedAt).getTime()) / 1000)) : 0;
+  const queued = running && !run.callStartedAt;
+  const elapsed = running ? Math.max(0, Math.round((serverNow - new Date(run.callStartedAt || run.startedAt).getTime()) / 1000)) : 0;
   const overdue = running && serverNow > new Date(run.deadlineAt).getTime();
   const isOwn = attempt.learner.id === user.id;
   const againLink = attempt.assignment
@@ -200,6 +201,7 @@ export function AttemptPage() {
           {attempt.mode === 'coached' && !evaluation && (
             <CoachingStatus
               run={run}
+              queued={queued}
               running={running}
               elapsed={elapsed}
               overdue={overdue}
@@ -244,21 +246,21 @@ export function AttemptPage() {
   );
 }
 
-function CoachingStatus({ run, running, elapsed, overdue, stopped, coaching, onStop, onResume, onRetry, retrying }) {
+function CoachingStatus({ run, queued, running, elapsed, overdue, stopped, coaching, onStop, onResume, onRetry, retrying }) {
   if (running && !stopped) {
-    const pct = Math.min(95, Math.round((elapsed / EXPECTED_SECONDS) * 100));
+    const pct = queued ? 3 : Math.min(95, Math.round((elapsed / EXPECTED_SECONDS) * 100));
     return (
       <div className="panel stack" role="status" aria-live="polite">
         <div className="row">
           <CheckIcon style={{ color: 'var(--green)' }} />
           <strong>Answer saved.</strong>
-          <span className="muted">Coaching is running ({elapsed}s).</span>
+          <span className="muted">{queued ? 'Waiting for a free coaching slot; other answers are being coached.' : `Coaching is running (${elapsed}s).`}</span>
         </div>
         <div className="progress-line" aria-hidden="true">
           <span style={{ width: `${pct}%` }} />
         </div>
         <p className="small muted" style={{ margin: 0 }}>
-          Coaching usually takes 15 to 45 seconds. It stops on its own after {Math.round((new Date(run.deadlineAt) - new Date(run.startedAt)) / 1000)} seconds.
+          Coaching usually takes 15 to 45 seconds once it starts. It stops on its own after {coaching.timeoutSeconds} seconds.
         </p>
         <div className="row">
           <button className="btn btn-secondary btn-small" onClick={onStop}>

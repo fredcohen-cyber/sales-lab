@@ -35,7 +35,15 @@ function ItemRow({ item, learnerView }) {
               Completed
             </span>
             {item.proficiency &&
-              (item.proficiency.metTarget ? <span className="badge badge-ok">Met target ({item.proficiency.score})</span> : <span className="badge badge-neutral">Not yet at target ({item.proficiency.score})</span>)}
+              (item.proficiency.reviewStatus === 'provisional' ? (
+                <span className="badge badge-warn">Waiting for manager review</span>
+              ) : item.proficiency.reviewStatus === 'disputed' ? (
+                <span className="badge badge-neutral">Evaluation disputed</span>
+              ) : item.proficiency.metTarget ? (
+                <span className="badge badge-ok">Met target ({item.proficiency.score})</span>
+              ) : (
+                <span className="badge badge-neutral">Not yet at target ({item.proficiency.score})</span>
+              ))}
             <Link className="small" to={`/attempts/${item.completedAttemptId}`}>
               Feedback
             </Link>

@@ -2,13 +2,16 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { addUser, drillBySlug, ownerClient, PASSWORD, startTestApp, submit, waitForCoaching } from '../helpers.js';
+import { addUser, drillBySlug, ownerClient, PASSWORD, startTestApp, submit, waitFor, waitForCoaching } from '../helpers.js';
 
 let h;
 let owner;
 before(async () => {
   // Trust one proxy hop so tests can present different client addresses with X-Forwarded-For.
-  h = await startTestApp({ dbName: 'saleslab_test_hardening', env: { TRUST_PROXY: '1' } });
+  h = await startTestApp({
+    dbName: 'saleslab_test_hardening',
+    env: { TRUST_PROXY: '1', AI_RUNS_PER_USER_PER_HOUR: '8', AI_MAX_CONCURRENT: '2' },
+  });
   owner = await ownerClient(h);
 });
 after(() => h.close());
@@ -263,4 +266,128 @@ test('reps can retry coaching a few times an hour; a manager can always restart 
   } finally {
     h.provider.behavior = null;
   }
+});
+
+test('a flood from one address does not lock the person out from another', async () => {
+  const { user } = await addUser(h, owner, { name: 'Flo Flood', email: 'flo@ravenly.com' });
+  const flood = await Promise.all(Array.from({ length: 60 }, (_, i) => login(h.client(), user.email, `flood-${i}-xx`, '10.9.0.1')));
+  assert.ok(flood.filter((r) => r.status === 401).length <= 5);
+  assert.equal((await login(h.client(), user.email, PASSWORD, '10.9.0.2')).status, 200, 'their own address still works');
+});
+
+test('parallel submissions cannot get past the hourly coaching limit', async () => {
+  const { client: rep } = await addUser(h, owner, { name: 'Ria Rate', email: 'ria@omnizant.com' });
+  const d = await drillBySlug(h, 'just-looking');
+  const results = await Promise.all(
+    Array.from({ length: 12 }, (_, i) => submit(rep, d, `Totally fair. What prompted you to start looking now? Variation ${i} of my answer.`)),
+  );
+  const accepted = results.filter((r) => r.status === 201);
+  assert.ok(accepted.length <= 8, `at most 8 coaching runs started (got ${accepted.length})`);
+  assert.ok(results.filter((r) => r.status === 429).every((r) => r.data.error.code === 'coaching_rate_limited'));
+  for (const r of accepted) await waitForCoaching(rep, r.data.attempt.id);
+});
+
+test('coaching requests wait their turn instead of failing when every slot is busy', async () => {
+  const { client: rep } = await addUser(h, owner, { name: 'Quin Queue', email: 'quin@ravenly.com' });
+  const d = await drillBySlug(h, 'send-me-information');
+  h.provider.behavior = 'hold';
+  try {
+    const a = await submit(rep, d, 'Happy to. So I send the right thing, can I ask two quick questions about your intake?');
+    const b = await submit(rep, d, 'Of course. What would you want the information to answer for you and your partners?');
+    await waitFor(() => h.provider._waiters.length === 2);
+    const c = await submit(rep, d, 'Sure. Before I send anything, who else will read it, and what decision is it for?');
+    const queued = await rep.get(`/api/practice/attempts/${c.data.attempt.id}`);
+    assert.equal(queued.data.coaching.run.status, 'running');
+    assert.equal(queued.data.coaching.run.callStartedAt, null, 'still waiting for a slot');
+    assert.equal(queued.data.coaching.retryBlockedReason, 'queued');
+    h.provider.behavior = null;
+    h.provider.release();
+    for (const x of [a, b, c]) {
+      const done = await waitForCoaching(rep, x.data.attempt.id);
+      assert.ok(done.evaluation, 'every queued answer was coached');
+    }
+  } finally {
+    h.provider.behavior = null;
+    h.provider.release();
+  }
+});
+
+test('disputing sets undecided items aside; reviewing again needs fresh decisions', async () => {
+  const { client: rep } = await addUser(h, owner, { name: 'Dee Dispute', email: 'dee@omnizant.com' });
+  const d = await drillBySlug(h, 'ravenly-guarantee-ask');
+  const a = await submit(rep, d, 'Yes. I guarantee you will sign more cases with Ravenly this quarter. [[mock:gtee]]');
+  const ev = (await waitForCoaching(rep, a.data.attempt.id)).evaluation;
+  assert.equal(ev.criticalFailures[0].status, 'pending');
+  assert.equal((await owner.post(`/api/evaluations/${ev.id}/dispute`, { note: 'Coaching misread the drill.' })).status, 200);
+  const view = (await rep.get(`/api/practice/attempts/${a.data.attempt.id}`)).data.evaluation;
+  assert.equal(view.criticalFailures[0].status, 'set_aside');
+  const critical = await owner.get('/api/reviews?filter=critical');
+  assert.ok(!critical.data.items.some((i) => i.evaluation_id === ev.id), 'no longer listed as a failure to decide');
+  assert.equal((await owner.post(`/api/evaluations/${ev.id}/review`, {})).status, 409);
+  const re = await owner.post(`/api/evaluations/${ev.id}/review`, { criticalFailures: { cf1: 'reject' } });
+  assert.equal(re.status, 200);
+  assert.equal(re.data.overallScore, ev.weightedScore);
+});
+
+test('a completed exercise shows a target verdict only once its evaluation counts', async () => {
+  const { client: rep, user } = await addUser(h, owner, { name: 'Cal Curriculum', email: 'cal@ravenly.com' });
+  const d = await drillBySlug(h, 'close-ask-for-business');
+  const asg = await owner.post('/api/assignments', {
+    learnerIds: [user.id],
+    title: 'Closing practice',
+    items: [{ drillId: d.id, persona: d.personas[0], difficulty: 3, skepticism: 3, depth: 3 }],
+  });
+  assert.equal(asg.status, 201, JSON.stringify(asg.data));
+  const mine = (await rep.get('/api/curriculum/mine')).data;
+  const item = mine.active[0].items[0];
+  const a = await rep.post('/api/practice/attempts', {
+    clientRequestId: randomUUID(),
+    assignmentItemId: item.id,
+    mode: 'coached',
+    answer: 'Have you heard enough to make a decision today? I can send the agreement now. [[mock:unsupported]]',
+  });
+  assert.equal(a.status, 201, JSON.stringify(a.data));
+  await waitForCoaching(rep, a.data.attempt.id);
+  const after = (await rep.get('/api/curriculum/mine')).data.completed[0].items[0];
+  assert.equal(after.state, 'completed');
+  assert.equal(after.proficiency.reviewStatus, 'provisional');
+  assert.equal(after.proficiency.metTarget, null, 'no verdict while the evaluation waits for review');
+});
+
+test('a drill about both brands is not scored against one brand’s product material', async () => {
+  const ravenly = await h.db.one(`SELECT id FROM knowledge_sources WHERE slug = 'ravenly-sales-training'`);
+  const id = await createDrill({ title: 'Both-brand pricing', brand: 'both', sourceRefs: [{ sourceId: ravenly.id, sections: [] }] });
+  const preview = await owner.post('/api/practice/preview', { drillId: id });
+  assert.equal(preview.data.coaching.available, false);
+  assert.equal(preview.data.coaching.reason, 'no_relevant_sources');
+});
+
+test('approving a renumbered source keeps drills on the same material', async () => {
+  const ravenly = await h.db.one(`SELECT id FROM knowledge_sources WHERE slug = 'ravenly-sales-training'`);
+  const v1 = (await owner.get(`/api/knowledge/${ravenly.id}?version=1`)).data.version;
+  const d = await drillBySlug(h, 'ravenly-clio-sync');
+  const before = (await owner.post('/api/practice/preview', { drillId: d.id })).data.scenario.sources.find((x) => x.sourceId === ravenly.id);
+  assert.ok(before.sections.length > 0);
+  // Insert a new section 02 and push every later section down by one.
+  const renumbered = v1.content
+    .replace(/^## (\d{2}) · /gm, (m, n) => (Number(n) >= 2 ? `## ${String(Number(n) + 1).padStart(2, '0')} · ` : m))
+    .replace(/^## 03 · /m, '## 02 · What changed this quarter\n\nNew material for this test.\n\n## 03 · ');
+  const v = await owner.post(`/api/knowledge/${ravenly.id}/versions`, {
+    title: v1.title,
+    brand: 'ravenly',
+    subjects: v1.subjects,
+    evidenceBasis: 'mixed',
+    caveats: v1.caveats,
+    content: renumbered,
+  });
+  assert.equal(v.status, 201);
+  const impact = await owner.get(`/api/knowledge/${ravenly.id}/drill-impact?versionId=${v.data.versionId}`);
+  assert.ok(!impact.data.drills.some((x) => x.drillId === d.id), 'renumbering alone does not affect the drill');
+  assert.equal((await owner.post(`/api/knowledge/${ravenly.id}/approve`, { versionId: v.data.versionId })).status, 200);
+  const after = (await owner.post('/api/practice/preview', { drillId: d.id })).data;
+  const src = after.scenario.sources.find((x) => x.sourceId === ravenly.id);
+  const strip = (t) => t.replace(/^\d+ · /, '');
+  assert.deepEqual(src.sections.map((x) => strip(x.title)), before.sections.map((x) => strip(x.title)), 'same sections, new numbers');
+  assert.notDeepEqual(src.sections.map((x) => x.key), before.sections.map((x) => x.key));
+  assert.equal(after.coaching.available, true);
 });

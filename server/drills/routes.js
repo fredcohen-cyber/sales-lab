@@ -4,7 +4,7 @@ import { HttpError, notFound, parseBody, route } from '../lib/errors.js';
 import { audit } from '../lib/audit.js';
 import { clientIp, requireManager } from '../auth/middleware.js';
 import { BRANDS, DIMENSION_KEYS, STAGE_KEYS, SUBJECTS } from '../domain.js';
-import { coachingAvailability, DRILL_SQL, shapeDrill, sourceStatusMap } from './service.js';
+import { coachingAvailability, DRILL_SQL, shapeDrill, sourceIndexFor } from './service.js';
 
 const level = z.number().int().min(1).max(5);
 const drillSchema = z.object({
@@ -38,8 +38,11 @@ async function validateRefs(q, body) {
   }
   if (body.sourceRefs.length) {
     const ids = body.sourceRefs.map((s) => s.sourceId);
-    const found = await q.many(`SELECT id FROM knowledge_sources WHERE id = ANY($1::uuid[])`, [ids]);
+    const found = await q.many(`SELECT id, latest_version_id FROM knowledge_sources WHERE id = ANY($1::uuid[])`, [ids]);
     if (found.length !== new Set(ids).size) throw new HttpError(400, 'validation_failed', 'One of the selected sources no longer exists.');
+    // The editor lists the sections of each source's latest version, so the chosen keys come from it.
+    const latest = new Map(found.map((f) => [f.id, f.latest_version_id]));
+    body.sourceRefs = body.sourceRefs.map((ref) => ({ sourceId: ref.sourceId, sections: ref.sections, versionId: latest.get(ref.sourceId) }));
   }
 }
 
@@ -83,8 +86,8 @@ export function drillRoutes({ db, config }) {
       const forManager = req.user.isManager;
       const status = forManager ? String(req.query.status || '') : 'active';
       const rows = await db.many(`${DRILL_SQL} ${status ? 'WHERE d.status = $1' : ''} ORDER BY v.title`, status ? [status] : []);
-      const sourceMap = await sourceStatusMap(db);
-      let drills = rows.map((row) => shapeDrill(row, coachingAvailability(config, row, sourceMap), { forManager }));
+      const index = await sourceIndexFor(db, rows);
+      let drills = rows.map((row) => shapeDrill(row, coachingAvailability(config, row, index), { forManager }));
       const { brand, stage, persona, role, subject } = req.query;
       drills = drills.filter(
         (d) =>
@@ -103,8 +106,8 @@ export function drillRoutes({ db, config }) {
     route(async (req, res) => {
       const row = await db.one(`${DRILL_SQL} WHERE d.id = $1`, [req.params.id]).catch(() => null);
       if (!row || (!req.user.isManager && row.status !== 'active')) throw notFound('That drill was not found.');
-      const sourceMap = await sourceStatusMap(db);
-      const drill = shapeDrill(row, coachingAvailability(config, row, sourceMap), { forManager: req.user.isManager });
+      const index = await sourceIndexFor(db, [row]);
+      const drill = shapeDrill(row, coachingAvailability(config, row, index), { forManager: req.user.isManager, index });
       let versions;
       if (req.user.isManager) {
         versions = await db.many(

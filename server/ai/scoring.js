@@ -2,7 +2,7 @@ import { evaluationOutputSchema } from './schema.js';
 import { ProviderError, RUN_ERROR_MESSAGES } from './provider.js';
 import { quoteAppearsIn, sentenceContaining } from '../lib/text.js';
 
-const NEGATION = /\b(not|never|no one|nobody|cannot|can't|can not|won't|wouldn't|don't|do not|isn't|aren't|without|no)\b[^.!?]{0,40}$/i;
+const NEGATION = /\b(not|never|no one|nobody|cannot|can't|can not|won't|wouldn't|don't|do not|doesn't|does not|isn't|aren't|without|no)\b[^.!?]{0,60}$/i;
 const GUARANTEE = /\b(guarantee[ds]?|guaranteeing|i promise|we promise|promise you|you will definitely|you'll definitely|will definitely|100% (?:sure|certain)|risk[- ]free results?)\b/i;
 const INJECTION =
   /(ignore (?:all |any |the )?(?:previous|prior|above|earlier) (?:instructions|rules|prompts?)|disregard (?:the|your) (?:rules|instructions)|you are now|system prompt|as the (?:evaluator|grader|ai|model)|give (?:me|this(?: answer)?) (?:a )?(?:100|full marks|perfect|top)|score (?:this|me) (?:a )?(?:100|perfect|highly)|record_evaluation|<\/?\s*(?:rep_answer|source_material|scenario|rubric)\b)/i;
@@ -96,7 +96,14 @@ export function processEvaluation({ output, scenario, answer, sources, rubricDim
 
   for (const cf of ev.critical_failures) {
     if (!strictlyInAnswer(cf.claim_quote)) {
-      notes.push('A critical-failure claim did not match the answer word for word and was discarded.');
+      // Never dropped silently: a manager sees it, and can add it with the rep's exact words if it holds up.
+      const loose = inAnswer(cf.claim_quote);
+      reviewFlags.push({
+        kind: 'unverified_critical',
+        type: cf.type,
+        claimQuote: loose ? cf.claim_quote : null,
+        note: `${cf.explanation} Coaching reported this as a critical failure, but its quote ${loose ? 'did not match the answer word for word' : 'does not appear in the answer'}, so it was not counted. A manager should check it.`,
+      });
       continue;
     }
     if (cf.type === 'unauthorized_guarantee') {
@@ -263,8 +270,8 @@ export function applyReviewDecisions(ev, decisions, { answer, threshold, reviewe
     }
     if (d === 'critical') {
       if (f.status === 'made_critical') continue;
-      if (!f.claimQuote) {
-        problems.push('That flag has no quoted claim, so it cannot become a critical failure.');
+      if (!f.claimQuote || !quoteAppearsIn(f.claimQuote, answer)) {
+        problems.push('That flag does not quote the answer, so it cannot become a critical failure. Add one with the rep’s exact words instead.');
         continue;
       }
       const type = decisions.flagTypes?.[id] || (f.kind === 'possible_guarantee' ? 'unauthorized_guarantee' : f.type || 'contradicts_approved_fact');
@@ -306,7 +313,9 @@ export function applyReviewDecisions(ev, decisions, { answer, threshold, reviewe
       confirmedBy: reviewerName,
     });
   }
-  const unresolved = cfs.filter((c) => c.status === 'pending').length + flags.filter((f) => f.status === 'open').length;
+  // Items set aside when an evaluation was disputed need a fresh decision if it is reviewed again.
+  const unresolved =
+    cfs.filter((c) => c.status === 'pending' || c.status === 'set_aside').length + flags.filter((f) => f.status === 'open' || f.status === 'set_aside').length;
   const confirmed = cfs.filter((c) => c.status === 'confirmed').length;
   const overallScore = confirmed > 0 ? 0 : ev.weighted_score;
   return {

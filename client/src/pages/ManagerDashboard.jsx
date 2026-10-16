@@ -19,7 +19,13 @@ function GroupTable({ groups }) {
     ['Met target on first attempt', (g) => g.performance.metTarget],
     ['Critical failures (confirmed / pending)', (g) => `${g.performance.criticalFailures.confirmed} / ${g.performance.criticalFailures.pending}`],
     ['Evaluations pending review', (g) => g.performance.pendingReviews],
-    ['Reps practicing', (g) => `${g.participants} of ${g.activeReps}${g.participationRate !== null ? ` (${g.participationRate}%)` : ''}`],
+    [
+      'Reps practicing',
+      (g) =>
+        `${g.participants} of ${g.activeReps}${g.participationRate !== null ? ` (${g.participationRate}%)` : ''}${
+          g.formerMembersPracticed ? `, plus ${g.formerMembersPracticed} who have since changed role` : ''
+        }`,
+    ],
     ['Answers submitted', (g) => g.engagement.submitted],
     ['Retries', (g) => g.engagement.retries],
     ['Unscored practice', (g) => g.engagement.unscored],

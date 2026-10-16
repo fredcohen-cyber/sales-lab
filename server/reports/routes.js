@@ -154,14 +154,18 @@ export async function buildReport(db, filters, { selfUser = null } = {}) {
     // Membership for participation, curriculum, and follow-up is the person's current role.
     const members = allRepRows.filter((r) => (role ? r.role === role : REP_ROLES.includes(r.role)));
     const active = members.filter((r) => r.status === 'active');
-    const participants = new Set(gRows.map((r) => r.learner_id));
+    const practiced = new Set(gRows.map((r) => r.learner_id));
+    const activeParticipants = active.filter((r) => practiced.has(r.id)).length;
     const items = members.reduce((n, r) => n + r.assignments.items, 0);
     const completed = members.reduce((n, r) => n + r.assignments.completed, 0);
     return {
       reps: members.length,
       activeReps: active.length,
-      participants: participants.size,
-      participationRate: active.length ? Math.round((active.filter((r) => participants.has(r.id)).length / active.length) * 100) : null,
+      // Participation compares like with like: current active members of the group who practiced.
+      participants: activeParticipants,
+      // People whose answers in this group's columns came while they held this role but who now hold another.
+      formerMembersPracticed: [...practiced].filter((id) => !members.some((m) => m.id === id)).length,
+      participationRate: active.length ? Math.round((activeParticipants / active.length) * 100) : null,
       engagement: engagementFor(gRows),
       performance: performanceFor(gRows),
       curriculum: { items, completed, completionRate: items ? Math.round((completed / items) * 100) : null },

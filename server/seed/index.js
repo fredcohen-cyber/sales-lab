@@ -136,13 +136,14 @@ export async function seed(db, config, { log = console.log } = {}) {
     db,
     'drills-v1',
     async (q) => {
-      const sources = await q.many(`SELECT id, slug FROM knowledge_sources WHERE slug IS NOT NULL`);
-      const bySlug = new Map(sources.map((s) => [s.slug, s.id]));
+      const sources = await q.many(`SELECT id, slug, latest_version_id FROM knowledge_sources WHERE slug IS NOT NULL`);
+      const bySlug = new Map(sources.map((s) => [s.slug, s]));
       for (const d of SEED_DRILLS) {
         const refs = d.sources.map((s) => {
-          const id = bySlug.get(s.source);
-          if (!id) throw new Error(`Seed drill ${d.slug} references unknown source ${s.source}`);
-          return { sourceId: id, sections: s.sections };
+          const src = bySlug.get(s.source);
+          if (!src) throw new Error(`Seed drill ${d.slug} references unknown source ${s.source}`);
+          // versionId records which version the section keys come from.
+          return { sourceId: src.id, sections: s.sections, versionId: src.latest_version_id };
         });
         const drill = await q.one(`INSERT INTO drills (slug, status, created_by) VALUES ($1, 'active', $2) RETURNING id`, [d.slug, owner.id]);
         const v = await q.one(

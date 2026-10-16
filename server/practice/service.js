@@ -3,7 +3,7 @@ import { aiConfigured } from '../config.js';
 import { availabilityReason, DRILL_VERSION_SQL, UNAVAILABLE_TEXT } from '../drills/service.js';
 import { resolveSourceRefs } from '../knowledge/service.js';
 import { buildScenario } from './scenario.js';
-import { MIN_SECONDS_BEFORE_SUPERSEDE, RUNS_PER_ATTEMPT_PER_HOUR, startRun } from '../ai/evaluate.js';
+import { abortRun, MIN_SECONDS_BEFORE_SUPERSEDE, RUNS_PER_ATTEMPT_PER_HOUR, startRun } from '../ai/evaluate.js';
 import { audit } from '../lib/audit.js';
 import { RUN_ERROR_MESSAGES } from '../ai/provider.js';
 import { nyDate } from '../lib/time.js';
@@ -77,13 +77,15 @@ export async function resolvePractice(q, config, user, input) {
   const rubric = await currentRubric(q);
   const sources = await resolveSourceRefs(q, drill.source_refs, drill, personaKey);
   const available = sources.filter((s) => s.available);
-  const unavailableReason = availabilityReason(config, sources);
+  const unavailableReason = availabilityReason(config, sources, drill);
   const scenario = buildScenario({ drill, persona, settings, rubricDimensions: rubric.dimensions, sources });
   return { drill, persona, settings, rubric, sources, available, scenario, assigned, coachingAvailable: !unavailableReason, unavailableReason };
 }
 
 // Bounds paid AI calls per person: new coached answers plus retries, across all their answers.
 async function checkCoachingRate(q, config, user) {
+  // Serialize per person so parallel requests cannot all pass the count before any of them is recorded.
+  await q.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [`coach-rate:${user.id}`]);
   const row = await q.one(
     `SELECT count(*) AS n FROM evaluation_runs WHERE requested_by = $1 AND started_at > now() - interval '1 hour'`,
     [user.id],
@@ -188,7 +190,13 @@ function retryState(attempt, latestRun, recentRuns, config, viewer) {
   if (attempt.evaluation_id) return { canRetry: false, reason: 'already_coached' };
   if (!aiConfigured(config)) return { canRetry: false, reason: 'ai_not_configured' };
   if (latestRun?.status === 'running') {
-    const ageSec = (Date.now() - new Date(latestRun.started_at).getTime()) / 1000;
+    // Waiting for a free slot: restarting would only move it to the back of the queue. After a minute
+    // (for example if the server restarted and the queue was lost), a restart is allowed.
+    if (!latestRun.call_started_at) {
+      const queuedSec = (Date.now() - new Date(latestRun.started_at).getTime()) / 1000;
+      if (queuedSec < 60) return { canRetry: false, reason: 'queued', retryInSeconds: Math.ceil(60 - queuedSec) };
+    }
+    const ageSec = (Date.now() - new Date(latestRun.call_started_at || latestRun.started_at).getTime()) / 1000;
     if (ageSec < MIN_SECONDS_BEFORE_SUPERSEDE) return { canRetry: false, reason: 'in_progress', retryInSeconds: Math.ceil(MIN_SECONDS_BEFORE_SUPERSEDE - ageSec) };
   }
   if (!viewer.isManager && recentRuns >= RUNS_PER_ATTEMPT_PER_HOUR) return { canRetry: false, reason: 'too_many_runs' };
@@ -212,12 +220,14 @@ export async function retryCoaching(db, config, user, attemptId, { provider }) {
         ai_not_configured: RUN_ERROR_MESSAGES.ai_not_configured,
         too_many_runs: 'Coaching was retried several times in the last hour. Try again later, or ask your manager to restart it.',
         in_progress: `Coaching is still running. You can retry in ${state.retryInSeconds} seconds if it has not finished.`,
+        queued: 'Coaching is waiting for a free slot and will start shortly. Your answer is saved.',
       };
       throw conflict(`retry_${state.reason}`, messages[state.reason], { retryInSeconds: state.retryInSeconds });
     }
     await checkCoachingRate(q, config, user);
     if (latest?.status === 'running') {
       await q.query(`UPDATE evaluation_runs SET status = 'superseded', finished_at = now(), error_code = 'superseded' WHERE id = $1 AND status = 'running'`, [latest.id]);
+      abortRun(latest.id); // give its coaching slot back right away
     }
     const run = await startRun(q, { attemptId: attempt.id, requestedBy: user.id, provider, config });
     if (attempt.learner_id !== user.id) {
@@ -240,6 +250,7 @@ function shapeRun(run) {
     runNumber: run.run_number,
     status: run.status,
     startedAt: run.started_at,
+    callStartedAt: run.call_started_at || null,
     deadlineAt: run.deadline_at,
     finishedAt: run.finished_at,
     errorCode: run.error_code,
@@ -363,6 +374,7 @@ export async function attemptView(db, config, viewer, attemptId) {
       canRetry: retry.canRetry,
       retryBlockedReason: retry.reason,
       retryInSeconds: retry.retryInSeconds || null,
+      timeoutSeconds: Math.round(config.ai.timeoutMs / 1000),
       serverNow: new Date().toISOString(),
     },
     evaluation: shapeEvaluation(evaluation, { forManager: viewer.isManager }),

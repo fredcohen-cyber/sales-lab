@@ -76,8 +76,10 @@ export function reviewRoutes({ db }) {
     note: z.string().trim().max(2000).default(''),
   });
 
+  const OPEN_CF = ['pending', 'set_aside'];
+  const OPEN_FLAG = ['open', 'set_aside'];
   const unresolvedCount = (ev) =>
-    (ev.critical_failures || []).filter((c) => c.status === 'pending').length + (ev.review_flags || []).filter((f) => f.status === 'open').length;
+    (ev.critical_failures || []).filter((c) => OPEN_CF.includes(c.status)).length + (ev.review_flags || []).filter((f) => OPEN_FLAG.includes(f.status)).length;
 
   async function loadForReview(q, id) {
     if (!isUuid(id)) throw notFound('That evaluation was not found.');
@@ -129,11 +131,15 @@ export function reviewRoutes({ db }) {
       await db.tx(async (q) => {
         const { ev, attempt } = await loadForReview(q, req.params.id);
         if (ev.review_status === 'disputed') throw new HttpError(409, 'unchanged', 'This evaluation is already disputed.');
+        // A disputed evaluation is set aside as a whole: undecided items are no longer waiting for review,
+        // and they need a fresh decision if a manager reviews the evaluation again.
+        const cfs = (ev.critical_failures || []).map((c) => (c.status === 'pending' ? { ...c, status: 'set_aside' } : c));
+        const flags = (ev.review_flags || []).map((f) => (f.status === 'open' ? { ...f, status: 'set_aside' } : f));
         await q.query(
           `UPDATE evaluations SET review_status = 'disputed', reviewed_by = $2, reviewed_at = now(), review_note = $3,
-                  review_history = review_history || $4::jsonb
+                  review_history = review_history || $4::jsonb, critical_failures = $5, review_flags = $6
             WHERE id = $1`,
-          [ev.id, req.user.id, note, historyEntry(req, 'disputed', { from: ev.review_status, note })],
+          [ev.id, req.user.id, note, historyEntry(req, 'disputed', { from: ev.review_status, note }), JSON.stringify(cfs), JSON.stringify(flags)],
         );
         await audit(q, {
           actorId: req.user.id,

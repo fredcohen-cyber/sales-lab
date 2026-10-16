@@ -158,7 +158,7 @@ test('a stale coaching request cannot overwrite a newer one', async () => {
   // Too soon to supersede a running request.
   const early = await rep.post(`/api/practice/attempts/${attemptId}/evaluate`, {});
   assert.equal(early.status, 409);
-  await h.db.query(`UPDATE evaluation_runs SET started_at = now() - interval '30 seconds' WHERE id = $1`, [firstRun]);
+  await h.db.query(`UPDATE evaluation_runs SET started_at = now() - interval '30 seconds', call_started_at = now() - interval '30 seconds' WHERE id = $1`, [firstRun]);
   h.provider.behavior = null;
   const retry = await rep.post(`/api/practice/attempts/${attemptId}/evaluate`, {});
   assert.equal(retry.status, 202);

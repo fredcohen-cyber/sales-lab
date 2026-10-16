@@ -260,7 +260,9 @@ export function DrillRunner() {
                   .map((d) => (
                     <li key={d.sourceId}>
                       {d.title}: {d.reason ? `not used, ${d.reasonText}.` : ''}
-                      {d.missingSections?.length ? ` Sections ${d.missingSections.join(', ')} are not in the approved version.` : ''}
+                      {d.missingSections?.length
+                        ? ` Not in the approved version: ${d.missingSections.map((m) => (m.why === 'retitled' ? `“${m.title}” (now “${m.nowTitle}”)` : `“${m.title}”`)).join(', ')}.`
+                        : ''}
                     </li>
                   ))}
               </ul>

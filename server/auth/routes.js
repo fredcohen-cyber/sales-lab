@@ -36,6 +36,7 @@ export function authRoutes({ db, config }) {
       const ip = clientIp(req);
       // Written before the password check (outside any transaction) so parallel guesses count each other.
       const gate = await beginAttempt(db, { email, ip });
+      if (gate.busy) throw new HttpError(429, 'too_many_attempts', 'Too many sign-in attempts at once. Wait a moment and try again.');
       if (gate.blocked) {
         throw new HttpError(
           429,
@@ -147,6 +148,7 @@ export function authRoutes({ db, config }) {
       const user = await db.one(`SELECT * FROM users WHERE id = $1`, [req.user.id]);
       // The current-password check is throttled like sign-in, so a borrowed session cannot guess the password.
       const gate = await beginAttempt(db, { email: user.email, ip, kind: 'password_change' });
+      if (gate.busy) throw new HttpError(429, 'too_many_attempts', 'Too many attempts at once. Wait a moment and try again.');
       if (gate.blocked) {
         throw new HttpError(429, 'too_many_attempts', `Too many attempts. Try again in ${gate.retryMinutes} minute${gate.retryMinutes === 1 ? '' : 's'}.`);
       }

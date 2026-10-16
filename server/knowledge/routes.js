@@ -5,7 +5,7 @@ import { audit } from '../lib/audit.js';
 import { clientIp, requireManager } from '../auth/middleware.js';
 import { parseSections } from '../lib/text.js';
 import { isValidDateString } from '../lib/time.js';
-import { coverage, shapeSourceRow, SOURCE_LIST_SQL } from './service.js';
+import { coverage, loadVersionSections, mapSections, shapeSourceRow, SOURCE_LIST_SQL } from './service.js';
 import { BRANDS, EVIDENCE_BASIS, SUBJECTS } from '../domain.js';
 
 const MAX_CONTENT = 1_000_000;
@@ -68,31 +68,21 @@ async function approveVersion(q, sourceId, versionId, userId, ip) {
   await audit(q, { actorId: userId, action: 'knowledge.approved', entityType: 'knowledge_source', entityId: sourceId, details: { versionId }, ip });
 }
 
-// Drills whose chosen sections are missing from, or titled differently in, a version of a source.
-export async function drillImpact(q, sourceId, currentContent, targetContent) {
-  const targetSections = parseSections(targetContent);
-  const currentSections = currentContent ? parseSections(currentContent) : [];
+// Drills whose chosen sections cannot be found in a version of a source (followed by title, so
+// renumbering alone is fine; removed or retitled sections are reported).
+export async function drillImpact(q, sourceId, targetVersionId) {
   const drills = await q.many(
     `SELECT d.id, d.status, v.title, v.source_refs FROM drills d JOIN drill_versions v ON v.id = d.current_version_id
       WHERE d.status <> 'archived' AND v.source_refs @> $1::jsonb`,
     [JSON.stringify([{ sourceId }])],
   );
+  const refs = drills.map((d) => ({ d, ref: (d.source_refs || []).find((x) => x.sourceId === sourceId) })).filter((x) => x.ref?.sections?.length);
+  const sections = await loadVersionSections(q, [targetVersionId, ...refs.map((x) => x.ref.versionId)]);
+  const target = sections.get(targetVersionId) || [];
   const out = [];
-  for (const d of drills) {
-    const ref = (d.source_refs || []).find((x) => x.sourceId === sourceId);
-    const wanted = (ref?.sections || []).filter(Boolean);
-    const missing = [];
-    const retitled = [];
-    for (const key of wanted) {
-      const t = targetSections.find((s) => s.key === key);
-      if (!t) {
-        missing.push({ key, title: currentSections.find((s) => s.key === key)?.title || key });
-        continue;
-      }
-      const c = currentSections.find((s) => s.key === key);
-      if (c && c.title.trim() !== t.title.trim()) retitled.push({ key, from: c.title, to: t.title });
-    }
-    if (missing.length || retitled.length) out.push({ drillId: d.id, title: d.title, status: d.status, missing, retitled });
+  for (const { d, ref } of refs) {
+    const { matched, missing } = mapSections(ref.sections, sections.get(ref.versionId) || null, target);
+    if (missing.length) out.push({ drillId: d.id, title: d.title, status: d.status, missing, allMissing: matched.length === 0 });
   }
   return out;
 }
@@ -243,13 +233,10 @@ export function knowledgeRoutes({ db }) {
       const source = await db.one(`SELECT * FROM knowledge_sources WHERE id = $1`, [req.params.id]).catch(() => null);
       if (!source) throw notFound('That source was not found.');
       const target = await db
-        .one(`SELECT id, content FROM knowledge_versions WHERE id = $1 AND source_id = $2`, [String(req.query.versionId || ''), source.id])
+        .one(`SELECT id FROM knowledge_versions WHERE id = $1 AND source_id = $2`, [String(req.query.versionId || ''), source.id])
         .catch(() => null);
       if (!target) throw notFound('That version was not found.');
-      const current = source.approved_version_id
-        ? await db.one(`SELECT content FROM knowledge_versions WHERE id = $1`, [source.approved_version_id])
-        : null;
-      res.json({ drills: await drillImpact(db, source.id, current?.content || null, target.content) });
+      res.json({ drills: await drillImpact(db, source.id, target.id) });
     }),
   );
 

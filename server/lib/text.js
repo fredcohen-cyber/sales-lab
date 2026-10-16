@@ -34,19 +34,19 @@ export function matchWords(s) {
     .filter(Boolean);
 }
 
-function indexOfWords(hay, needle, from, lastStart) {
-  const end = Math.min(hay.length - needle.length, lastStart);
-  outer: for (let i = Math.max(0, from); i <= end; i += 1) {
-    for (let j = 0; j < needle.length; j += 1) if (hay[i + j] !== needle[j]) continue outer;
-    return i;
-  }
-  return -1;
+function wordsAt(hay, needle, i) {
+  if (i < 0 || i + needle.length > hay.length) return false;
+  for (let j = 0; j < needle.length; j += 1) if (hay[i + j] !== needle[j]) return false;
+  return true;
 }
 
+export const MAX_QUOTE_FRAGMENTS = 4;
+
 // True when the quote appears in the text as whole words, tolerating case and punctuation differences.
-// A quote may elide words with "..." but only between substantial fragments that sit close together in
+// A quote may elide words with "..." between substantial fragments (3+ words) that sit close together in
 // order, so a quote cannot be stitched from scattered words. Strict mode, used for critical failures,
-// requires longer fragments, smaller gaps, and at least two words overall.
+// allows no elision at all and needs at least two words. Matching is linear in the text length
+// (failed placements are remembered), so no quote can stall the server.
 export function quoteAppearsIn(quote, text, { strict = false } = {}) {
   const q = String(quote || '').trim();
   if (!q) return false;
@@ -54,27 +54,30 @@ export function quoteAppearsIn(quote, text, { strict = false } = {}) {
     .split(/\.\.\.|…|\[\.\.\.\]|\[…\]/)
     .map(matchWords)
     .filter((f) => f.length > 0);
-  if (fragments.length === 0) return false;
-  const totalWords = fragments.reduce((n, f) => n + f.length, 0);
-  if (strict && totalWords < 2) return false;
-  if (fragments.length > 1) {
-    const minWords = strict ? 4 : 3;
-    if (fragments.some((f) => f.length < minWords)) return false;
-  }
-  const maxGap = strict ? 12 : 30;
+  if (fragments.length === 0 || fragments.length > MAX_QUOTE_FRAGMENTS) return false;
+  if (strict && (fragments.length > 1 || fragments[0].length < 2)) return false;
+  if (fragments.length > 1 && fragments.some((f) => f.length < 3)) return false;
+  const maxGap = 30;
   const hay = matchWords(text);
-  const placeFrom = (fi, from, lastStart) => {
-    if (fi === fragments.length) return true;
-    let start = from;
-    for (;;) {
-      const at = indexOfWords(hay, fragments[fi], start, lastStart);
-      if (at === -1) return false;
-      const next = at + fragments[fi].length;
-      if (placeFrom(fi + 1, next, next + maxGap)) return true;
-      start = at + 1;
+  const failed = new Set();
+  // Can fragments fi+1.. be placed after fragment fi placed at position `at`?
+  const restFits = (fi, at) => {
+    if (fi === fragments.length - 1) return true;
+    const key = fi * (hay.length + 1) + at;
+    if (failed.has(key)) return false;
+    const next = fragments[fi + 1];
+    const from = at + fragments[fi].length;
+    const to = Math.min(hay.length - next.length, from + maxGap);
+    for (let p = from; p <= to; p += 1) {
+      if (wordsAt(hay, next, p) && restFits(fi + 1, p)) return true;
     }
+    failed.add(key);
+    return false;
   };
-  return placeFrom(0, 0, Infinity);
+  for (let p = 0; p + fragments[0].length <= hay.length; p += 1) {
+    if (wordsAt(hay, fragments[0], p) && restFits(0, p)) return true;
+  }
+  return false;
 }
 
 // The sentence of the text that contains the quote, if any (for checks such as negated guarantees).

@@ -109,59 +109,128 @@ export const FIT_TEXT = {
   sections_missing: 'no longer has the sections this drill uses',
 };
 
-// Resolve a drill's source references to the currently approved versions and judge whether each fits.
+// Parsed sections of immutable versions, kept in memory: a version's text never changes.
+const sectionCache = new Map();
+const SECTION_CACHE_MAX = 60;
+export async function loadVersionSections(q, versionIds) {
+  const ids = [...new Set(versionIds.filter(Boolean))];
+  const needed = ids.filter((id) => !sectionCache.has(id));
+  if (needed.length) {
+    const rows = await q.many(`SELECT id, content FROM knowledge_versions WHERE id = ANY($1::uuid[])`, [needed]);
+    for (const r of rows) {
+      if (sectionCache.size >= SECTION_CACHE_MAX) sectionCache.delete(sectionCache.keys().next().value);
+      sectionCache.set(r.id, parseSections(r.content));
+    }
+  }
+  return new Map(ids.filter((id) => sectionCache.has(id)).map((id) => [id, sectionCache.get(id)]));
+}
+
+// "05 · Pricing" and "6. Pricing" are the same section title once the number is set aside.
+export function sectionTitleKey(title) {
+  return String(title || '')
+    .replace(/^\s*\d{1,3}\s*(?:[·.:)\-]|\s)\s*/, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Finds the sections a drill chose (keys from the version it was authored against) in another version.
+// Sections are followed by title, so renumbering is harmless. A key whose title changed is not used,
+// because the number may now point at different material; managers see it as missing.
+export function mapSections(wanted, authored, current) {
+  const matched = [];
+  const missing = [];
+  for (const key of wanted) {
+    const a = authored ? authored.find((s) => s.key === key) : null;
+    const t = a ? sectionTitleKey(a.title) : null;
+    let hit = t ? current.find((s) => sectionTitleKey(s.title) === t) : null;
+    if (!hit) {
+      const byKey = current.find((s) => s.key === key);
+      if (byKey && (!t || sectionTitleKey(byKey.title) === t)) hit = byKey;
+      else if (byKey) {
+        missing.push({ key, title: a.title, why: 'retitled', nowTitle: byKey.title });
+        continue;
+      }
+    }
+    if (hit) {
+      if (!matched.includes(hit)) matched.push(hit);
+    } else {
+      missing.push({ key, title: a?.title || key, why: 'removed' });
+    }
+  }
+  return { matched, missing };
+}
+
+const SOURCE_ROWS_SQL = `
+  SELECT s.id, s.slug, s.status, s.approved_version_id, s.latest_version_id, av.version, av.title, av.as_of_date, av.caveats,
+         av.brand, av.subjects, av.personas, av.evidence_basis, lv.title AS latest_title
+    FROM knowledge_sources s
+    JOIN knowledge_versions lv ON lv.id = s.latest_version_id
+    LEFT JOIN knowledge_versions av ON av.id = s.approved_version_id`;
+
+// Everything needed to judge many drills' sources at once: source rows plus parsed sections of the
+// approved versions and of the versions the drills were authored against.
+export async function buildSourceIndex(q, drills, { sourceIds = null } = {}) {
+  const rows = sourceIds ? await q.many(`${SOURCE_ROWS_SQL} WHERE s.id = ANY($1::uuid[])`, [sourceIds]) : await q.many(SOURCE_ROWS_SQL);
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const versionIds = rows.flatMap((r) => [r.approved_version_id, r.latest_version_id]);
+  for (const d of drills) for (const ref of d.source_refs || []) versionIds.push(ref.versionId);
+  return { byId, sections: await loadVersionSections(q, versionIds) };
+}
+
+// Resolve one drill source reference against the approved version, and judge whether it fits.
 // Titles of sources that are not approved are only returned as latestTitle, for managers.
+export function resolveRef(ref, index, drill = null, persona = null) {
+  const r = index.byId.get(ref.sourceId);
+  const wanted = (ref.sections || []).filter(Boolean);
+  if (!r) {
+    return { sourceId: ref.sourceId, available: false, usable: false, primary: false, reason: 'missing', title: null, latestTitle: 'Deleted source', sections: [], requestedSections: wanted, missingSections: [] };
+  }
+  const approved = r.status === 'approved' && Boolean(r.approved_version_id);
+  let matched = [];
+  let missing = [];
+  if (approved) {
+    const current = index.sections.get(r.approved_version_id) || [];
+    if (wanted.length) {
+      const authored = ref.versionId ? index.sections.get(ref.versionId) || null : null;
+      ({ matched, missing } = mapSections(wanted, authored, current));
+    } else {
+      matched = current;
+    }
+  }
+  let reason = approved ? null : r.status === 'archived' ? 'archived' : 'not_approved';
+  // If none of the sections the drill relies on can be found, the source cannot support it.
+  if (approved && wanted.length && matched.length === 0) reason = 'sections_missing';
+  const fit = approved && drill ? sourceFit({ brand: r.brand, subjects: r.subjects, personas: r.personas }, { brand: drill.brand, subject: drill.subject, persona }) : null;
+  if (!reason && fit && !fit.usable) reason = fit.reasons[0];
+  const available = reason === null;
+  return {
+    sourceId: r.id,
+    slug: r.slug,
+    title: approved ? r.title : null,
+    latestTitle: r.latest_title,
+    available,
+    usable: available,
+    primary: available && (fit ? fit.primary : true),
+    reason,
+    versionId: approved ? r.approved_version_id : null,
+    version: approved ? r.version : null,
+    asOfDate: approved ? r.as_of_date : null,
+    caveats: approved ? r.caveats : '',
+    brand: approved ? r.brand : null,
+    subjects: approved ? r.subjects : [],
+    evidenceBasis: approved ? r.evidence_basis : null,
+    requestedSections: wanted,
+    sections: matched.map((x) => ({ key: x.key, title: x.title })),
+    missingSections: missing,
+  };
+}
+
 export async function resolveSourceRefs(q, sourceRefs, drill = null, persona = null) {
   const refs = Array.isArray(sourceRefs) ? sourceRefs : [];
   if (refs.length === 0) return [];
-  const ids = refs.map((r) => r.sourceId);
-  const rows = await q.many(
-    `SELECT s.id, s.slug, s.status, s.approved_version_id, av.version, av.title, av.as_of_date, av.caveats, av.brand, av.subjects,
-            av.personas, av.evidence_basis, av.content, lv.title AS latest_title
-       FROM knowledge_sources s
-       JOIN knowledge_versions lv ON lv.id = s.latest_version_id
-       LEFT JOIN knowledge_versions av ON av.id = s.approved_version_id
-      WHERE s.id = ANY($1::uuid[])`,
-    [ids],
-  );
-  const byId = new Map(rows.map((r) => [r.id, r]));
-  return refs.map((ref) => {
-    const r = byId.get(ref.sourceId);
-    if (!r) {
-      return { sourceId: ref.sourceId, available: false, usable: false, primary: false, reason: 'missing', title: null, latestTitle: 'Deleted source', sections: [], requestedSections: ref.sections || [], missingSections: [] };
-    }
-    const approved = r.status === 'approved' && Boolean(r.approved_version_id);
-    const sections = approved ? parseSections(r.content) : [];
-    const wanted = (ref.sections || []).filter(Boolean);
-    const matched = wanted.length ? sections.filter((s) => wanted.includes(s.key)) : sections;
-    const missingSections = approved ? wanted.filter((k) => !sections.some((s) => s.key === k)) : [];
-    let reason = approved ? null : r.status === 'archived' ? 'archived' : 'not_approved';
-    // If every section the drill relies on is gone from the approved version, the source cannot support it.
-    if (approved && wanted.length && matched.length === 0) reason = 'sections_missing';
-    const fit = approved && drill ? sourceFit({ brand: r.brand, subjects: r.subjects, personas: r.personas }, { brand: drill.brand, subject: drill.subject, persona }) : null;
-    if (!reason && fit && !fit.usable) reason = fit.reasons[0];
-    const available = reason === null;
-    return {
-      sourceId: r.id,
-      slug: r.slug,
-      title: approved ? r.title : null,
-      latestTitle: r.latest_title,
-      available,
-      usable: available,
-      primary: available && (fit ? fit.primary : true),
-      reason,
-      versionId: approved ? r.approved_version_id : null,
-      version: approved ? r.version : null,
-      asOfDate: approved ? r.as_of_date : null,
-      caveats: approved ? r.caveats : '',
-      brand: approved ? r.brand : null,
-      subjects: approved ? r.subjects : [],
-      evidenceBasis: approved ? r.evidence_basis : null,
-      requestedSections: wanted,
-      sections: matched.map((s) => ({ key: s.key, title: s.title })),
-      missingSections,
-    };
-  });
+  const index = await buildSourceIndex(q, [{ source_refs: refs }], { sourceIds: refs.map((x) => x.sourceId) });
+  return refs.map((ref) => resolveRef(ref, index, drill, persona));
 }
 
 const MAX_SOURCE_CHARS = 90_000;

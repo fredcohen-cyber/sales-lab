@@ -33,9 +33,12 @@ function mapHttpError(status, json) {
   return new ProviderError('bad_request', RUN_ERROR_MESSAGES.bad_request, { status, detail: apiMessage });
 }
 
-async function postJson(url, headers, body, timeoutMs) {
+async function postJson(url, headers, body, timeoutMs, signal = null) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), Math.max(1000, timeoutMs));
+  // A superseded run cancels its request so it stops using a coaching slot.
+  if (signal?.aborted) controller.abort();
+  else if (signal) signal.addEventListener('abort', () => controller.abort(), { once: true });
   try {
     const res = await fetch(url, {
       method: 'POST',
@@ -55,6 +58,7 @@ async function postJson(url, headers, body, timeoutMs) {
     return json;
   } catch (err) {
     if (err instanceof ProviderError) throw err;
+    if (signal?.aborted) throw new ProviderError('interrupted', RUN_ERROR_MESSAGES.interrupted);
     if (controller.signal.aborted) throw new ProviderError('timeout', RUN_ERROR_MESSAGES.timeout);
     throw new ProviderError('network', RUN_ERROR_MESSAGES.network, { detail: err.cause?.code || err.message });
   } finally {
@@ -67,7 +71,7 @@ function anthropicProvider(config) {
   return {
     name: 'anthropic',
     model,
-    async evaluate(request, { timeoutMs }) {
+    async evaluate(request, { timeoutMs, signal }) {
       const json = await postJson(
         'https://api.anthropic.com/v1/messages',
         { 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01' },
@@ -80,6 +84,7 @@ function anthropicProvider(config) {
           tool_choice: { type: 'tool', name: request.tool.name },
         },
         timeoutMs,
+        signal,
       );
       if (json.stop_reason === 'refusal') throw new ProviderError('refusal', RUN_ERROR_MESSAGES.refusal);
       const block = (json.content || []).find((b) => b.type === 'tool_use' && b.name === request.tool.name);
@@ -106,7 +111,7 @@ function openaiProvider(config) {
   return {
     name: 'openai',
     model,
-    async evaluate(request, { timeoutMs }) {
+    async evaluate(request, { timeoutMs, signal }) {
       const json = await postJson(
         'https://api.openai.com/v1/chat/completions',
         { authorization: `Bearer ${openaiKey}` },
@@ -121,6 +126,7 @@ function openaiProvider(config) {
           tool_choice: { type: 'function', function: { name: request.tool.name } },
         },
         timeoutMs,
+        signal,
       );
       const choice = json.choices?.[0];
       if (choice?.message?.refusal) throw new ProviderError('refusal', RUN_ERROR_MESSAGES.refusal);
@@ -150,7 +156,16 @@ function openaiProvider(config) {
 // Deterministic, offline, and impossible to enable in production (see config.js).
 // Answers can include [[mock:...]] markers to exercise failure paths in automated tests.
 function mockProvider() {
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  // Waits end early when the run is superseded, like a cancelled HTTP request.
+  const sleep = (ms, signal) =>
+    new Promise((resolve, reject) => {
+      if (signal?.aborted) return reject(new ProviderError('interrupted', RUN_ERROR_MESSAGES.interrupted));
+      const t = setTimeout(resolve, ms);
+      signal?.addEventListener('abort', () => {
+        clearTimeout(t);
+        reject(new ProviderError('interrupted', RUN_ERROR_MESSAGES.interrupted));
+      }, { once: true });
+    });
   const firstWords = (s, n) => String(s).replace(/\[\[mock:[a-z]+\]\]/g, '').trim().split(/\s+/).slice(0, n).join(' ');
   return {
     name: 'mock',
@@ -166,7 +181,7 @@ function mockProvider() {
       w.forEach((fn) => fn());
     },
     _seen: new Set(),
-    async evaluate(request, { timeoutMs }) {
+    async evaluate(request, { timeoutMs, signal }) {
       this.calls += 1;
       const answer = /<rep_answer>\n([\s\S]*?)\n<\/rep_answer>/.exec(request.user)?.[1] || '';
       let mode = this.behavior;
@@ -177,10 +192,10 @@ function mockProvider() {
       }
       if (mode === 'hold') await new Promise((resolve) => this._waiters.push(resolve));
       if (mode === 'slow' || answer.includes('[[mock:slow]]')) {
-        await sleep(timeoutMs + 500);
+        await sleep(timeoutMs + 500, signal);
         throw new ProviderError('timeout', RUN_ERROR_MESSAGES.timeout);
       }
-      await sleep(Math.min(this.delayMs, timeoutMs));
+      await sleep(Math.min(this.delayMs, timeoutMs), signal);
       if (mode === 'fail' || answer.includes('[[mock:fail]]')) {
         throw new ProviderError('provider_unavailable', RUN_ERROR_MESSAGES.provider_unavailable, { status: 529 });
       }
