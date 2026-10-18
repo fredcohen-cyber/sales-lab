@@ -51,6 +51,8 @@ export function loadConfig(env = process.env) {
     ai: {
       provider,
       anthropicKey: env.ANTHROPIC_API_KEY || '',
+      // Needed only for an Anthropic key that works across several workspaces: requests must name one.
+      anthropicWorkspaceId: (env.ANTHROPIC_WORKSPACE_ID || '').trim(),
       openaiKey: env.OPENAI_API_KEY || '',
       model: (env.AI_MODEL || defaultModel).trim(),
       timeoutMs: intFrom(env.AI_TIMEOUT_MS, 90_000),

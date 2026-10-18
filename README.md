@@ -17,7 +17,8 @@ default Node builder: it installs dependencies, runs `npm run build` (the web ap
    - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}` (a reference to the database; Railway offers it in the
      variable picker)
    - `ANTHROPIC_API_KEY` = your Anthropic API key. Paste it only here, never in code, chat, or a file in
-     the repository.
+     the repository. In the Claude Console, create the key for a single workspace. A key that works
+     across all workspaces also needs `ANTHROPIC_WORKSPACE_ID` (see below).
 4. Under **Settings → Networking**, generate a public domain. Setup and reset links use it automatically.
    If you later use a custom domain, also set `APP_BASE_URL` to it (for example `https://saleslab.omnizant.com`).
 5. Optional but recommended: under **Settings → Deploy**, set the health check path to `/healthz`.
@@ -35,6 +36,7 @@ default Node builder: it installs dependencies, runs `npm run build` (the web ap
 | --- | --- | --- |
 | `DATABASE_URL` | Yes | Postgres connection string. |
 | `ANTHROPIC_API_KEY` | For coaching | Without it, drills run as clearly labeled unscored practice that never counts as scored work. |
+| `ANTHROPIC_WORKSPACE_ID` | Only for a multi-workspace key | The workspace coaching requests run in (starts with `wrkspc_`, listed in the Claude Console under workspaces). Not needed for a key created for one workspace. |
 | `AI_MODEL` | No | Claude model for coaching. Default `claude-sonnet-5-5`. |
 | `AI_TIMEOUT_MS` | No | Longest a coaching request may run once sent. Default `90000`. |
 | `AI_MAX_CONCURRENT` | No | Coaching requests sent at once; more wait their turn. Default `8`. |
@@ -112,7 +114,7 @@ Automated tests use a test-only stand-in for the AI service that cannot be enabl
 
 ## Status
 
-Implemented and covered by automated tests (97 server tests and 15 browser tests): company email and
+Implemented and covered by automated tests (100 server tests and 15 browser tests): company email and
 password sign-in with manager-created accounts only, private single-use setup and reset links, sign-in
 throttling, deactivation and session revocation, server-side roles and learner privacy, the knowledge
 library with versions, approval, and evidence basis, drills with relevance checks, the Practice Studio

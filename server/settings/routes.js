@@ -167,7 +167,10 @@ export function settingsRoutes({ db, config, provider }) {
         const out = await provider.ping({ timeoutMs: 20_000 });
         res.json({ ok: true, message: `Connected. The AI service answered using ${out.model}.` });
       } catch (err) {
-        const msg = err instanceof ProviderError ? `${err.message}${err.detail ? ` (${String(err.detail).slice(0, 200)})` : ''}` : 'The test request failed.';
+        // The service's own words help a manager fix the setting; keep them whole up to a sensible length.
+        const detail = err instanceof ProviderError && err.detail ? String(err.detail) : '';
+        const shown = detail.length > 400 ? `${detail.slice(0, 400).replace(/\s+\S*$/, '')}…` : detail;
+        const msg = err instanceof ProviderError ? `${err.message}${shown ? ` (${shown})` : ''}` : 'The test request failed.';
         res.json({ ok: false, message: msg });
       }
     }),

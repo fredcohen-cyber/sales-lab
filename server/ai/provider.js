@@ -15,6 +15,8 @@ export const RUN_ERROR_MESSAGES = {
   rate_limited: 'The AI service is limiting requests right now. Your answer is saved; retry in a minute.',
   provider_unavailable: 'The AI service is busy or unavailable. Your answer is saved; retry in a minute.',
   auth_error: 'The AI service rejected the key. A manager needs to check the AI settings.',
+  key_needs_workspace:
+    'Coaching could not run because the Anthropic key is not limited to one workspace. Your answer is saved. A manager needs to replace the key in Railway with one created for a single workspace, or add ANTHROPIC_WORKSPACE_ID.',
   bad_request: 'The AI service could not process this request. A manager can check the AI settings.',
   invalid_response: 'The coaching response was incomplete, so no score was recorded. Your answer is saved; retry coaching.',
   refusal: 'The AI declined to evaluate this answer, so no score was recorded. A manager can review it.',
@@ -24,8 +26,12 @@ export const RUN_ERROR_MESSAGES = {
   internal: 'Something went wrong while recording coaching. Your answer is saved; retry coaching.',
 };
 
-function mapHttpError(status, json) {
+export function mapHttpError(status, json) {
   const apiMessage = json?.error?.message || json?.message || '';
+  // A key that works across several workspaces must name one on every request.
+  if (status === 400 && /anthropic-workspace-id/i.test(apiMessage)) {
+    return new ProviderError('key_needs_workspace', RUN_ERROR_MESSAGES.key_needs_workspace, { status, detail: apiMessage });
+  }
   if (status === 401 || status === 403) return new ProviderError('auth_error', RUN_ERROR_MESSAGES.auth_error, { status, detail: apiMessage });
   if (status === 429) return new ProviderError('rate_limited', RUN_ERROR_MESSAGES.rate_limited, { status, detail: apiMessage });
   if (status === 408 || status === 504) return new ProviderError('timeout', RUN_ERROR_MESSAGES.timeout, { status, detail: apiMessage });
@@ -66,15 +72,22 @@ async function postJson(url, headers, body, timeoutMs, signal = null) {
   }
 }
 
+export function anthropicHeaders({ anthropicKey, anthropicWorkspaceId }) {
+  const headers = { 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01' };
+  if (anthropicWorkspaceId) headers['anthropic-workspace-id'] = anthropicWorkspaceId;
+  return headers;
+}
+
 function anthropicProvider(config) {
-  const { anthropicKey, model, maxOutputTokens } = config.ai;
+  const { model, maxOutputTokens } = config.ai;
+  const headers = anthropicHeaders(config.ai);
   return {
     name: 'anthropic',
     model,
     async evaluate(request, { timeoutMs, signal }) {
       const json = await postJson(
         'https://api.anthropic.com/v1/messages',
-        { 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01' },
+        headers,
         {
           model,
           max_tokens: maxOutputTokens,
@@ -97,7 +110,7 @@ function anthropicProvider(config) {
     async ping({ timeoutMs = 20_000 } = {}) {
       const json = await postJson(
         'https://api.anthropic.com/v1/messages',
-        { 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01' },
+        headers,
         { model, max_tokens: 16, messages: [{ role: 'user', content: 'Reply with the single word: ready' }] },
         timeoutMs,
       );
