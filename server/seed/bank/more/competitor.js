@@ -122,7 +122,7 @@ export const QUESTIONS = [
     situation:
       'You are on a video call with the intake director of a 22-attorney personal injury firm that gets many after-hours and Local Services Ads (LSA) inquiries. Her team of four cannot keep up with texting new leads at night, and she has seen Intaker’s AI texting agent demonstrated.',
     buyerLine:
-      '“Intaker’s AI agent texts our leads back at night, qualifies them, books consultations, and hands off to my team when it should. My people can’t keep up as it is. If Ravenly can’t do that, tell me now.”',
+      '“Intaker’s AI agent would text our leads back at night, qualify them, book consultations, and hand off to my team when it should. My people can’t keep up as it is. If Ravenly can’t do that, tell me now.”',
     objective:
       'Give a precise, honest answer about Ravenly’s follow-up, credit Intaker’s advertised agent as Intaker’s claim, and find out whether she needs an agent, a better team workflow, or both.',
     goodLooksLike: [
@@ -165,7 +165,7 @@ export const QUESTIONS = [
     goodLooksLike: [
       '- Acknowledges why per-lead billing is easy to report and does not criticize Juvo’s model.',
       '- Explains that the units differ: Juvo’s posted $40 is per human chat lead and includes Juvo’s people doing the chatting, while Ravenly is a subscription with published lead allowances that exclude phone calls and spam (for example, Ascend lists 50 monthly leads at $199 a month on yearly billing or $229 monthly, and Summit is a custom quote) and does not include outsourced labor.',
-      '- Suggests reporting what the partners care about more than cost per lead, such as cost per retained matter, built on agreed definitions of a lead and a qualified lead.',
+      '- Suggests a measure the partners care about more than cost per lead, such as the firm’s total intake cost (vendor fees plus staff time) per retained matter, built on agreed definitions of a lead, a qualified lead, and a retained matter, and does not present it as a Ravenly report.',
       '- Offers a scoped worksheet that compares lead definitions, staff time, conversion outcomes, onboarding, usage, and integrations, and uses Juvo’s posted rate only as arithmetic, not as a quote.',
       '- Does not promise savings or invent numbers, and proposes a short call with her and a partner to fill in the worksheet with the firm’s own volume.',
     ].join('\n'),
@@ -206,7 +206,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“What about a dead month in August? I’m still paying you?”',
+      '“If I sign with you and it isn’t working after a few months, can I walk away, or am I locked in?”',
       '“Your cheapest price is ninety-nine dollars. Where’s the rest of the cost hiding: setup, texting, phone numbers?”',
       '“My partners will ask what each option costs us per signed client. If you can’t tell me that, why would I switch?”',
     ],
@@ -386,14 +386,14 @@ export const QUESTIONS = [
       'Answer precisely about e-signature without overclaiming, treat Intaker’s advertised workflow fairly, and learn how much the feature matters to her team.',
     goodLooksLike: [
       '- Explains that the Documents tab is a place to search and upload lead-related files, and that e-signature was not established in the reviewed product, so offers to confirm the current answer by a set date rather than guessing either way.',
-      '- Notes that a stage name such as Retainer Sent describes status and does not prove e-signature functionality.',
+      '- If retainer tracking or pipeline stages come up, notes that a stage such as Retainer Sent records status and does not prove e-signature functionality.',
       '- Treats Intaker’s e-signature workflow as something Intaker advertises, without disputing or belittling it.',
       '- Asks how her team sends and tracks retainers today and whether e-signature inside the intake tool is a must-have or a convenience.',
       '- Mentions what Ravenly could do about the chasing, such as a task for each retainer that is out, and proposes walking one real retainer through both products.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“If you don’t do e-signatures, can we keep our e-signature tool and use it alongside Ravenly?”',
+      '“If you don’t do e-signatures, could we add a separate e-signature tool and use it alongside Ravenly?”',
       '“How would my team see which retainers are still unsigned?”',
       '“Intaker seems to do it all in one place. Why would I recommend two tools to the partners?”',
     ],
@@ -489,7 +489,7 @@ export const QUESTIONS = [
     situation:
       'You are meeting the managing partner of a 12-attorney personal injury firm that spends heavily on Google Ads and Local Services Ads. A previous vendor’s dashboard never matched his intake team’s numbers, and he has already heard Intaker’s pitch.',
     buyerLine:
-      '“Intaker told me they show source to signed client. Now you’re telling me the same thing. My last vendor’s dashboard was fiction. Why should I believe either of you?”',
+      '“Intaker told me they show source to signed client, and I expect you’ll tell me the same. My last vendor’s dashboard was fiction. Why should I believe either of you?”',
     objective:
       'Acknowledge the overlap and his experience, explain what Ravenly’s reporting records and what it depends on, and propose a test he can verify himself.',
     goodLooksLike: [
@@ -709,7 +709,7 @@ export const QUESTIONS = [
       'Treat the hybrid model as legitimate, be precise about what attribution Ravenly can promise for leads another vendor captures, and agree on a test that will settle it.',
     goodLooksLike: [
       '- Treats keeping Juvo as a legitimate choice and does not disparage Juvo or claim it lacks attribution or reporting; notes that Juvo advertises its own attribution and signed-client tracking.',
-      '- Does not commit to campaign and landing-page attribution for Juvo chat leads: Ravenly’s Attribution tab (page journey, landing page, source, channel, and medium) describes inquiries Ravenly captures itself, and that detail has not been established for leads arriving from another vendor’s chat.',
+      '- Does not commit to campaign and landing-page attribution for Juvo chat leads: Ravenly’s Attribution tab shows a page journey, landing page, and source, channel, and medium for a lead, but what it holds for leads forwarded from another vendor’s chat by email or Zapier has not been established.',
       '- Does not promise a native Juvo integration; names the paths to scope (a Ravenly inbound email lead source or a Zapier connection on Ravenly’s side, and the CRM delivery, Zapier, and webhook options Juvo advertises) and the fields that would have to come across, and offers to confirm them on samples.',
       '- Explains what Ravenly would add once a Juvo lead is in it, such as ownership, stages, tasks, and recorded retained outcomes and value, while source detail depends on what the handoff carries.',
       '- Asks how chat leads are reconciled with web forms, phone calls, and retained matters today, and which single report the partners need first.',
@@ -788,7 +788,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“Add up CallRail and your plan for me. Is it more or less than Juvo’s package?”',
+      '“If I’d need CallRail on top of your plan, add the two up for me. Is that more or less than Juvo’s package?”',
       '“When a call comes in while I’m in court, does Ravenly do anything about it?”',
       '“I don’t have time to set up two systems. If this takes more than an afternoon, I’m out.”',
     ],
@@ -889,7 +889,7 @@ export const QUESTIONS = [
     situation:
       'You presented Omnizant’s website and SEO recommendation to the marketing manager of a 20-attorney employment law firm. She liked it, but she also has a quote from a freelance SEO consultant, and the partners watch her budget closely.',
     buyerLine:
-      '“I like your plan, but a freelance SEO consultant quoted me a fraction of your price. The partners will ask why I’d pay an agency more for the same work. What should I tell them?”',
+      '“I like your plan, but a freelance SEO consultant quoted me much less, and the partners go through my budget line by line. What do I tell them when they ask why I picked the bigger number?”',
     objective:
       'Help her see whether the two are really the same thing, without attacking the freelancer or defending the price, so she can explain her recommendation to the partners.',
     goodLooksLike: [
@@ -923,14 +923,14 @@ export const QUESTIONS = [
     situation:
       'You are presenting Omnizant’s website and SEO recommendation to the managing partner of an eight-attorney real estate law firm. A freelancer has maintained the firm’s site for six years, and the partner is loyal to him.',
     buyerLine:
-      '“My freelancer charges a fraction of what you’re asking, and he picks up on a Saturday. Every agency says it does more. Prove this isn’t the same work for a lot more money, or we’re done.”',
+      '“My freelancer has kept our site running for six years, picks up on a Saturday, and costs far less than you. Prove this isn’t the same work for a lot more money, or we’re done.”',
     objective:
       'Stay calm, neither defend the price nor attack the freelancer, test whether it is really the same thing, and get a clear decision or a dated next step without unsupported proof.',
     goodLooksLike: [
       '- Acknowledges the loyalty and responsiveness as real value and does not criticize the freelancer.',
       '- Does not defend the price or offer a discount; questions whether it is the same thing by asking what the firm needs the website to produce and how the current site has done on that.',
       '- Lets him name the value rather than reciting Omnizant’s strengths, and keeps the comparison on outcomes he cares about, such as signed matters in the practice he wants to grow.',
-      '- Does not invent client results, retention figures, case studies, or guarantees of rankings or leads; offers real proof only once it is confirmed, such as a short screen-share of Omnizant’s work.',
+      '- Does not invent client results, retention figures, case studies, or guarantees of rankings or leads; offers proof it can show, such as a short screen-share of Omnizant’s work on a set date, and shares any firm’s outcomes only once they are confirmed.',
       '- Is willing to say that if the lowest price is the main goal, Omnizant may not be the right fit, then asks directly what he would like to do.',
     ].join('\n'),
     roleGuidance: {},
@@ -959,7 +959,7 @@ export const QUESTIONS = [
     situation:
       'You are on a follow-up call with the office manager of a four-attorney family law firm. Besides running the office, she updates the firm’s website and Google Business Profile herself, and one of the partners suggested she hear from you.',
     buyerLine:
-      '“I’ve kept our website and Google listing up myself for years, and we get calls from it. I’m not sure what an agency would add except a bill, and I’d still be the one dealing with you.”',
+      '“I’ve kept our website and Google listing up myself for years, and we get calls from it. Hiring an agency just means another invoice, and I’d still be the one dealing with you.”',
     objective:
       'Earn her trust as a help rather than a replacement, learn what she cannot get to, and agree on a next step she controls.',
     goodLooksLike: [
@@ -1036,7 +1036,7 @@ export const QUESTIONS = [
     situation:
       'You are cold calling a three-attorney estate planning firm. The receptionist puts you through to the office manager, who built the firm’s website two years ago with a drag-and-drop builder and still keeps it updated.',
     buyerLine:
-      '“Actually, I built our website myself on one of those drag-and-drop builders, and the attorneys love it. I don’t think we need an agency, but thanks.”',
+      '“Oh, the website’s mine. I put it together two years ago and still keep it updated, and the attorneys love it. I don’t think we need an agency, but thanks.”',
     objective:
       'Respect what she built, move the conversation from how the site looks to what it does for the firm, and earn a short review without criticizing her work.',
     goodLooksLike: [

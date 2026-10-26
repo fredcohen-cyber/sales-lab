@@ -21,7 +21,7 @@ export const QUESTIONS = [
       '- Agrees that saving her team time is the point: the summary and 0 to 100 score help staff decide which inquiries to look at first.',
       '- Says plainly that the score does not decide who gets a call back: the firm’s criteria affect the score but do not automatically reject a lead, and her staff still make the call.',
       '- Shows that staff can open the original answers behind the summary and check them before deciding.',
-      '- Explains that screening out matters the firm never takes is a separate, explicit step: disqualifier flags on specific answers in the flow, which the firm approves.',
+      '- Explains that disqualifying matters the firm never takes is a separate, explicit step: disqualifier flags on specific answers in the flow, which the firm approves; what happens to a lead that triggers one is confirmed and tested before launch.',
       '- Asks how her team decides today which inquiries to call first, and suggests using the score to order the work rather than to skip leads.',
     ].join('\n'),
     roleGuidance: {
@@ -74,7 +74,7 @@ export const QUESTIONS = [
       ].join('\n'),
       am: [
         '- Checks how the firm’s stages are used today, and whether qualified and retained outcomes are recorded consistently, before any number goes to the partners.',
-        '- Shows the firm’s own Lead Performance figures for qualified, won, and lost leads, and what each measure means.',
+        '- Shows the firm’s own Lead Performance figures for qualified, won, and lost leads, and confirms how the report decides a lead is qualified before she relies on that figure.',
         '- Offers to help draft the partner slide or join the meeting on a set date.',
       ].join('\n'),
     },
@@ -148,7 +148,7 @@ export const QUESTIONS = [
     objective: 'Separate what is established about Spanish in the chat from what her workflow needs, avoid promising language routing or translated records, and agree on a test that answers her questions.',
     goodLooksLike: [
       '- Says Spanish is among the chat widget’s language options, and that translation quality and Spanish across other surfaces, such as messages and lead records, were not tested.',
-      '- Does not promise routing by language: the review established assigning teams by case type, with a default team as fallback, and nothing about routing on language.',
+      '- Does not promise routing by language or rule it out: the review established assigning teams by case type, with a default team as fallback, and said nothing about language; offers to confirm, and to test who receives a Spanish lead.',
       '- Does not claim that summaries or records will be translated into English for the attorneys; offers to confirm how a Spanish conversation appears to staff.',
       '- Mentions that public pricing lists multilingual support for Ascend and Summit, and still confirms the firm’s entitlement rather than assuming it.',
       '- Proposes a bilingual test before launch, run with her bilingual specialists, covering the chat, the consent text, who receives the lead, and what the attorneys see.',
@@ -426,7 +426,7 @@ export const QUESTIONS = [
     personas: ['managing_partner'],
     personaLines: {},
     situation:
-      'You are in the office of the managing partner of a 10-attorney employment law firm, presenting Omnizant’s review of the firm’s website and online presence. In discovery he said calls from new clients are down this year. A few minutes into your findings, he cuts you off.',
+      'On a video call, you are presenting Omnizant’s review of the firm’s website and online presence to the managing partner of a 10-attorney employment law firm. In discovery he said calls from new clients are down this year. A few minutes into your findings, he cuts you off.',
     buyerLine: '“Stop. I don’t speak SEO, and I don’t have time to learn it. Is our website costing us cases, yes or no?”',
     objective: 'Answer in plain business terms, tie the findings to the drop in calls he described without overstating them, and leave with one recommendation and a next step.',
     goodLooksLike: [
@@ -579,9 +579,9 @@ export const QUESTIONS = [
     buyerLine: '“I was told this follows up with every lead until they book, without anyone lifting a finger. That’s the only reason I’m in this meeting. Does it do that or not?”',
     objective: 'Correct the expectation directly without losing him, explain what an automation does, and propose one validated sequence with a named owner for the follow-up.',
     goodLooksLike: [
-      '- Answers directly: what was established is an automation that sends set texts or emails and creates tasks, immediately or on a schedule; holding a conversation or booking the consultation on its own was not, so it is not sold that way.',
+      '- Answers directly: the builder offers automations that send set texts or emails and create tasks, immediately or on a schedule, once configured and validated; holding a conversation or booking the consultation on its own was not established, so it is not sold that way.',
       '- Explains the building blocks: a trigger such as a new lead or a stage change, conditions such as case type or source, and the steps that follow.',
-      '- Does not claim the sequence stops when a lead replies, follows business hours, or branches on answers; none of that was established. Notes that the sequence copy says it cancels on a stage change, to be confirmed in a controlled test.',
+      '- Does not claim the sequence stops when a lead replies, follows business hours, or branches on the conversation; none of that was established. Notes that the sequence copy says it cancels on a stage change, to be confirmed in a controlled test.',
       '- Names the prerequisites: opt-in, SMS registration, sender setup, and approved templates.',
       '- Ties it to his problem: one limited sequence for unreached leads with a task, so a named person owns every lead that goes quiet.',
       '- Asks who owns follow-up today, and proposes a dated review of how the sequence performs.',
@@ -685,7 +685,7 @@ export const QUESTIONS = [
     },
     pushbacks: [
       '“Somebody at your company made that card, so somebody knows the date. Find out and call me today.”',
-      '“The won revenue on that screen doesn’t match what my bookkeeper tells me. Which one am I supposed to believe?”',
+      '“If your won revenue figure says one thing and my bookkeeper says another, which one am I supposed to believe?”',
       '“If the report I care about doesn’t exist yet, why shouldn’t I wait until it does and decide then?”',
     ],
     assessed: ['product_accuracy', 'objection_handling', 'advancing'],
@@ -719,7 +719,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“Every other agency gave me three options to choose from. Why should I take a single plan from you?”',
+      '“Fine. What exactly would I get for the money, and what does it cost?”',
       '“How do I know your one plan isn’t just your most expensive one?”',
       '“I’m not deciding today. Leave me the proposal and I’ll call you.”',
     ],
@@ -876,14 +876,14 @@ export const QUESTIONS = [
     personas: ['solo_attorney'],
     personaLines: {},
     situation:
-      'You are showing the chat widget’s contact settings to a solo immigration attorney. Many of her clients have relatives abroad who keep in touch on WhatsApp, and she notices WhatsApp among the preferred contact methods.',
-    buyerLine: '“Oh, WhatsApp! That’s how most of my clients’ families reach me. So I could message them on WhatsApp right from here?”',
+      'You are showing Ravenly’s Automations builder to a solo immigration attorney, and she notices that contact preference is one of the conditions. Many of her clients’ relatives live abroad and keep in touch only on WhatsApp.',
+    buyerLine: '“Contact preference, perfect. So when a family picks WhatsApp in the chat, Ravenly sends my follow-up to them on WhatsApp?”',
     objective: 'Answer accurately about WhatsApp, explain what the preference field does, and find out how much her practice depends on it.',
     goodLooksLike: [
       '- Explains that WhatsApp is an optional preferred contact method a visitor can choose, and that a preference field does not mean she can send WhatsApp messages from Ravenly.',
       '- Does not promise WhatsApp messaging and does not say it is impossible; offers to confirm the current answer.',
       '- Describes what was observed: texts and emails from the lead record, which depend on services being set up, such as SMS registration.',
-      '- Notes that the preference still tells her how each client wants to be reached, so she knows when to use WhatsApp herself.',
+      '- Explains what an automation could do with the preference once configured and tested: contact preference is one of its conditions and its observed actions are sending a text or an email or creating a task, so a WhatsApp choice could create a task reminding her to reach that family herself.',
       '- Asks how many of her inquiries depend on WhatsApp, to judge whether it is a requirement for her.',
     ].join('\n'),
     roleGuidance: {},
@@ -894,7 +894,7 @@ export const QUESTIONS = [
     ],
     assessed: ['product_accuracy', 'discovery', 'empathy_clarity'],
     defaults: [2, 1, 3],
-    sources: [{ collection: 'ravenly-product', sections: ['04 · ', '07 · ', '06 · ', '20 · ', '21 · '] }],
+    sources: [{ collection: 'ravenly-product', sections: ['04 · ', '07 · ', '06 · ', '20 · ', '21 · ', '08 · '] }],
   },
 
   // ------------------------------------------------------------ demo-ravenly-google-ads-conversions
@@ -1024,7 +1024,7 @@ export const QUESTIONS = [
     pushbacks: [
       '“If I put ‘sample data’ under each screenshot, that’s fine to show the partners, isn’t it?”',
       '“The partners will ask what results other firms get. What am I supposed to tell them?”',
-      '“If we did your ten-day trial, it wouldn’t show retained cases. So what would I actually bring the partners at the end of it?”',
+      '“Would a ten-day trial even show retained cases? If not, what would I actually bring the partners at the end of it?”',
     ],
     assessed: ['product_accuracy', 'persuasion', 'advancing'],
     defaults: [3, 2, 3],

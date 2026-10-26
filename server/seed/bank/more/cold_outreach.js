@@ -125,7 +125,7 @@ export const QUESTIONS = [
       'In about 20 seconds, give a reason to talk that fits a marketing manager who already tracks cost per lead, tied to what happens after the inquiry, without overstating what Ravenly’s reporting can prove, and end with one question.',
     goodLooksLike: [
       '- Respects her numbers and the agency’s work, and does not suggest either is falling short.',
-      '- Moves from cost per lead to what happens after the inquiry, such as which campaigns bring matters the firm retains, and names the relevant capability plainly: reporting that connects sources and campaigns to qualified and retained outcomes, including cost per retained lead.',
+      '- Moves from cost per lead to what happens after the inquiry, such as which campaigns bring matters the firm retains, and names the relevant capability plainly as something to see rather than a given: reporting that connects sources and campaigns to qualified and retained outcomes, such as cost per retained lead, without claiming her plan or ad-spend setup would include it.',
       '- Stays accurate about measurement: reporting covers inquiries whose source data is available and depends on the team recording outcomes; it is not complete visibility or proof of return on investment.',
       '- Does not present marketing statistics as facts about her firm, and does not claim her agency’s reports cannot show retained cases.',
       '- Ends with one question, such as whether she can see today which campaigns bring matters the firm actually retains.',
@@ -324,7 +324,7 @@ export const QUESTIONS = [
     pushbacks: [
       '“So if we’re already first, what exactly would I be paying you for?”',
       '“What does it cost, and what do I actually get each month?”',
-      '“Then put it in writing that we’ll still be the first firm named six months from now, and I’ll sign today.”',
+      '“Put it in writing that we’ll still be the first firm named six months from now, and I’ll sign today.”',
     ],
     assessed: ['objection_handling', 'empathy_clarity', 'advancing'],
     defaults: [5, 5, 1],
@@ -576,7 +576,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“Ballpark it. Are we talking hundreds a month or thousands?”',
+      '“If I do take a call, who from my firm needs to be on it? I’m not pulling my partners into a sales pitch.”',
       '“If I call Mark, what’s he going to tell me went wrong?”',
       '“I don’t meet with vendors until I’ve seen a proposal. Send me one and I’ll decide.”',
     ],
@@ -642,7 +642,7 @@ export const QUESTIONS = [
     goodLooksLike: [
       '- Is upfront that it is a sales call and says who they are and the company in one line, without pretending to return a call or to have a relationship.',
       '- Respects his rule: says an email will follow and how to recognize it, and still leaves a name and number, without pressing him to call back.',
-      '- Gives one specific reason in a managing partner’s terms, such as whether he can see which high-value website inquiries are going stale and who owns each one, or which ad campaigns lead to retained cases.',
+      '- Gives one specific reason in a managing partner’s terms, such as whether he can see which high-value website inquiries are going stale and who owns each one, or which marketing sources, such as his Google Ads, lead to retained cases.',
       '- Stays accurate: does not claim Ravenly answers the firm’s phones or that the firm is losing inquiries, and does not quote marketing figures as facts.',
       '- Sounds confident and brief, with no apology for calling.',
     ].join('\n'),
@@ -717,7 +717,7 @@ export const QUESTIONS = [
       'Answer in a sentence or two without claiming exclusivity, results, or knowledge of what other vendors lack, tie one demonstrable strength to what a managing partner is accountable for, and earn a short next step.',
     goodLooksLike: [
       '- Does not claim to know what the other vendors offered or lacked, and does not claim Ravenly is the only or best option.',
-      '- Answers in a sentence or two with one strength that fits a managing partner, such as one view of which high-priority inquiries have gone inactive and who owns each, or retained matters and recorded revenue by marketing source, offered as something to see rather than a proven advantage.',
+      '- Answers in a sentence or two with one strength that fits a managing partner, such as seeing which high-priority inquiries have gone inactive and who owns each one, or retained matters and recorded revenue by marketing source, offered as something to see rather than a proven advantage.',
       '- Promises no signed cases, revenue, or return on investment.',
       '- Stays accurate about reporting: it shows recorded outcomes by source where source data is available and the team records outcomes; it is not complete visibility.',
       '- Ends with a specific next step, such as 20 minutes to trace how one recent high-value inquiry was handled from arrival to outcome.',
@@ -758,7 +758,7 @@ export const QUESTIONS = [
       '- Acknowledges what she went through, including taking the blame, without criticizing the previous vendor or promising that this time will be different.',
       '- Asks what broke before pitching anything: who received which alerts, who was supposed to own each inquiry, and what the spam looked like.',
       '- Connects accurately to what she describes: notification preferences each user sets by event and channel, teams tied to case types with a default team as a fallback, and ownership through assignments, stages, and tasks.',
-      '- Does not claim the spam filter will catch all spam or promise exactly how alerts will behave, offers to confirm both in a controlled test, and says that software alone will not fix unclear ownership.',
+      '- Makes no claim about how much spam the spam filter catches and does not promise exactly how alerts will behave, offers to see and confirm both in a controlled test, and says that software alone will not fix unclear ownership.',
       '- Ends with a specific, low-risk next step, such as 20 minutes for her to sketch how inquiries should be routed before anyone involves the partners.',
     ].join('\n'),
     roleGuidance: {},
@@ -900,19 +900,19 @@ export const QUESTIONS = [
     buyerLine:
       '“Absolutely not. If your chatbot tells someone they qualify for asylum and they don’t, that’s a family’s future and our firm’s name. Tell me exactly what that AI says to people, or we’re done.”',
     objective:
-      'Answer his challenge precisely: what the visitor sees, what the AI does and does not do, and what the firm controls, without compliance promises, and earn a short follow-up.',
+      'Answer his challenge precisely and only as far as the material goes: what the firm controls in what visitors see, what staff see, and what you will confirm rather than assume, without compliance promises, and earn a short follow-up.',
     goodLooksLike: [
       '- Treats the concern as serious and answers precisely, without minimizing it or getting defensive.',
-      '- Explains that visitors answer the intake questions the firm configures and approves, and that the AI produces a summary and score for staff to review; neither is legal advice, an eligibility decision, or a promise that the firm will take the matter.',
+      '- Explains that visitors answer the intake questions in flows the firm approves, and that staff see the original answers beside an AI summary and score; neither is legal advice, an eligibility decision, or a promise that the firm will take the matter.',
       '- Names what the firm controls: the questions and their order, required answers and disqualifiers, the consent wording, and the completion messages visitors see.',
       '- Does not claim the product is bar-approved, ethics-compliant, or always accurate; notes that Ravenly’s own terms say AI outputs can be inaccurate, which is why staff review the original answers.',
-      '- Does not suggest the chat can answer legal questions, and proposes a specific next step, such as 20 minutes to review a draft immigration intake flow his team would approve before anything goes live.',
+      '- Does not suggest the chat can answer legal questions, and does not claim the AI never says anything to visitors, or that it does; offers to confirm exactly what a visitor sees and proposes a specific next step, such as 20 minutes to review a draft immigration intake flow his team would approve before anything goes live.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
       '“Many of our clients write in Spanish or Haitian Creole. If a translation is wrong, that’s worse than nothing. Who checks it?”',
       '“My partners will ask whether the bar has approved this. Has it?”',
-      '“Then put it in writing: your AI will never tell a visitor anything about their case. Will you sign that?”',
+      '“Put it in writing: your AI will never tell a visitor anything about their case. Will you sign that?”',
     ],
     assessed: ['product_accuracy', 'objection_handling', 'empathy_clarity', 'advancing'],
     defaults: [5, 5, 4],
@@ -940,7 +940,7 @@ export const QUESTIONS = [
       'Take her concern seriously, explain accurately what the intake experience and the AI do and do not do, show how her rules stay in the firm’s control, and earn a short conversation she can bring to the attorneys.',
     goodLooksLike: [
       '- Respects her team’s standard and treats the concern as legitimate, without brushing it aside.',
-      '- Explains accurately that the chat asks the intake questions the firm configures and approves, much like her team’s own intake script, and that the AI summary and score help staff review an inquiry; neither is legal advice or a decision to take the case.',
+      '- Explains accurately that visitors answer the intake questions in flows the firm approves, and that the AI summary and score help staff review an inquiry; neither is legal advice or a decision to take the case. Does not claim the AI never says anything to visitors, or that it does, and offers to show exactly what a visitor would see.',
       '- Notes that she and the attorneys would approve the questions, required answers, consent wording, and completion messages, and that her staff can read every original answer.',
       '- Does not claim the product is bar-approved or ethics-compliant, and does not suggest the chat can answer legal questions.',
       '- Asks what her team needs to know before a first call, and proposes a short look at how a family law intake flow could work, with the attorney she would want involved.',

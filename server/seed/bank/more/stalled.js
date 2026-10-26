@@ -226,7 +226,7 @@ export const QUESTIONS = [
     personas: ['office_manager'],
     personaLines: {},
     situation:
-      'You represent Ravenly. The intake director at a 15-attorney workers’ compensation firm championed Ravenly through your demo and proposal, then left the firm, and the deal went quiet. You emailed the firm, and her replacement, who started last week, calls you.',
+      'You represent Ravenly. The intake director at a 15-attorney workers’ compensation firm championed Ravenly through your demo and proposal, then left the firm, and the deal went quiet. In discovery, she said new-lead alerts were scattered across several inboxes and the same caller was often entered twice. You emailed the firm, and her replacement, who started last week, calls you.',
     buyerLine:
       '“Hi, I took over from Dana last week and found your proposal in her notes. I’m still learning how things run here, so I honestly don’t know if we need this. What was she trying to fix?”',
     objective:
@@ -236,7 +236,7 @@ export const QUESTIONS = [
       '- Answers her question with the problems the firm described, in its own words, such as alerts scattered across inboxes or the same person entered twice, then asks whether she sees the same things.',
       '- Asks about her goals, her team, how inquiries are handled today, and who decides now.',
       '- Connects Ravenly accurately to her work: lead filters, original answers beside a score and summary, tasks, templates, and an Action Center that shows messages awaiting a response, overdue tasks, and high-priority leads, as support for consistent triage rather than a fix on its own.',
-      '- If automatic texting comes up, says automations can send an approved text or email and create a task when a new lead arrives, once opt-in, sender setup, and messaging registration are in place, and does not describe an AI agent that holds conversations.',
+      '- If automatic texting comes up, says an automation can be set up so a new lead gets an approved text or email and the intake owner gets a task, once opt-in, sender setup, and messaging registration are in place, and that the workflow is tested before the team relies on it; does not describe an AI agent that holds conversations.',
       '- Offers a short session on a specific date to walk through her team’s real intake process together, rather than re-running the full demo.',
     ].join('\n'),
     roleGuidance: {},
@@ -264,7 +264,7 @@ export const QUESTIONS = [
     personas: ['managing_partner'],
     personaLines: {},
     situation:
-      'You represent Ravenly. The office manager at a nine-attorney immigration firm ran the evaluation, took your proposal to the partners, and then left the firm. After two weeks of silence you emailed the managing partner, who calls you between hearings.',
+      'You represent Ravenly. The office manager at a nine-attorney immigration firm ran the evaluation, took your proposal to the partners, and then left the firm. In discovery, she said high-value inquiries went stale because nobody clearly owned them. After two weeks of silence you emailed the managing partner, who calls you between hearings.',
     buyerLine:
       '“Maria ran all of this, and she’s gone. I don’t have time to start over with a vendor, and I’m not sure we needed it in the first place. You’ve got two minutes.”',
     objective:
@@ -355,7 +355,7 @@ export const QUESTIONS = [
     pushbacks: [
       '“My partners are numbers people. Won’t a big number get their attention faster?”',
       '“I don’t know our retained rate off the top of my head. Does that matter?”',
-      '“My partner will ask whether the 108x is real. What do I tell him?”',
+      '“And if our own numbers come out small, why would we spend the money at all?”',
     ],
     assessed: ['product_accuracy', 'persuasion', 'advancing'],
     defaults: [2, 2, 3],
@@ -536,7 +536,7 @@ export const QUESTIONS = [
       '- Asks what happened to the inquiries: how quickly she responded, which ones fit her practice, and where the good ones stand now.',
       '- Explains that a 10-day trial can test setup and the daily workflow but may be too short to show hired clients, given the lag between inquiry and retention.',
       '- On poor-fit inquiries, says accurately that her flows can ask practice-specific questions, a disqualifying answer can be flagged, and her own criteria adjust the score without automatically rejecting a lead.',
-      '- Does not guarantee new clients or offer free time that is not approved, and keeps the economics plausible for her volume rather than projecting big revenue.',
+      '- Does not guarantee new clients or offer a free month, a longer trial, or any other concession, and keeps the economics plausible for her volume rather than projecting big revenue.',
       '- Proposes one measured next step with a decision date, such as reviewing the trial inquiries together, or accepts the no warmly.',
     ].join('\n'),
     roleGuidance: {},
@@ -573,7 +573,7 @@ export const QUESTIONS = [
       '- Explains that a 10-day trial can test setup and workflow but may be too short to show retained cases, and that a matter shows as retained only when staff record that stage.',
       '- Asks what happened to the 34 leads: how many met the firm’s criteria, how fast they got a response, who owns each one, and which stage each is in now.',
       '- Keeps the measures separate: a high score, a qualified status, and a retained matter are different things.',
-      '- Does not guarantee retained cases or offer free time that is not approved; says outcomes depend on traffic quality, the team’s response, practice fit, and follow-through.',
+      '- Does not guarantee retained cases or offer extra free time or any other concession; says outcomes depend on traffic quality, the team’s response, practice fit, and follow-through.',
       '- Proposes one measured step: a review of the trial leads with her and the deciding partner on a specific date, with agreed measures and a decision date.',
     ].join('\n'),
     roleGuidance: {},
@@ -648,7 +648,7 @@ export const QUESTIONS = [
       '- States that full-service onboarding is listed at a one-time $3,000, covering configuration, website work, and individual training, and confirms how it applies to his plan.',
       '- Explains accurately that Clio appears on Ravenly’s integration page in a Zapier context, which supports connecting workflows but does not establish a native two-way connector, and does not promise that staff will never retype anything.',
       '- Asks which event should send which fields to Clio and whether anything must come back, and commits to confirming the mechanism and any third-party subscription it needs, such as Zapier.',
-      '- Is clear that the firm still supplies approvals, access, consent wording, and messaging registration, so no go-live date is promised until those are confirmed.',
+      '- Is clear that the firm still supplies approvals and access, such as consent wording, and that texting waits on messaging registration, so no go-live date is promised until those are confirmed.',
       '- Asks for a clear yes on what is confirmed, or a dated scoping call with him and whoever runs his intake.',
     ].join('\n'),
     roleGuidance: {},
@@ -722,7 +722,7 @@ export const QUESTIONS = [
     goodLooksLike: [
       '- Treats the committee’s requirements as legitimate and asks for its full list, so everything is answered in one pass.',
       '- Does not promise a SOC 2 report, a BAA, or HIPAA compliance; commits to an approved, current answer for each, with documentation where it exists, before the 30th.',
-      '- On retention, does not quote one period as settled: the privacy page and the terms differ (14 versus 30 days), so offers the approved answer that applies to the firm’s contract.',
+      '- On retention, does not quote one period as settled: the privacy page and the terms differ (14 versus 30 days), so commits to getting the approved answer that applies to the firm’s contract, in writing, before the 30th.',
       '- On AI, says the published terms bar third-party AI providers from training on user data while reserving aggregated, anonymized use for improving the company’s models, so “never” cannot be confirmed without an approved explanation.',
       '- Attributes security statements, such as US hosting on AWS and encryption in transit and at rest, to Ravenly’s published policies rather than certifications.',
       '- Proposes a technical session between the committee and the right Ravenly specialist on a date before the deadline.',
@@ -992,7 +992,7 @@ export const QUESTIONS = [
         '- Suggests a short call with the reviewing partner on a specific day, with her on it.',
       ].join('\n'),
       am: [
-        '- Treats it as an existing client’s renewal or expansion paperwork, and asks whether anything in the current service is behind the partner’s review.',
+        '- Treats it as renewal or expansion paperwork for a current client, and asks her whether the reviewing partner has raised anything about the service so far.',
         '- Does not threaten a lapse in service or invent a deadline to force the signature.',
         '- Confirms renewal, term, and notice details from the actual agreement rather than from memory.',
       ].join('\n'),
@@ -1024,10 +1024,10 @@ export const QUESTIONS = [
       'Lower the pressure, name the hesitation with curiosity rather than accusation, isolate what is really holding the signature, and agree on a specific time to finish, or learn that the answer has changed.',
     goodLooksLike: [
       '- Stays calm, thanks him for calling, and neither apologizes for the reminders nor defends them.',
-      '- Names what seems to be happening with curiosity, for example “I might be reading this wrong, but it feels like something is holding you back. What is it?”',
-      '- Isolates the real issue: a term, the price, timing, or a partner who now has doubts.',
-      '- Offers to walk through the agreement together at a specific day and time, and to confirm any term he questions rather than reinterpreting it on the call.',
-      '- Does not offer a discount to get the signature; if anything moves, it is traded for something of equal value, such as a later start or a longer term.',
+      '- Names the gap between his yes three weeks ago and the unsigned agreement with curiosity rather than accusation, and asks what has come up since.',
+      '- Finds out which concern is real before answering it: a term he dislikes, when billing starts, the price, or a partner who now has doubts.',
+      '- Offers 15 minutes at a specific day and time to go through the term he raises, and confirms what the agreement says rather than reinterpreting it on the call.',
+      '- If he demands money off to sign this week, gives no naked discount: anything that moves is traded for something in return, such as a longer term or payment upfront.',
       '- If the answer has changed, accepts it calmly and asks what changed.',
     ].join('\n'),
     roleGuidance: {
@@ -1036,9 +1036,9 @@ export const QUESTIONS = [
         '- If another partner has entered the decision, offers a short call with them on a specific day.',
       ].join('\n'),
       am: [
-        '- Treats it as renewal or expansion paperwork for an existing client, and asks whether anything in the current service is behind the delay.',
-        '- Does not threaten a lapse in service or invent a deadline to force the signature.',
-        '- Confirms renewal, term, and notice details from the actual agreement rather than from memory.',
+        '- Treats it as renewal or expansion paperwork for a current client, and asks whether anything in the service has cooled his yes.',
+        '- Stays calm with an irritated client and does not threaten a lapse in service or invent a deadline to force the signature.',
+        '- If he objects to automatic renewal or another term, confirms what the actual agreement says about renewal, term, and notice rather than answering from memory.',
       ].join('\n'),
     },
     pushbacks: [

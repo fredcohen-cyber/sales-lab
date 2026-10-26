@@ -193,13 +193,13 @@ export const QUESTIONS = [
     buyerLine:
       '“My predecessor bought Ravenly. From where I sit, Google Analytics and our case management system already cover this. Give me one reason it isn’t redundant.”',
     objective:
-      'Find out what the new marketing manager must report and decide, explain where Ravenly sits beside her other tools without claiming they fall short, show what the firm’s own data connects, and agree on a fair test before she cuts it.',
+      'Find out what the new marketing manager must report and recommend, explain where Ravenly sits beside her other tools without claiming they fall short, show what the firm’s own data connects, and agree on a fair test before she recommends cutting it.',
     goodLooksLike: [
       '- Asks what she must report to the partners and which questions her current tools leave unanswered, rather than defending the purchase.',
       '- Positions Ravenly alongside the firm’s analytics and case management system as the capture and intake layer, and does not claim those tools fall short without knowing how the firm uses them.',
       '- Shows what the firm’s own Ravenly data connects: each inquiry’s source, channel, and landing page to qualification, retained outcomes, and recorded value, in Lead Performance and the paid, organic, and LLM referral views.',
-      '- Is precise about limits: won revenue is recorded value, not collected cash; LLM figures are referral attribution, not AI visibility; and a Google Analytics 4 connection, which Ravenly lists for server-side lead, deal, and call events, would need configuring and confirming for her account.',
-      '- Proposes a short test of one question she must answer, such as which sources produce retained matters, with a dated review.',
+      '- Is precise about limits: won revenue is recorded value, not collected cash; LLM figures are referral attribution, not AI visibility; and whether a Google Analytics 4 connection, which Ravenly lists for server-side lead, deal, and call events, is set up for her account, and with which events, must be confirmed rather than assumed.',
+      '- Proposes a short test of one question she must answer, such as which sources produce retained matters, with a dated review that includes the partner who approves the spend.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -313,7 +313,7 @@ export const QUESTIONS = [
       'Celebrate the result while helping the intake director write a claim the partners will trust: what won revenue measures, which matters came through Ravenly’s capture, and what her team contributed.',
     goodLooksLike: [
       '- Celebrates the quarter with her, then explains that won revenue adds up the values her team recorded on matters marked won, so it is not collected cash.',
-      '- Points out that the total includes matters her team entered from phone calls and referrals, so it cannot all be credited to Ravenly’s website capture; offers to separate them with the channel and source views and to confirm how staff-entered leads are counted.',
+      '- Points out that the total may include matters her team entered from phone calls and referrals, which cannot be credited to Ravenly’s website capture; offers to check which won matters came through the chat, webform, or case evaluation with the lead list’s capture-method filter, since a channel shows where an inquiry came from rather than how it was captured, and to confirm how staff-entered leads are classified and counted.',
       '- Gives her team its share of the credit: they responded to and signed these matters, and Ravenly supported that work rather than producing every client.',
       '- Suggests a claim she can stand behind, such as how won matters and won revenue compare with the quarters before Ravenly, without counting the same gain twice across capture, qualification, and conversion.',
       '- Offers to review her draft before it goes to the partners, on a set date.',
@@ -449,7 +449,7 @@ export const QUESTIONS = [
     buyerLine:
       '“So they typed in their phone numbers and then quit? My team has time this afternoon. Pull those numbers for me and we’ll call every one of them.”',
     objective:
-      'Explain what the abandonment report shows and does not show, avoid promising contact details or outreach that the product and the firm’s consent settings do not support, and agree on how to investigate the question.',
+      'Explain what the abandonment report shows and does not show, avoid promising contact details or outreach that the material does not establish or that the firm’s consent settings may not allow, and agree on how to investigate the question.',
     goodLooksLike: [
       '- Explains what she is looking at: individual abandonment events with the step and progress where each visitor stopped, which show where people leave but not why.',
       '- Does not promise that names, phone numbers, or partial entries from abandoned sessions are available or saved as leads; offers to confirm what each abandonment event records.',
@@ -751,7 +751,7 @@ export const QUESTIONS = [
     defaults: [2, 2, 2],
     sources: [
       { collection: 'sales-playbook', sections: ['3. '] },
-      { collection: 'omnizant-ai-search', sections: ['Messaging guidance', 'The story we tell', 'How we earn confidence'] },
+      { collection: 'omnizant-ai-search', sections: ['Messaging guidance', 'The story we tell', 'How we earn confidence', 'How the plans fit'] },
     ],
   },
   {
@@ -893,7 +893,7 @@ export const QUESTIONS = [
     ],
     assessed: ['empathy_clarity', 'persuasion', 'advancing'],
     defaults: [3, 3, 1],
-    sources: [{ collection: 'sales-playbook', sections: ['7. ', '5. ', '8. '] }],
+    sources: [{ collection: 'sales-playbook', sections: ['7. ', '5. ', '8. ', '6. '] }],
   },
   {
     slug: 'value-skip-quarterly-review-v3',
@@ -927,6 +927,6 @@ export const QUESTIONS = [
     ],
     assessed: ['empathy_clarity', 'persuasion', 'advancing'],
     defaults: [2, 2, 1],
-    sources: [{ collection: 'sales-playbook', sections: ['7. ', '8. ', '5. '] }],
+    sources: [{ collection: 'sales-playbook', sections: ['7. ', '8. ', '5. ', '6. '] }],
   },
 ];

@@ -124,14 +124,14 @@ documents stay archived so past answers still show exactly what they were scored
 - **Expectations fit the rep's role.** Each question says what a good answer does; questions that happen
   in both jobs add what differs for an account executive (winning new business) and an account manager
   (looking after an existing client). The coach is told which role is answering.
-- **The question bank** has BANK_TOTAL questions on CONCEPT_TOTAL concepts, at least STAGE_MIN per stage, written only
+- **The question bank** has 528 questions on 176 concepts, at least 45 per stage, written only
   from approved material: the Sales Playbook with its call field notes, Ravenly product knowledge with the
   Ravenly vs Intaker battle card, the Omnizant AI Search Plans brief, and the Omnizant website review and
   competitor angles (see `server/seed/bank/`, checked by `node server/seed/bank/validate.js`). Each lists
   three follow-up objections the buyer is likely to raise: the coach uses them as a guide, and practice
   without coaching uses them word for word. Questions about Omnizant's websites and SEO practice technique,
-  because only the website review and the competitor angles are approved; none rely on the unconfirmed
-  "Omnizant at a glance" draft. Managers browse every question under **Question bank** in the Practice
+  apart from a few on the complimentary website review itself, because only the review and the competitor
+  angles are approved; none rely on the unconfirmed "Omnizant at a glance" draft. Managers browse every question under **Question bank** in the Practice
   Studio, filter it by product, set a question's product and concept in the editor, and can still assign
   specific questions in Curriculum.
 - **Four buyers.** The office manager or intake director joined the managing partner, solo attorney, and

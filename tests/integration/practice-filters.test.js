@@ -3,6 +3,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { addUser, ownerClient, startTestApp } from '../helpers.js';
 import { PRODUCT_LINES } from '../../server/domain.js';
+import { BANK_QUESTIONS } from '../../server/seed/bank/index.js';
 
 let h;
 let owner;
@@ -36,6 +37,15 @@ test('every question has a product line that belongs to its brand, and reps meet
   assert.deepEqual([seeded.concept, seeded.product_line], ['price-ravenly-over-allowance', 'ravenly']);
   const ai = await h.db.one(`SELECT v.product_line FROM drills d JOIN drill_versions v ON v.id = d.current_version_id WHERE d.slug = 'disc-omnizant-ai-search-partners'`);
   assert.equal(ai.product_line, 'omnizant_ai_search');
+});
+
+test('every question is seeded with all the sections it cites', async () => {
+  // Questions are added only once the material they cite exists, so none loses a section.
+  assert.deepEqual(h.logs.filter((l) => /left out/.test(l)), []);
+  const rows = await h.db.many(`SELECT d.slug, v.source_refs FROM drills d JOIN drill_versions v ON v.id = d.current_version_id`);
+  const refs = new Map(rows.map((r) => [r.slug, r.source_refs.length]));
+  const short = BANK_QUESTIONS.filter((q) => refs.get(q.slug) !== q.sources.reduce((n, r) => n + r.sections.length, 0)).map((q) => q.slug);
+  assert.deepEqual(short, []);
 });
 
 test('stage tiles count only the questions that match the filters', async () => {

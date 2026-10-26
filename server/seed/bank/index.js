@@ -60,7 +60,9 @@ export const EXTRA_FILES = {
   'new/calls.js': newCalls,
 };
 
-export const BANK_QUESTIONS = [...Object.values(BANK_FILES), ...Object.values(EXTRA_FILES)].flatMap((f) => f.QUESTIONS);
+// The first bank's questions, seeded before the AI Search Plans brief and the call field notes existed.
+export const FIRST_BANK_QUESTIONS = Object.values(BANK_FILES).flatMap((f) => f.QUESTIONS);
+export const BANK_QUESTIONS = [...FIRST_BANK_QUESTIONS, ...Object.values(EXTRA_FILES).flatMap((f) => f.QUESTIONS)];
 
 // Additions for the drills seeded before the question bank existed, by slug.
 export const EXISTING_UPDATES = Object.assign({}, ...Object.values(BANK_FILES).map((f) => f.EXISTING));

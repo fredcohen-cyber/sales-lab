@@ -6,6 +6,7 @@ import { SEED_DRILLS, SEED_PATHS } from './drills.js';
 import { ADDED_SECTIONS, CALL_LEARNINGS, OMNIZANT_AI_SEARCH, SEED_COLLECTIONS } from './collections.js';
 import { createCollection, createSection, splitDocument, splitSourceIntoCollection } from '../knowledge/sections.js';
 import { classifyBankDrills, seedQuestionBank, SEEDED_DRILL_NOTE } from './bank/seed.js';
+import { FIRST_BANK_QUESTIONS } from './bank/index.js';
 import { createPasswordLink, linkUrl } from '../users/links.js';
 import { audit } from '../lib/audit.js';
 
@@ -214,7 +215,8 @@ export async function seed(db, config, { log = console.log } = {}) {
   await once(db, 'knowledge-sections-v1', (q) => createSeedCollections(q, owner, log), log);
 
   // The Practice Studio question bank: questions per stage, each with the buyer's follow-up objections.
-  await once(db, 'question-bank-v1', (q) => seedQuestionBank(q, owner, log), log);
+  // Later questions cite material seeded below, so they are added by question-bank-v2.
+  await once(db, 'question-bank-v1', (q) => seedQuestionBank(q, owner, log, { questions: FIRST_BANK_QUESTIONS }), log);
 
   // Omnizant's GEO offer, the AI Search Plans, from the positioning brief Fred supplied.
   await once(db, OMNIZANT_AI_SEARCH.seedKey, (q) => createDocumentCollection(q, owner, log, OMNIZANT_AI_SEARCH), log);
