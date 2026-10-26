@@ -1,7 +1,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { addUser, drillBySlug, GOOD_ANSWER, ownerClient, sleep, startTestApp, submit, waitFor, waitForCoaching } from '../helpers.js';
+import { addUser, drillBySlug, GOOD_ANSWER, ownerClient, prepare, sleep, startTestApp, submit, waitFor, waitForCoaching } from '../helpers.js';
 import { SEED_DRILLS } from '../../server/seed/drills.js';
 import { BANK_QUESTIONS } from '../../server/seed/bank/index.js';
 import { runEvaluation, sweepStaleRuns } from '../../server/ai/evaluate.js';
@@ -34,6 +34,11 @@ test('the question bank is for managers, and coaching can score every question i
 
 test('preview shows persona, situation, objective, and settings, not the grading criteria or pushbacks', async () => {
   const d = await drillBySlug(h, 'ravenly-too-expensive');
+  // Reps practice only what a stage served them.
+  const unserved = await rep.post('/api/practice/preview', { drillId: d.id, persona: 'solo_attorney' });
+  assert.equal(unserved.status, 403);
+  assert.equal(unserved.data.error.code, 'not_served');
+  await prepare(rep, d.id, 'solo_attorney');
   const r = await rep.post('/api/practice/preview', { drillId: d.id, persona: 'solo_attorney', difficulty: 5, skepticism: 4, depth: 2 });
   assert.equal(r.status, 200);
   const s = r.data.scenario;
@@ -56,6 +61,7 @@ test('preview shows persona, situation, objective, and settings, not the grading
 
 test('answer is saved before coaching, then coaching completes with a verified evaluation', async () => {
   const d = await drillBySlug(h, 'ravenly-receptionist');
+  await prepare(rep, d.id, d.personas[0]);
   h.provider.behavior = 'hold';
   const created = await submit(rep, d, GOOD_ANSWER);
   assert.equal(created.status, 201);
@@ -98,6 +104,7 @@ test('double submission with the same request id creates one attempt', async () 
   const d = await drillBySlug(h, 'just-looking');
   const id = randomUUID();
   const body = { clientRequestId: id, drillId: d.id, persona: d.personas[0], mode: 'coached', answer: 'What prompted you to start looking now?' };
+  await prepare(rep, d.id, d.personas[0]);
   const [a, b] = await Promise.all([rep.post('/api/practice/attempts', body), rep.post('/api/practice/attempts', body)]);
   assert.ok([200, 201].includes(a.status) && [200, 201].includes(b.status));
   assert.equal(a.data.attempt.id, b.data.attempt.id);
@@ -121,6 +128,7 @@ test('retries are separate attempts; the original answer is preserved', async ()
 
 test('failed coaching keeps the answer and can be retried without retyping or duplicating', async () => {
   const d = await drillBySlug(h, 'close-ask-for-business');
+  await prepare(rep, d.id, d.personas[0]);
   h.provider.behavior = 'fail';
   const created = await submit(rep, d, 'Let me make sure I have this right. Have you heard and seen enough to make a decision?');
   const failed = await waitForCoaching(rep, created.data.attempt.id);
@@ -147,6 +155,7 @@ test('failed coaching keeps the answer and can be retried without retyping or du
 
 test('timeouts end the wait and are retryable; incomplete responses are not scored', async () => {
   const d = await drillBySlug(h, 'talk-to-partner');
+  await prepare(rep, d.id, d.personas[0]);
   h.provider.behavior = 'slow';
   const created = await submit(rep, d, 'Makes sense. What do you think your partner will want to know? Could we set 20 minutes Tuesday with both of you?');
   const timedOut = await waitForCoaching(rep, created.data.attempt.id);
@@ -165,6 +174,7 @@ test('timeouts end the wait and are retryable; incomplete responses are not scor
 
 test('a stale coaching request cannot overwrite a newer one', async () => {
   const d = await drillBySlug(h, 'stalled-follow-up');
+  await prepare(rep, d.id, d.personas[0]);
   h.provider.behavior = 'hold';
   const created = await submit(rep, d, 'Quick idea for you: two firms like yours fixed after-hours follow-up with one change. Does Tuesday or Thursday work?');
   const attemptId = created.data.attempt.id;
@@ -193,6 +203,7 @@ test('a stale coaching request cannot overwrite a newer one', async () => {
 
 test('interrupted runs are swept so nothing waits forever', async () => {
   const d = await drillBySlug(h, 'just-looking');
+  await prepare(rep, d.id, d.personas[0]);
   h.provider.behavior = 'hold';
   const created = await submit(rep, d, 'Totally fair. What prompted you to start looking now, and what would make this worth your time?');
   await waitFor(() => h.provider._waiters.length >= 1);
@@ -326,6 +337,7 @@ test('learners only see their own answers', async () => {
 
 test('unscored practice is offered only when coaching is unavailable, and is labeled', async () => {
   const d = await drillBySlug(h, 'just-looking');
+  await prepare(rep, d.id, d.personas[0]);
   const refused = await rep.post('/api/practice/attempts', { clientRequestId: randomUUID(), drillId: d.id, persona: d.personas[0], mode: 'unscored', answer: 'Practice answer here.' });
   assert.equal(refused.status, 409);
   // Archive the playbook sections this drill uses: it loses its only approved sources.

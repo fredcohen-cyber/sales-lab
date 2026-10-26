@@ -28,7 +28,7 @@ export const QUESTIONS = [
     ],
     assessed: ['product_accuracy', 'empathy_clarity', 'advancing'],
     defaults: [2, 2, 3],
-    sources: [{ collection: 'ravenly-product', sections: ['10 · ', '04 · ', '17 · ', '20 · '] }],
+    sources: [{ collection: 'ravenly-product', sections: ['10 · ', '04 · ', '17 · ', '20 · ', '12 · '] }],
   },
   {
     slug: 'demo-omnizant-plain-language',
@@ -102,8 +102,8 @@ export const QUESTIONS = [
     personas: ['solo_attorney'],
     personaLines: {},
     situation:
-      'You are walking a solo personal injury attorney through Ravenly’s Automations template library and stop on a new-lead intake sequence that combines welcome messages and a task. He is in court most days.',
-    buyerLine: '“So if a lead doesn’t answer, it just keeps texting them for me until they book? The last tool I bought promised that and didn’t deliver.”',
+      'You are walking a solo personal injury attorney through Ravenly’s Automations template library and stop on a new-lead intake sequence that combines welcome messages and a task. He is in court most days. If you are an AE, he is evaluating Ravenly; if you are an AM, he is an existing Ravenly client.',
+    buyerLine: '“So if a lead doesn’t answer, it just keeps texting them for me until they book? A tool I tried a few years ago promised that and didn’t deliver.”',
     objective: 'Explain what an automation can and cannot do, propose one sequence worth validating, and keep the attorney in charge of the conversations that matter.',
     goodLooksLike: [
       '- Explains the building blocks accurately: a trigger such as a new lead or a stage change, conditions, and immediate or timed steps that send an SMS, send an email, or create a task.',

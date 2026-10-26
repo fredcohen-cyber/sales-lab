@@ -20,12 +20,13 @@ const drillSchema = z.object({
   objective: z.string().trim().min(5, 'Add the objective.').max(1000),
   goodLooksLike: z.string().trim().min(5, 'Describe what a good answer does.').max(3000),
   assessedDimensions: z.array(z.enum(DIMENSION_KEYS)).min(1, 'Choose at least one scored dimension.'),
-  // Added to goodLooksLike for reps in that role.
+  // Added to goodLooksLike for reps in that role, when the drill is for both roles.
   roleGuidance: z
     .object({ ae: z.string().trim().max(2000).optional(), am: z.string().trim().max(2000).optional() })
     .default({}),
   // The buyer's likely follow-up objections, in order (used word for word when coaching is off).
-  pushbacks: z.array(z.string().trim().min(3, 'Write each pushback as the buyer would say it.').max(600)).max(5, 'List at most 5 pushbacks.').default([]),
+  // At most three: the buyer pushes back up to three times (see pushbacksFor).
+  pushbacks: z.array(z.string().trim().min(3, 'Write each pushback as the buyer would say it.').max(600)).max(3, 'List at most 3 pushbacks.').default([]),
   defaults: z.object({ difficulty: level, skepticism: level, depth: level }),
   sourceRefs: z
     .array(
@@ -43,10 +44,11 @@ const drillSchema = z.object({
   status: z.enum(['draft', 'active', 'archived']).optional(),
 });
 
-// Role expectations only for the roles this drill is for, and no empty ones.
+// Role expectations only for a drill for both roles (a drill for one role keeps all its criteria in
+// goodLooksLike, as the editor shows it), and no empty ones.
 function tidyRoleGuidance(body) {
   const out = {};
-  for (const role of body.roles) if (body.roleGuidance?.[role]?.trim()) out[role] = body.roleGuidance[role].trim();
+  if (body.roles.length > 1) for (const role of body.roles) if (body.roleGuidance?.[role]?.trim()) out[role] = body.roleGuidance[role].trim();
   body.roleGuidance = out;
 }
 

@@ -20,6 +20,9 @@ export async function freshDatabase(name) {
   return ADMIN_URL.replace(/\/[^/]*$/, `/${name}`);
 }
 
+// The app the current test file started, so helpers can act for the stage feed (see serve).
+let currentApp = null;
+
 export async function startTestApp({ dbName = 'saleslab_test', env = {} } = {}) {
   const url = await freshDatabase(dbName);
   const config = loadConfig({
@@ -44,7 +47,7 @@ export async function startTestApp({ dbName = 'saleslab_test', env = {} } = {}) 
     const s = app.listen(0, '127.0.0.1', () => resolve(s));
   });
   const base = `http://127.0.0.1:${server.address().port}`;
-  return {
+  const h = {
     db,
     config,
     provider,
@@ -59,6 +62,42 @@ export async function startTestApp({ dbName = 'saleslab_test', env = {} } = {}) 
       await db.end();
     },
   };
+  currentApp = h;
+  return h;
+}
+
+// Reps only practice what a stage served them (or a question they answered before). Tests that practice
+// a particular question first have its stage serve it, as the Practice Studio would.
+export async function serve(client, drillId, persona) {
+  if (!currentApp) throw new Error('serve() needs startTestApp() first');
+  const me = (await client.get('/api/auth/me')).data?.user;
+  if (!me || me.isManager) return;
+  const row = await currentApp.db.one(
+    `SELECT v.stage, v.personas FROM drills d JOIN drill_versions v ON v.id = d.current_version_id WHERE d.id = $1`,
+    [drillId],
+  );
+  if (!row) return;
+  await currentApp.db.query(
+    `INSERT INTO practice_draws (learner_id, stage, drill_id, persona) VALUES ($1, $2, $3, $4)
+     ON CONFLICT (learner_id, stage) DO UPDATE SET drill_id = EXCLUDED.drill_id, persona = EXCLUDED.persona, drawn_at = now()`,
+    [me.id, row.stage, drillId, persona || row.personas[0]],
+  );
+}
+
+// Gets a rep ready to start a conversation on a question: the stage serves it, and an unfinished
+// conversation on the same question and buyer is finished first.
+export async function prepare(client, drillId, persona) {
+  await serve(client, drillId, persona);
+  const me = (await client.get('/api/auth/me')).data?.user;
+  const open = await currentApp.db.one(
+    `SELECT a.id FROM attempts a
+      WHERE a.learner_id = $1 AND a.drill_id = $2 AND a.persona = COALESCE($3, a.persona) AND a.assignment_item_id IS NULL
+        AND a.turn_number < a.replies_planned
+        AND NOT EXISTS (SELECT 1 FROM attempts n WHERE n.conversation_id = a.conversation_id AND n.turn_number = a.turn_number + 1)
+      ORDER BY a.submitted_at DESC LIMIT 1`,
+    [me.id, drillId, persona || null],
+  );
+  if (open) await finishConversation(client, open.id);
 }
 
 export class Client {
@@ -151,8 +190,11 @@ export async function waitFor(fn, { timeout = 8000, interval = 50 } = {}) {
   }
 }
 
+// Submits a first reply to a question. A rep finishes an unfinished conversation on the same question
+// before starting another, so when one is in the way this answers its pushbacks first.
 export async function submit(client, drill, answer, extra = {}) {
-  return client.post('/api/practice/attempts', {
+  if (!extra.assignmentItemId && !extra.continueFrom) await serve(client, drill.id, extra.persona || drill.personas[0]);
+  const body = {
     clientRequestId: randomUUID(),
     drillId: drill.id,
     drillVersionId: drill.version_id,
@@ -160,7 +202,13 @@ export async function submit(client, drill, answer, extra = {}) {
     mode: 'coached',
     answer,
     ...extra,
-  });
+  };
+  let r = await client.post('/api/practice/attempts', body);
+  if (r.status === 409 && r.data?.error?.code === 'conversation_unfinished' && !extra.keepUnfinished) {
+    await finishConversation(client, r.data.error.details.attemptId);
+    r = await client.post('/api/practice/attempts', body);
+  }
+  return r;
 }
 
 export async function waitForCoaching(client, attemptId) {
@@ -182,6 +230,11 @@ export async function finishConversation(client, attemptId, { answer = FOLLOW_UP
   let view = (await client.get(`/api/practice/attempts/${attemptId}`)).data;
   for (let i = 0; i < 8; i += 1) {
     if (view.attempt.mode === 'coached') view = await waitForCoaching(client, view.attempt.id);
+    // Coaching that stopped is retried, as the rep would from the answer page.
+    if (view.conversation.next.state === 'coaching_stopped') {
+      await client.post(`/api/practice/attempts/${view.attempt.id}/evaluate`, {});
+      view = await waitForCoaching(client, view.attempt.id);
+    }
     const next = view.conversation.next;
     if (next.state !== 'reply') return view;
     const r = await client.post('/api/practice/attempts', { clientRequestId: randomUUID(), continueFrom: next.afterAttemptId, mode: view.attempt.mode, answer });

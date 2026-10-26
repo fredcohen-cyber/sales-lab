@@ -137,7 +137,7 @@ export const QUESTIONS = [
     assessed: ['discovery', 'product_accuracy', 'empathy_clarity', 'advancing'],
     defaults: [4, 3, 4],
     sources: [
-      { collection: 'ravenly-product', sections: ['03 · ', '07 · ', '02 · ', '16 · '] },
+      { collection: 'ravenly-product', sections: ['03 · ', '07 · ', '02 · ', '16 · ', '18 · '] },
       { collection: 'sales-playbook', sections: ['3. '] },
     ],
   },
@@ -278,7 +278,7 @@ export const QUESTIONS = [
     assessed: ['discovery', 'product_accuracy', 'persuasion', 'advancing'],
     defaults: [4, 3, 3],
     sources: [
-      { collection: 'ravenly-product', sections: ['16 · ', '19 · ', '20 · ', '12 · '] },
+      { collection: 'ravenly-product', sections: ['16 · ', '19 · ', '20 · ', '12 · ', '08 · '] },
       { collection: 'sales-playbook', sections: ['5. '] },
     ],
   },

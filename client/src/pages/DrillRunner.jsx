@@ -140,6 +140,9 @@ export function DrillRunner({ stage = null, initialPreview = null }) {
     } catch (e) {
       if (e.code === 'timeout' || e.code === 'network') {
         setSubmitError({ message: 'Sales Lab could not confirm your answer was saved. Your text is still here; submit again. It will not be saved twice.' });
+      } else if (e.code === 'conversation_unfinished' && e.details?.attemptId) {
+        // A conversation on this question is still open: go back to it. The draft stays on this device.
+        navigate(`/attempts/${e.details.attemptId}`, { state: { resumed: true } });
       } else {
         setSubmitError(e);
         requestId.current = null;
@@ -193,7 +196,7 @@ export function DrillRunner({ stage = null, initialPreview = null }) {
             <p style={{ marginBottom: 0 }}>{s.objective}</p>
             {pushbacks > 0 && (
               <p className="small muted" style={{ marginBottom: 0 }}>
-                This is a conversation: after each reply you get coaching, then the buyer pushes back{' '}
+                This is a conversation: after each reply {coaching?.available ? 'you get coaching, then ' : ''}the buyer pushes back{' '}
                 {pushbacks === 1 ? 'once more' : `${pushbacks} more times`}. You answer as {s.repRoleLabel ? `an ${s.repRoleLabel.toLowerCase()}` : 'yourself'}.
               </p>
             )}

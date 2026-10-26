@@ -126,7 +126,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“Three thousand dollars just for setup? That’s more than a year of the plan.”',
+      '“Your pricing page lists onboarding at three thousand dollars. That’s more than a year of the plan.”',
       '“Honestly, how many hours of my time will this take?”',
       '“Can we start next month instead, once things calm down?”',
     ],
@@ -342,6 +342,7 @@ export const EXISTING = {
     ],
   },
   'ravenly-guarantee-ask': {
+    sources: [{ collection: 'ravenly-product', sections: ['12 · '] }],
     pushbacks: [
       '“Your pricing page calculator shows a 108 times return. Was that just marketing?”',
       '“Then give me a money-back guarantee if it doesn’t work.”',

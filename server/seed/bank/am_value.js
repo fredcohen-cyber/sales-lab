@@ -82,9 +82,9 @@ export const QUESTIONS = [
     objective: 'Learn what the new practice needs, explain the plan scope accurately, and recommend one way forward without inventing upgrade terms.',
     goodLooksLike: [
       '- Asks about the new practice before answering: expected inquiry volume, what the attorney needs to know before a first call, and whether those visitors need another language.',
-      '- States the published scope accurately: Launch lists three practice areas for custom bot and form flows, all in use, while Ascend lists five, along with multilingual support.',
+      '- States the published scope accurately: Launch lists three practice areas for custom bot and form flows, all in use, while Ascend lists five, along with multilingual support; offers to confirm whether one more practice area can be added to Launch and how it would be priced, rather than presenting an upgrade as the only route.',
       '- Gives published prices without guessing at upgrade terms: Ascend is $199 a month on yearly billing or $229 monthly, against Launch at $99 or $119; confirms how a plan change works mid-term.',
-      '- Mentions that the public trial page lists immigration among its practice-area templates, as a starting point the attorney still reviews and approves.',
+      '- Mentions that the public trial page lists immigration among its practice-area templates, as a possible starting point, to be confirmed for this account, that the attorney still reviews and approves.',
       '- Recommends one option based on what the attorney said and asks for a decision or a dated next step.',
     ].join('\n'),
     roleGuidance: {},

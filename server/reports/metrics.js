@@ -12,6 +12,10 @@ const hasPendingCritical = (r) => (r.critical_failures || []).some((c) => c.stat
 
 const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 const round1 = (x) => (x === null ? null : Math.round(x * 10) / 10);
+// The replies behind conversation rows: critical failures and reviews are counted reply by reply, so a
+// conversation that is unfinished or partly reviewed never hides them.
+const repliesOf = (rows) => rows.flatMap((r) => r.reply_rows || [r]);
+const DAY_MS = 86_400_000;
 
 // Reports count conversations: a rep's replies to one question, with the buyer's pushbacks between
 // them. A conversation counts once every planned reply is in and coached and every reply's coaching
@@ -56,6 +60,8 @@ export function toConversationRows(replyRows) {
     const threshold = first.proficiency_threshold ?? null;
     out.push({
       ...first,
+      reply_rows: turns,
+      days: [...new Set(turns.map((t) => t.day))],
       replies: turns.length,
       unfinished,
       evaluation_id: evaluated ? first.evaluation_id : null,
@@ -128,8 +134,9 @@ export function trendByWeek(rows) {
     const b = solid[solid.length - 1];
     const delta = round1(b.average - a.average);
     const dir = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
-    // Like-for-like: compare only answers on the same subject, stage, and difficulty in both weeks.
-    const key = (r) => `${r.subject}|${r.stage}|${r.difficulty}`;
+    // Like-for-like: compare only answers on the same subject, stage, and difficulty in both weeks, and
+    // conversations of the same length (a single answer from before conversations is not comparable).
+    const key = (r) => `${r.subject}|${r.stage}|${r.difficulty}|${r.replies_planned || 1}`;
     const groupsA = new Map();
     for (const r of a.rows) groupsA.set(key(r), [...(groupsA.get(key(r)) || []), r]);
     let weighted = 0;
@@ -183,20 +190,24 @@ export function retryImprovement(exerciseAttempts) {
   }
   const gains = [];
   let easierExcluded = 0;
+  let lengthExcluded = 0;
   for (const rs of groups.values()) {
     const first = rs.find((r) => r.coached_number === 1);
     if (!first) continue;
-    const retries = rs.filter((r) => r.coached_number > 1);
+    const allRetries = rs.filter((r) => r.coached_number > 1);
+    // A retry is compared only with a first attempt of the same conversation length.
+    const retries = allRetries.filter((r) => (r.replies_planned || 1) === (first.replies_planned || 1));
+    lengthExcluded += allRetries.length - retries.length;
     const comparable = retries.filter((r) => r.difficulty >= first.difficulty && r.skepticism >= first.skepticism && r.depth >= first.depth);
     easierExcluded += retries.length - comparable.length;
     if (comparable.length === 0) continue;
     gains.push(Math.max(...comparable.map((r) => r.overall_score)) - first.overall_score);
   }
-  return { exercises: gains.length, averageGain: round1(mean(gains)), easierRetriesExcluded: easierExcluded };
+  return { exercises: gains.length, averageGain: round1(mean(gains)), easierRetriesExcluded: easierExcluded, differentLengthExcluded: lengthExcluded };
 }
 
 export function engagementFor(rows) {
-  const days = new Set(rows.map((r) => r.day));
+  const days = new Set(rows.flatMap((r) => r.days || [r.day]));
   return {
     submitted: rows.length,
     replies: rows.reduce((n, r) => n + (r.replies || 1), 0),
@@ -211,17 +222,19 @@ export function performanceFor(rows) {
   const first = rows.filter(isFirstScored);
   const coached = rows.filter((r) => r.mode === 'coached');
   const withEval = coached.filter((r) => r.evaluation_id);
-  const cfRows = withEval.filter((r) => liveCritical(r).length > 0);
+  // Reply by reply, whether or not the conversation is finished.
+  const replies = repliesOf(rows).filter((r) => r.mode === 'coached' && r.evaluation_id);
+  const cfReplies = replies.filter((r) => liveCritical(r).length > 0);
   return {
     firstAttemptAverage: round1(mean(first.map((r) => r.overall_score))),
     scoredFirstAttempts: first.length,
     metTarget: first.filter((r) => r.meets_target).length,
     criticalFailures: {
-      confirmed: cfRows.filter((r) => r.review_status === 'confirmed' && hasConfirmedCritical(r)).length,
-      pending: cfRows.filter((r) => r.review_status === 'provisional' && hasPendingCritical(r)).length,
-      disputed: cfRows.filter((r) => r.review_status === 'disputed').length,
+      confirmed: cfReplies.filter((r) => r.review_status === 'confirmed' && hasConfirmedCritical(r)).length,
+      pending: cfReplies.filter((r) => r.review_status === 'provisional' && hasPendingCritical(r)).length,
+      disputed: cfReplies.filter((r) => r.review_status === 'disputed').length,
     },
-    pendingReviews: withEval.filter((r) => r.review_status === 'provisional').length,
+    pendingReviews: replies.filter((r) => r.review_status === 'provisional').length,
     excluded: {
       retries: rows.filter(isRetry).length,
       unscored: rows.filter((r) => r.mode === 'unscored').length,
@@ -246,9 +259,14 @@ export function followUpReasons({ rep, rows, lastPracticeAt, assignmentStats, di
   for (const d of dims.filter((x) => x.verdict === 'weakness')) {
     reasons.push({ kind: 'weakness', dimension: d.key, text: `Weak in ${d.label.toLowerCase()} (${d.average} across ${d.n} first attempts)` });
   }
-  const confirmedCf = rows.filter((r) => r.review_status === 'confirmed' && hasConfirmedCritical(r)).length;
+  const replies = repliesOf(rows);
+  const confirmedCf = replies.filter((r) => r.review_status === 'confirmed' && hasConfirmedCritical(r)).length;
   if (confirmedCf > 0) reasons.push({ kind: 'critical', text: `${confirmedCf} confirmed critical failure${confirmedCf === 1 ? '' : 's'}` });
-  const stuck = rows.filter((r) => r.mode === 'coached' && !r.evaluation_id && ['failed', 'timed_out', 'superseded'].includes(r.run_status)).length;
-  if (stuck > 0) reasons.push({ kind: 'coaching_failed', text: `${stuck} conversation${stuck === 1 ? '' : 's'} with a reply still waiting for coaching to be retried` });
+  const stuck = replies.filter((r) => r.mode === 'coached' && !r.evaluation_id && ['failed', 'timed_out', 'superseded'].includes(r.run_status)).length;
+  if (stuck > 0) reasons.push({ kind: 'coaching_failed', text: `${stuck} repl${stuck === 1 ? 'y' : 'ies'} still waiting for coaching to be retried` });
+  // Conversations left for more than a day since the last reply; they do not count until they are finished.
+  const lastReplyAt = (r) => new Date((r.reply_rows || [r]).at(-1).submitted_at).getTime();
+  const left = rows.filter((r) => r.unfinished && now.getTime() - lastReplyAt(r) > DAY_MS).length;
+  if (left > 0) reasons.push({ kind: 'unfinished', text: `${left} practice conversation${left === 1 ? '' : 's'} left unfinished` });
   return reasons;
 }

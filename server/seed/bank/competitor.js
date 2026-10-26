@@ -59,7 +59,7 @@ export const QUESTIONS = [
     pushbacks: [
       '“Fine. Give me the one-sentence reason to pick you over them.”',
       '“If you two are about the same, I’ll just take whoever’s cheaper.”',
-      '“I don’t have time for a bake-off. Give me one reason to look at you at all.”',
+      '“Intaker’s site says its AI texting agent qualifies and follows up with leads. Does Ravenly do that?”',
     ],
     assessed: ['product_accuracy', 'empathy_clarity', 'discovery', 'advancing'],
     defaults: [2, 2, 2],
@@ -177,10 +177,10 @@ export const QUESTIONS = [
     objective:
       'Give an accurate, fair comparison she can defend, attribute competitor claims to the vendors, and steer the page toward the firm’s own evaluation.',
     goodLooksLike: [
-      '- Frames each vendor by its model: Ravenly, capture, qualification, intake work, and attribution run by the firm’s own team; Intaker, an intake platform that advertises communications and AI agents across channels; Juvo, outsourced human engagement plus tracking and reporting services.',
+      '- Frames each vendor by its model: Ravenly, capture, qualification, intake work, and attribution run by the firm’s own team; Intaker, an intake platform that advertises communications and AI agents across channels; Juvo, which advertises outsourced human engagement plus lead tracking and reporting services.',
       '- Price: Ravenly’s public tiers as of October 11, 2026 (Launch $99 a month on the yearly selection or $119 monthly, Ascend $199 or $229, Summit by custom quote); Juvo’s posted $40 per human chat lead and its separate $179-a-month Call Tracking Plus package; no verified current Intaker price, so a scoped quote.',
       '- Says the prices are not comparable until lead definitions, staff labor, onboarding, usage, and contract term are normalized, and does not call any option cheaper.',
-      '- AI: Ravenly’s AI summaries and scores help staff prioritize, with the original answers still available; Intaker advertises AI agents for texting and LSA follow-up; Juvo uses people. Does not claim a Ravenly autonomous texting agent or that Ravenly is uniquely AI-powered.',
+      '- AI: Ravenly’s AI summaries and scores help staff prioritize, with the original answers still available; Intaker advertises AI agents for texting and LSA follow-up; Juvo advertises human chat and SMS answering by its own people. Does not claim a Ravenly autonomous texting agent or that Ravenly is uniquely AI-powered.',
       '- Reporting: Ravenly’s observed source, channel, retained-outcome, paid, organic, LLM referral, and abandonment reporting; Intaker and Juvo each advertise reporting through to signed clients. Does not claim either competitor lacks reporting.',
       '- Suggests adding a “who does the work” row and a scenario-based evaluation, and offers to review her draft before Friday.',
     ].join('\n'),
@@ -224,7 +224,7 @@ export const QUESTIONS = [
     ],
     assessed: ['product_accuracy', 'discovery', 'objection_handling', 'advancing'],
     defaults: [4, 3, 5],
-    sources: [{ collection: 'ravenly-product', sections: ['15 · ', '10 · ', '13 · ', '20 · ', '11 · '] }],
+    sources: [{ collection: 'ravenly-product', sections: ['15 · ', '10 · ', '13 · ', '20 · ', '11 · ', '12 · '] }],
   },
   {
     slug: 'comp-juvo-call-tracking',
@@ -250,7 +250,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“So we’d be paying for CallRail on top of Ravenly?”',
+      '“Your website mentions CallRail. Would we be paying for CallRail on top of Ravenly?”',
       '“Can your reports show which ad campaign a phone call came from?”',
       '“With Juvo, chat and call tracking come from one vendor. Why would I piece this together with you?”',
     ],
@@ -334,7 +334,7 @@ export const QUESTIONS = [
     buyerLine: '“With respect, we handle SEO in-house, and our traffic is up this year. I’m not sure what an agency adds besides cost.”',
     objective: 'Earn her trust as an ally rather than a replacement, find out what she cannot get done, and agree on a next step she owns.',
     goodLooksLike: [
-      '- Credits her results and makes clear the aim is to support her work, not replace her.',
+      '- Credits her results and makes clear the conversation is about what she wants to get done, not about replacing her, without describing how an Omnizant engagement would be structured.',
       '- Asks what the partners judge her on and whether the extra traffic is turning into signed cases she can show them.',
       '- Explores gaps without assuming them, such as team capacity, technical website work, or visibility in AI answers (GEO), and lets her name what is not getting done.',
       '- Makes no claims about Omnizant results, timelines, or prices, and does not guarantee rankings, leads, or AI citations.',
@@ -385,6 +385,7 @@ export const QUESTIONS = [
 // Buyer pushbacks and role expectations for the seeded drills already in this stage, by slug.
 export const EXISTING = {
   'ravenly-juvo-real-person': {
+    sources: [{ collection: 'ravenly-product', sections: ['02 · '] }],
     pushbacks: [
       '“So who answers our website chat at two in the morning with Ravenly?”',
       '“Juvo’s people answer our text messages too. Does Ravenly do that?”',

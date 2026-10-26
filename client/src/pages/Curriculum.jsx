@@ -511,7 +511,7 @@ export function Curriculum() {
         <div>
           <h1>Curriculum</h1>
           <p className="sub">
-            {user.isManager ? 'Assign ordered practice to reps, follow their progress, and keep reusable learning paths.' : 'Exercises your manager assigned, in order. Each one completes when you receive coaching on it.'}
+            {user.isManager ? 'Assign ordered practice to reps, follow their progress, and keep reusable learning paths.' : 'Exercises your manager assigned, in order. Each one is a conversation with the buyer, and completes when your last reply has been coached.'}
           </p>
         </div>
       </div>

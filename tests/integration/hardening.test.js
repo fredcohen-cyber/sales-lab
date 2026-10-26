@@ -2,7 +2,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { addUser, drillBySlug, finishConversation, ownerClient, PASSWORD, sectionBy, startTestApp, submit, waitFor, waitForCoaching } from '../helpers.js';
+import { addUser, drillBySlug, finishConversation, ownerClient, PASSWORD, prepare, sectionBy, startTestApp, submit, waitFor, waitForCoaching } from '../helpers.js';
 
 let h;
 let owner;
@@ -118,6 +118,7 @@ test('coaching needs a relevant source: technique material cannot score an Omniz
   const presenting = await sectionBy(h, 'sales-playbook', '4. Presenting');
   const id = await createDrill({ sourceRefs: [{ sourceId: objections.id, sections: [] }, { sourceId: presenting.id }] });
   const { client: rep } = await addUser(h, owner, { name: 'Omar Omni', email: 'omar@omnizant.com' });
+  await prepare(rep, id);
   const preview = await rep.post('/api/practice/preview', { drillId: id });
   assert.equal(preview.status, 200);
   assert.equal(preview.data.coaching.available, false);
@@ -143,6 +144,7 @@ test('learners never see the titles of sources that are not approved', async () 
   const id = await createDrill({ title: 'Draft source drill', sourceRefs: [{ sourceId: draft.data.id, sections: [] }] });
   const { client: rep } = await addUser(h, owner, { name: 'Tia Titles', email: 'tia@ravenly.com' });
   assert.equal((await rep.get(`/api/drills/${id}`)).status, 403, 'reps never open questions directly');
+  await prepare(rep, id);
   const preview = await rep.post('/api/practice/preview', { drillId: id });
   assert.equal(preview.data.scenario.sources[0].title, null);
   assert.ok(!JSON.stringify(preview.data).includes('Secret Omnizant pricing draft'));
@@ -160,6 +162,7 @@ test('unscored practice does not use up the first attempt', async () => {
   });
   const id = await createDrill({ title: 'First attempt drill', sourceRefs: [{ sourceId: draft.data.id, sections: [] }] });
   const { client: rep, user } = await addUser(h, owner, { name: 'Una Unscored', email: 'una@omnizant.com' });
+  await prepare(rep, id);
   const answer = 'Pricing depends on your firm size. How many attorneys are on intake today?';
   const u = await rep.post('/api/practice/attempts', { clientRequestId: randomUUID(), drillId: id, mode: 'unscored', answer });
   assert.equal(u.status, 201);
@@ -292,7 +295,8 @@ test('a flood from one address does not lock the person out from another, even w
 });
 
 test('parallel submissions cannot get past the hourly coaching limit', async () => {
-  const { client: rep } = await addUser(h, owner, { name: 'Ria Rate', email: 'ria@omnizant.com' });
+  // Coaching limits apply to everyone; a manager can submit any question, so no stage feed is involved.
+  const { client: rep } = await addUser(h, owner, { name: 'Ria Rate', email: 'ria@omnizant.com', role: 'manager' });
   const d = await drillBySlug(h, 'just-looking');
   const results = await Promise.all(
     Array.from({ length: 12 }, (_, i) => submit(rep, d, `Totally fair. What prompted you to start looking now? Variation ${i} of my answer.`)),
@@ -304,7 +308,7 @@ test('parallel submissions cannot get past the hourly coaching limit', async () 
 });
 
 test('coaching requests wait their turn instead of failing when every slot is busy', async () => {
-  const { client: rep } = await addUser(h, owner, { name: 'Quin Queue', email: 'quin@ravenly.com' });
+  const { client: rep } = await addUser(h, owner, { name: 'Quin Queue', email: 'quin@ravenly.com', role: 'manager' });
   const d = await drillBySlug(h, 'send-me-information');
   h.provider.behavior = 'hold';
   try {

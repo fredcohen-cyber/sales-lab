@@ -99,7 +99,9 @@ documents stay archived so past answers still show exactly what they were scored
   on) serves one question at random from those written for the rep's role, preferring questions the rep
   has not answered and ones coaching can score. The question sets the buyer persona and the challenge
   levels, and reps cannot change them. The served question waits until it is answered, and a conversation
-  the rep has not finished comes back first, so skipping never leads to an easier question.
+  the rep has not finished comes back first, so skipping never leads to an easier question. (One whose
+  coaching stopped and was already retried as often as a rep may in an hour is set aside until it can be
+  retried, so the stage keeps serving other questions.)
 - **Every question is a conversation.** After each reply the coach scores it and writes the buyer's next
   line from what the rep actually said: one pushback at difficulty 1 or 2, two at 3, and three at 4 or 5.
   The rep reads the coaching, then answers the pushback. When the last reply is coached, the rep sees the
@@ -116,8 +118,9 @@ documents stay archived so past answers still show exactly what they were scored
   bank** in the Practice Studio, and can still assign specific questions in Curriculum.
 - **Reports count conversations.** A conversation counts once every planned reply is in and coached and
   every reply's coaching counts: one disputed reply leaves it out, and one waiting for review holds it.
-  Unfinished conversations are listed separately. An assigned exercise is complete when its conversation
-  is.
+  Unfinished conversations are listed separately, and managers are told about any left for more than a
+  day. Critical failures and pending reviews are counted reply by reply, so an unfinished conversation
+  never hides them. An assigned exercise is complete when its conversation is.
 
 ## How coaching stays honest
 
@@ -175,7 +178,7 @@ Automated tests use a test-only stand-in for the AI service that cannot be enabl
 
 ## Status
 
-Implemented and covered by automated tests (NN_SERVER server tests and NN_BROWSER browser tests): company email and
+Implemented and covered by automated tests (146 server tests and 22 browser tests): company email and
 password sign-in with manager-created accounts only, private single-use setup and reset links, sign-in
 throttling, deactivation and session revocation, server-side roles and learner privacy, the knowledge
 library as collections of sections with versions, approval, evidence basis, ordering, and document

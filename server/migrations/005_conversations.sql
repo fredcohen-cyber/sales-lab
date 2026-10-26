@@ -22,7 +22,6 @@ CREATE UNIQUE INDEX attempts_number ON attempts (learner_id, drill_id, persona, 
 ALTER TABLE attempts DROP CONSTRAINT attempts_coached_number_mode;
 ALTER TABLE attempts ADD CONSTRAINT attempts_coached_number_mode
   CHECK (CASE WHEN turn_number = 1 THEN (mode = 'coached') = (coached_number IS NOT NULL) ELSE coached_number IS NULL END);
-CREATE INDEX attempts_conversation ON attempts (conversation_id, turn_number);
 
 -- What a good answer does for each rep role ({"ae": "...", "am": "..."}), added to the shared criteria,
 -- and the follow-up objections the buyer is likely to raise, in order.

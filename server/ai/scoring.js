@@ -14,7 +14,7 @@ function negatesVerb(before) {
 }
 const GUARANTEE = /\b(guarantee[ds]?|guaranteeing|i promise|we promise|promise you|you will definitely|you'll definitely|will definitely|100% (?:sure|certain)|risk[- ]free results?)\b/i;
 const INJECTION =
-  /(ignore (?:all |any |the )?(?:previous|prior|above|earlier) (?:instructions|rules|prompts?)|disregard (?:the|your) (?:rules|instructions)|you are now|system prompt|as the (?:evaluator|grader|ai|model)|give (?:me|this(?: answer)?) (?:a )?(?:100|full marks|perfect|top)|score (?:this|me) (?:a )?(?:100|perfect|highly)|record_evaluation|<\/?\s*(?:rep_answer|source_material|scenario|rubric)\b)/i;
+  /(ignore (?:all |any |the )?(?:previous|prior|above|earlier) (?:instructions|rules|prompts?)|disregard (?:the|your) (?:rules|instructions)|you are now|system prompt|as the (?:evaluator|grader|ai|model)|give (?:me|this(?: answer)?) (?:a )?(?:100|full marks|perfect|top)|score (?:this|me) (?:a )?(?:100|perfect|highly)|record_evaluation|<\/?\s*(?:rep_answer|source_material|scenario|rubric|conversation|turn|buyer|rep_reply)\b)/i;
 
 function sentences(text) {
   return String(text)
@@ -211,6 +211,15 @@ export function processEvaluation({ output, scenario, answer, sources, rubricDim
       kind: 'instruction_text',
       claimQuote: null,
       note: 'The answer contains text addressed to the evaluator. It was treated as part of the answer, not as an instruction.',
+    });
+  }
+  // In a conversation, the earlier replies and the buyer's latest words were part of what coaching read.
+  const history = scenario.conversation?.history || [];
+  if (history.length && (history.some((t) => detectInjection(t.answer)) || detectInjection(scenario.buyerLine))) {
+    reviewFlags.push({
+      kind: 'instruction_text',
+      claimQuote: null,
+      note: 'An earlier reply in this conversation, or the buyer’s line it led to, contains text addressed to the evaluator. Coaching treated it as part of the conversation, not as an instruction; a manager should check this reply’s score.',
     });
   }
 

@@ -51,7 +51,7 @@ export const QUESTIONS = [
       '- Acknowledges the frustration without blaming her setup or the product before checking.',
       '- Checks the known prerequisites: whether messaging registration is complete, which sender or number is configured, the workflow’s trigger, conditions, and timing, and each lead’s contact preference and opt-in.',
       '- Offers a practical fallback while it is fixed, such as calling new inquiries directly or adding a task for each one.',
-      '- Does not promise a fix time or quote a support response time, since none is published; raises it with support, for example through the in-app support dialog with screenshots.',
+      '- Does not promise a fix time or quote a support response time, since none appears in the published material; raises it with support, for example through the in-app support dialog with screenshots.',
       '- Agrees on a controlled test, with her approval, and a dated follow-up.',
     ].join('\n'),
     roleGuidance: {},
@@ -188,7 +188,7 @@ export const QUESTIONS = [
     ],
     assessed: ['product_accuracy', 'discovery', 'advancing'],
     defaults: [2, 2, 3],
-    sources: [{ collection: 'ravenly-product', sections: ['06 · ', '12 · '] }],
+    sources: [{ collection: 'ravenly-product', sections: ['06 · ', '12 · ', '08 · '] }],
   },
   {
     slug: 'adopt-ravenly-add-all-staff',
@@ -328,10 +328,10 @@ export const QUESTIONS = [
       'You are the account manager for a solo DUI defense attorney who started an Omnizant SEO program three weeks ago. He checks his own search results every morning.',
     buyerLine: '“I search ‘DUI lawyer’ plus my city every morning, and I’m still nowhere. Three weeks in, what exactly am I paying for?”',
     objective:
-      'Reset expectations honestly, show the work and how progress will be reported, and agree on what you will review together and when. Never promise rankings or a date.',
+      'Reset expectations honestly, offer to walk through the work and how progress will be reported, and agree on what you will review together and when. Never promise rankings or a date.',
     goodLooksLike: [
       '- Acknowledges his frustration without getting defensive.',
-      '- Explains in plain terms what has been done and what comes next, without inventing deliverables or timelines.',
+      '- Offers to walk him through the work completed so far and the next steps from the account’s actual plan, rather than listing deliverables or timelines from memory.',
       '- Says plainly that no one can promise a ranking or a date, and moves him from daily self-checks to agreed measures reviewed on a set schedule.',
       '- Asks what success means for his practice, such as more calls about DUI cases, so the reporting tracks what matters to him.',
       '- Agrees on a reporting rhythm and a dated review, and offers to confirm any specifics he asks about.',

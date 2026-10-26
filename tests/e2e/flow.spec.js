@@ -2,6 +2,7 @@
 // Coaching uses the test-only mock provider; nothing here talks to a real AI service.
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { BASE, SHOTS, ownerSetupLink, shot } from './util.js';
 
 test.describe.configure({ mode: 'serial' });
@@ -55,7 +56,34 @@ async function addPerson(page, person, role = 'ae') {
   return { dialog, link };
 }
 
+// A rep finishes a conversation before starting another on the same question. Tests that only need a
+// new first answer finish the open one through the API (the browser flow is covered on its own).
+async function finishOpenConversations(page) {
+  const headers = { 'X-Requested-With': 'SalesLab' };
+  const list = await (await page.request.get(`/api/practice/attempts?drillId=${state.drillId}`)).json();
+  for (const c of list.attempts.filter((x) => x.conversation_state === 'unfinished')) {
+    let id = c.latest_turn_id;
+    for (let i = 0; i < 20; i += 1) {
+      const view = await (await page.request.get(`/api/practice/attempts/${id}`)).json();
+      const next = view.conversation.next;
+      if (next.state === 'finished') break;
+      if (next.state === 'coaching_stopped') await page.request.post(`/api/practice/attempts/${id}/evaluate`, { headers, data: {} });
+      if (next.state !== 'reply') {
+        await page.waitForTimeout(400);
+        continue;
+      }
+      const r = await page.request.post('/api/practice/attempts', {
+        headers,
+        data: { clientRequestId: randomUUID(), continueFrom: next.afterAttemptId, mode: view.attempt.mode, answer: FOLLOW_UP },
+      });
+      expect(r.status()).toBe(201);
+      id = (await r.json()).attempt.id;
+    }
+  }
+}
+
 async function submitAnswer(page, text) {
+  await finishOpenConversations(page);
   await page.goto(state.drillUrl);
   await page.getByRole('textbox', { name: 'Your answer' }).fill(text);
   await page.getByRole('button', { name: 'Submit for coaching' }).click();
@@ -176,7 +204,9 @@ test('Vic chooses a stage, not a question: it is served with its buyer and level
   state.vicAttemptUrl = new URL(vic.url()).pathname;
   // Later tests practice this same question again.
   const attempt = await (await vic.request.get(`/api${state.vicAttemptUrl.replace('/attempts/', '/practice/attempts/')}`)).json();
-  state.drillUrl = `/practice/drill/${attempt.attempt.drillId}`;
+  // With the buyer Vic met: a rep may open a question again only with a buyer they practiced it with.
+  state.drillId = attempt.attempt.drillId;
+  state.drillUrl = `/practice/drill/${attempt.attempt.drillId}?persona=${attempt.attempt.persona}`;
   // After coaching, the buyer pushes back.
   await expect(vic.getByRole('heading', { name: /pushes back: reply 2 of \d/ })).toBeVisible();
   await shot(vic, '10-coaching-result');
@@ -402,7 +432,7 @@ test('managers browse the question bank and see each question’s pushbacks', as
   await expect(owner.getByRole('heading', { name: /^Cold outreach/, level: 2 })).toBeVisible();
   await expect(owner.getByRole('link', { name: DRILL })).toBeVisible();
   await shot(owner, '28-question-bank');
-  await owner.goto(`${state.drillUrl.replace('/practice/drill/', '/drills/')}/edit`);
+  await owner.goto(`/drills/${state.drillId}/edit`);
   await expect(owner.getByRole('heading', { name: 'The buyer’s pushbacks' })).toBeVisible();
   await expect(owner.getByLabel('Pushback 1')).not.toHaveValue('');
 });
@@ -427,7 +457,7 @@ test('remaining screens render for review', async ({ browser }) => {
     await owner.waitForLoadState('networkidle');
     await shot(owner, name);
   }
-  await owner.goto(`${state.drillUrl.replace('/practice/drill/', '/drills/')}/edit`);
+  await owner.goto(`/drills/${state.drillId}/edit`);
   await expect(owner.getByRole('heading', { name: /^Edit/, level: 1 })).toBeVisible();
   // The drill's sources are sections of the playbook and the Ravenly collection, chosen whole.
   await expect(owner.getByText(/\d+ chosen\. Coaching reads them/)).toBeVisible();

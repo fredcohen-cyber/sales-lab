@@ -48,6 +48,11 @@ export function CoachingResult({ attempt, evaluation, next, conversation = null,
   const multi = (conversation?.repliesPlanned || 1) > 1;
   const pushesBack = multi && attempt.turn < conversation.repliesPlanned;
   const finished = !conversation || conversation.next.state === 'finished';
+  // What the buyer actually said next: the line the next reply answered, or the one waiting for a reply.
+  // It can differ from the coach's text, which is not used when it reads like instructions to the coach.
+  const nextLine = pushesBack
+    ? conversation.turns.find((t) => t.turn === attempt.turn + 1)?.buyerLine || (conversation.isLatest && conversation.next.buyerLine) || null
+    : null;
   const cfs = ev.criticalFailures || [];
   const pendingCfs = cfs.filter((c) => (c.status || 'pending') === 'pending');
   const confirmedCfs = cfs.filter((c) => c.status === 'confirmed');
@@ -165,7 +170,7 @@ export function CoachingResult({ attempt, evaluation, next, conversation = null,
                 : `How the ${s.persona.label.toLowerCase()} might respond`}
           </h2>
           <div className="buyer-reply">
-            <blockquote>{ev.feedback.buyerReaction}</blockquote>
+            <blockquote>{nextLine || ev.feedback.buyerReaction}</blockquote>
           </div>
           <p className="tiny muted">
             {pushesBack

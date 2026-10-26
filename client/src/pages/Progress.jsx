@@ -90,7 +90,7 @@ export function Progress() {
         <div className="stack-lg" style={{ opacity: loading ? 0.6 : 1 }}>
           <Disclosures items={data.disclosures} />
           <div className="stats">
-            <Stat label="First-attempt average" value={me.performance.firstAttemptAverage ?? '—'} note={`${me.performance.scoredFirstAttempts} scored first attempts`} />
+            <Stat label="First-attempt average" value={me.performance.firstAttemptAverage ?? '—'} note={`${me.performance.scoredFirstAttempts} scored first attempt${me.performance.scoredFirstAttempts === 1 ? '' : 's'}`} />
             <Stat label="Met target on first try" value={me.performance.scoredFirstAttempts ? `${me.performance.metTarget} of ${me.performance.scoredFirstAttempts}` : '—'} note={`Target ${data.thresholds.proficiency}`} />
             <Stat label="Questions answered" value={me.engagement.submitted} note={`${me.engagement.replies} replies, ${me.engagement.retries} retries, ${me.engagement.unscored} unscored`} />
             <Stat label="Practice days" value={me.engagement.practiceDays} note={`In the last ${data.period.days} days`} />

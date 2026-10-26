@@ -224,6 +224,11 @@ export async function buildReport(db, filters, { selfUser = null } = {}) {
       `Retry gains leave out ${team.retry.easierRetriesExcluded} retr${team.retry.easierRetriesExcluded === 1 ? 'y' : 'ies'} done at easier settings than the first attempt.`,
     );
   }
+  if (team.retry.differentLengthExcluded > 0) {
+    disclosures.push(
+      `Retry gains also leave out ${team.retry.differentLengthExcluded} retr${team.retry.differentLengthExcluded === 1 ? 'y' : 'ies'} whose conversation had a different number of replies than the first attempt, such as a single answer given before practice conversations.`,
+    );
+  }
 
   return {
     filters,

@@ -1,5 +1,20 @@
 // Practice conversations: the rep's replies to one question and the buyer's pushbacks between them.
 // Each reply is an attempt row with its own coaching; these helpers read a conversation as a whole.
+import { detectInjection } from '../ai/scoring.js';
+
+// Used when the coach gives no usable pushback and the question has no written one left.
+export const FALLBACK_PUSHBACK = '“I’m still not convinced. What would actually change for us if we did this?”';
+
+// The buyer's words after a reply that is not the last: in coached practice the coach's pushback, which
+// answers what the rep said; in unscored practice the question's next written pushback. A coach's
+// pushback that is missing, or that reads like instructions to the coach (which a rep could try to
+// steer it into), is replaced by the written one.
+export function buyerLineAfter({ mode, turnNumber, buyerReaction, pushbacks }) {
+  const written = (pushbacks || [])[turnNumber - 1] || null;
+  if (mode !== 'coached') return written;
+  const line = String(buyerReaction || '').trim();
+  return !line || detectInjection(line) ? written || FALLBACK_PUSHBACK : line;
+}
 
 // Per conversation, joined to a query over first replies (alias "a" by default): how far it got, its
 // score so far, and the state of its latest reply. Columns come out under the given prefix.
@@ -8,7 +23,7 @@ export function conversationSummarySql(alias = 'a', name = 'conv') {
   LEFT JOIN LATERAL (
     SELECT count(*)::int AS replies_done,
            count(*) FILTER (WHERE t.mode = 'coached' AND t.evaluation_id IS NULL)::int AS replies_awaiting,
-           count(*) FILTER (WHERE te.id IS NOT NULL AND te.overall_score IS NULL)::int AS replies_pending_review,
+           count(*) FILTER (WHERE te.id IS NOT NULL AND (te.review_status = 'provisional' OR te.overall_score IS NULL))::int AS replies_pending_review,
            count(*) FILTER (WHERE te.review_status = 'disputed')::int AS replies_disputed,
            round(avg(te.overall_score))::int AS conversation_average,
            -- A conversation counts only when every reply's coaching counts.
@@ -21,7 +36,8 @@ export function conversationSummarySql(alias = 'a', name = 'conv') {
            min(te.proficiency_threshold) AS conversation_threshold,
            (array_agg(t.id ORDER BY t.turn_number DESC))[1] AS latest_turn_id,
            (array_agg(t.turn_number ORDER BY t.turn_number DESC))[1] AS latest_turn_number,
-           (array_agg(tr.status ORDER BY t.turn_number DESC))[1] AS latest_run_status
+           (array_agg(tr.status ORDER BY t.turn_number DESC))[1] AS latest_run_status,
+           max(t.submitted_at) AS last_reply_at
       FROM attempts t
       LEFT JOIN evaluations te ON te.id = t.evaluation_id
       LEFT JOIN evaluation_runs tr ON tr.id = t.latest_run_id
@@ -32,14 +48,14 @@ export const CONVERSATION_SUMMARY_SQL = conversationSummarySql();
 
 // The conversation's score is the average of its replies' scores, once every planned reply is in and
 // coached. It counts only when every reply's coaching counts: a disputed reply leaves the conversation
-// without a score, and a reply waiting for a manager's decision on a possible critical failure leaves
-// the score open.
+// without a score, and a reply waiting for a manager's review (a possible critical failure or a flag)
+// leaves the score open until the review is done.
 export function conversationScore(turns, repliesPlanned) {
   if (turns.length < repliesPlanned) return { state: 'unfinished', score: null };
   if (turns.some((t) => t.mode !== 'coached')) return { state: 'unscored', score: null };
   if (turns.some((t) => !t.evaluation_id)) return { state: 'awaiting_coaching', score: null };
   if (turns.some((t) => t.review_status === 'disputed')) return { state: 'disputed', score: null };
-  if (turns.some((t) => t.overall_score === null || t.overall_score === undefined)) return { state: 'pending_review', score: null };
+  if (turns.some((t) => t.review_status === 'provisional' || t.overall_score === null || t.overall_score === undefined)) return { state: 'pending_review', score: null };
   return { state: 'scored', score: Math.round(turns.reduce((s, t) => s + t.overall_score, 0) / turns.length) };
 }
 
@@ -63,9 +79,9 @@ function nextStep(latest, repliesPlanned, pushbacks) {
   if (!latest || latest.turn_number >= repliesPlanned) return { state: 'finished' };
   if (latest.mode === 'coached') {
     if (!latest.evaluation_id) return { state: latest.run_status === 'running' ? 'waiting' : 'coaching_stopped', afterAttemptId: latest.id };
-    return { state: 'reply', afterAttemptId: latest.id, buyerLine: latest.buyer_reaction || null };
   }
-  return { state: 'reply', afterAttemptId: latest.id, buyerLine: (pushbacks || [])[latest.turn_number - 1] || null };
+  const buyerLine = buyerLineAfter({ mode: latest.mode, turnNumber: latest.turn_number, buyerReaction: latest.buyer_reaction, pushbacks });
+  return buyerLine ? { state: 'reply', afterAttemptId: latest.id, buyerLine } : { state: 'finished' };
 }
 
 export function conversationView(turns, { current, pushbacks }) {

@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { addUser, drillBySlug, ownerClient, sectionBy, startTestApp, submit, waitForCoaching } from '../helpers.js';
+import { addUser, drillBySlug, ownerClient, prepare, sectionBy, startTestApp, submit, waitForCoaching } from '../helpers.js';
 import { parseSections } from '../../server/lib/text.js';
 import { SEED_DRILLS } from '../../server/seed/drills.js';
 import { BANK_QUESTIONS, EXISTING_UPDATES } from '../../server/seed/bank/index.js';
@@ -468,6 +468,7 @@ test('learners never learn the name of a collection they cannot read', async () 
   ]);
   // Reps never list questions; what they see of one comes with practicing it.
   assert.equal((await rep.get(`/api/drills/${made.data.id}`)).status, 403);
+  await prepare(rep, made.data.id);
   const preview = (await rep.post('/api/practice/preview', { drillId: made.data.id })).data;
   assert.deepEqual(names(preview.scenario), [
     [true, null],

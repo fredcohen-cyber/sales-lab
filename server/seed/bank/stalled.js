@@ -67,7 +67,7 @@ export const QUESTIONS = [
     assessed: ['product_accuracy', 'discovery', 'persuasion', 'advancing'],
     defaults: [4, 4, 3],
     sources: [
-      { collection: 'ravenly-product', sections: ['09 · ', '03 · ', '19 · ', '14 · '] },
+      { collection: 'ravenly-product', sections: ['09 · ', '03 · ', '19 · ', '14 · ', '18 · '] },
       { collection: 'sales-playbook', sections: ['7. '] },
     ],
   },
@@ -87,7 +87,7 @@ export const QUESTIONS = [
     objective: 'Help your champion move the partners with evidence that will hold up, and get a decision-maker into a dated conversation.',
     goodLooksLike: [
       '- Agrees the partners need something short, and asks what each partner cares about and what usually gets their attention.',
-      '- Explains that the calculator’s figures, including the 108x, come from default assumptions (25% more captured leads, a 25% better close rate, and an illustrative $500 a month), compare added revenue with cost rather than profit, and are a scenario, not a result to forward as proof.',
+      '- Explains that the calculator’s figures, including the 108x, come from default assumptions (25% more captured leads, a 25% relative improvement in close rate, and an illustrative $500 a month), compare added revenue with cost rather than profit, and are a scenario, not a result to forward as proof.',
       '- Offers a one-page business case built from the firm’s own numbers: inquiries a month, retained rate, value per matter, and full cost, including a no-change scenario.',
       '- Does not invent customer results or present website statistics as facts about this firm.',
       '- Proposes a 20-minute call with the deciding partner on a specific day rather than relying on a forwarded document.',
@@ -155,7 +155,7 @@ export const QUESTIONS = [
     objective: 'Leave a voicemail of about 30 seconds with a specific, accurate reason to call back and a clear next step. No “just checking in.”',
     goodLooksLike: [
       '- Says who is calling and why in the first sentence, without “just checking in” or “following up.”',
-      '- Brings one new idea tied to her problem: Ravenly’s abandonment report shows the question where visitors drop out of its chat and case evaluation flows, so her team can see which step to fix.',
+      '- Brings one new idea tied to her problem: Ravenly’s abandonment report shows the question where visitors drop out of its chat and case evaluation flows, so her team can see which step warrants a closer look.',
       '- Does not claim Ravenly explains why visitors leave or sends recovery messages to people who abandon.',
       '- Proposes a specific next step, such as 15 minutes on Tuesday or Thursday to show the report, and leaves a callback number.',
       '- Keeps it short and free of guilt or pressure.',
@@ -205,7 +205,7 @@ export const QUESTIONS = [
     assessed: ['product_accuracy', 'objection_handling', 'empathy_clarity', 'advancing'],
     defaults: [5, 5, 4],
     sources: [
-      { collection: 'ravenly-product', sections: ['19 · ', '20 · ', '18 · '] },
+      { collection: 'ravenly-product', sections: ['19 · ', '20 · ', '18 · ', '06 · '] },
       { collection: 'sales-playbook', sections: ['7. ', '6. '] },
     ],
   },
@@ -404,7 +404,7 @@ export const QUESTIONS = [
       ].join('\n'),
     },
     pushbacks: [
-      '“Cash is tight this month, and I’d rather not take on another bill right now.”',
+      '“Cash is tight this month, and I’m not sure I want to commit to this right now.”',
       '“I did skim it, and the term is longer than I expected. I don’t like being locked in.”',
       '“Maybe I should hold off a few months and see whether I really need this.”',
     ],
@@ -425,7 +425,7 @@ export const EXISTING = {
   },
   'send-me-information': {
     pushbacks: [
-      '“I really don’t have time for another meeting. Just put it in an email.”',
+      '“Honestly, my week is packed. Whatever this is, it has to be quick.”',
       '“I’m not making any decisions this quarter anyway, so there’s no rush.”',
       '“To be blunt, we’re fine the way we are. Why would I spend time on this at all?”',
     ],

@@ -60,12 +60,12 @@ export const QUESTIONS = [
     pushbacks: [
       '“Just match their price and I’ll recommend renewing.”',
       '“Their rep says they integrate with everything we use. Do you?”',
-      '“The partners love that their AI texts leads back on its own. If Ravenly can’t do that, why are we even talking?”',
+      '“The partners also asked whether Intaker’s AI is more accurate than your scoring. Is it?”',
     ],
     assessed: ['product_accuracy', 'objection_handling', 'persuasion', 'advancing'],
     defaults: [5, 5, 4],
     sources: [
-      { collection: 'ravenly-product', sections: ['14 · ', '13 · ', '12 · ', '08 · '] },
+      { collection: 'ravenly-product', sections: ['14 · ', '13 · ', '12 · ', '08 · ', '10 · '] },
       { collection: 'sales-playbook', sections: ['6. '] },
     ],
   },
@@ -188,7 +188,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“That’s a lot of words. Is the answer yes or no?”',
+      '“And who at your company, or at your vendors, can read what people type into that chat?”',
       '“Your terms mention using aggregate or anonymized data to improve your models. What does that mean when someone describes their arrest in detail?”',
       '“Put it in our contract that none of our data is used for any AI training, ever, or we walk.”',
     ],
@@ -322,7 +322,7 @@ export const QUESTIONS = [
     ],
     assessed: ['discovery', 'product_accuracy', 'persuasion', 'advancing'],
     defaults: [3, 3, 3],
-    sources: [{ collection: 'ravenly-product', sections: ['13 · ', '18 · ', '19 · ', '02 · '] }],
+    sources: [{ collection: 'ravenly-product', sections: ['13 · ', '18 · ', '19 · ', '02 · ', '09 · '] }],
   },
   {
     slug: 'renew-omnizant-pause-seo',

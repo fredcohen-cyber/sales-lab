@@ -189,7 +189,7 @@ export const QUESTIONS = [
     assessed: ['product_accuracy', 'persuasion', 'advancing'],
     defaults: [3, 2, 2],
     sources: [
-      { collection: 'ravenly-product', sections: ['02 · ', '03 · ', '21 · '] },
+      { collection: 'ravenly-product', sections: ['02 · ', '03 · ', '21 · ', '18 · '] },
       { collection: 'sales-playbook', sections: ['2. ', '8. '] },
     ],
   },
@@ -210,7 +210,7 @@ export const QUESTIONS = [
       'Reply in a short message that answers honestly, without claiming exclusivity or results, ties one or two demonstrable strengths to her job of showing which channels produce retained cases, and asks one question.',
     goodLooksLike: [
       '- Does not promise more signed cases, and does not claim Ravenly is the only or the best product at anything.',
-      '- Picks one or two strengths that fit her role, such as reporting that follows sources and channels through to retained outcomes, LLM referral reporting, or question-level abandonment analytics, and offers them as things to see rather than proven advantages.',
+      '- Picks one or two demonstrable strengths that fit her role, such as LLM referral reporting or question-level abandonment analytics, and offers them as things to see rather than proven or exclusive advantages, without implying that other vendors lack source-to-signed-case reporting.',
       '- Stays accurate about measurement: attribution works where source data is available and depends on the firm recording outcomes; it is not complete visibility, and the rep does not promise it will prove ROI.',
       '- Keeps it to a few sentences that suit LinkedIn, with no feature list.',
       '- Ends with one specific question, such as how she shows the partners today which campaigns produce retained matters.',
@@ -224,7 +224,7 @@ export const QUESTIONS = [
     assessed: ['product_accuracy', 'persuasion', 'advancing'],
     defaults: [4, 4, 3],
     sources: [
-      { collection: 'ravenly-product', sections: ['13 · ', '09 · ', '03 · '] },
+      { collection: 'ravenly-product', sections: ['13 · ', '09 · ', '03 · ', '18 · ', '12 · '] },
       { collection: 'sales-playbook', sections: ['2. '] },
     ],
   },

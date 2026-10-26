@@ -63,8 +63,8 @@ export function Home() {
           {data.next ? (
             <NextUpCard next={data.next} />
           ) : (
-            <Empty title="No assigned exercises right now" action={<Link className="btn" to="/practice">Choose a drill</Link>}>
-              Your manager’s assignments will appear here. Meanwhile, pick any drill to practice.
+            <Empty title="No assigned exercises right now" action={<Link className="btn" to="/practice">Choose a stage</Link>}>
+              Your manager’s assignments will appear here. Meanwhile, choose a stage in the Practice Studio for your next question.
             </Empty>
           )}
           {data.overdueAssignments > 0 && (
@@ -92,7 +92,7 @@ export function Home() {
                   <thead>
                     <tr>
                       <th>Question</th>
-                      <th>Submitted</th>
+                      <th>Last reply</th>
                       <th>Attempt</th>
                       <th className="num">Score</th>
                       <th>Status</th>
@@ -102,14 +102,24 @@ export function Home() {
                     {data.recent.map((r) => (
                       <tr key={r.id}>
                         <td>
-                          <Link className="row-link" to={`/attempts/${r.id}`}>
+                          <Link className="row-link" to={`/attempts/${r.latest_turn_id || r.id}`}>
                             {r.drill_title}
                           </Link>
                         </td>
-                        <td>{fmtRelative(r.submitted_at)}</td>
+                        <td>{fmtRelative(r.last_reply_at || r.submitted_at)}</td>
                         <td>{attemptLabel(r, { short: true })}</td>
                         <td className="num">{scoreText(r)}</td>
-                        <td>{r.mode === 'unscored' ? <span className="badge badge-neutral">Unscored practice</span> : r.review_status ? <ReviewBadge status={r.review_status} /> : <RunBadge status={r.run_status} />}</td>
+                        <td>
+                          {r.mode === 'unscored' ? (
+                            <span className="badge badge-neutral">Unscored practice</span>
+                          ) : r.conversation_state === 'unfinished' ? (
+                            <span className="badge badge-info">In progress</span>
+                          ) : r.replies_awaiting > 0 ? (
+                            <RunBadge status={r.latest_run_status} />
+                          ) : (
+                            <ReviewBadge status={r.conversation_review_status} />
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -134,7 +144,7 @@ function ManagerSnapshot({ m }) {
         </Link>
       </div>
       <div className="stats">
-        <Stat label="First-attempt average" value={t.performance.firstAttemptAverage ?? '—'} note={`${t.performance.scoredFirstAttempts} scored first attempts`} />
+        <Stat label="First-attempt average" value={t.performance.firstAttemptAverage ?? '—'} note={`${t.performance.scoredFirstAttempts} scored first attempt${t.performance.scoredFirstAttempts === 1 ? '' : 's'}`} />
         <Stat label="Reps practicing" value={`${t.participants} of ${t.activeReps}`} note="Based on submitted answers" />
         <Stat label="Questions answered" value={t.engagement.submitted} note={`${t.engagement.replies} replies, ${t.engagement.retries} retries`} />
         <Stat label="Pending reviews" value={m.pendingReviews} note={<Link to="/coaching">Review now</Link>} />

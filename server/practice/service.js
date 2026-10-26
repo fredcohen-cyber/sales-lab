@@ -4,7 +4,7 @@ import { aiConfigured } from '../config.js';
 import { availabilityReason, DRILL_VERSION_SQL, UNAVAILABLE_TEXT } from '../drills/service.js';
 import { resolveSourceRefs } from '../knowledge/service.js';
 import { buildScenario, continueScenario, practiceRole, repliesPlanned, scenarioFor } from './scenario.js';
-import { CONVERSATION_SUMMARY_SQL, conversationView, loadConversationTurns, withConversationScore } from './conversation.js';
+import { buyerLineAfter, CONVERSATION_SUMMARY_SQL, conversationView, loadConversationTurns, withConversationScore } from './conversation.js';
 import { abortRun, MIN_SECONDS_BEFORE_SUPERSEDE, RUNS_PER_ATTEMPT_PER_HOUR, startRun } from '../ai/evaluate.js';
 import { audit } from '../lib/audit.js';
 import { RUN_ERROR_MESSAGES } from '../ai/provider.js';
@@ -43,6 +43,29 @@ async function loadPersona(q, key) {
   return p;
 }
 
+// Reps never choose a question: outside an assignment they practice the question a stage served them,
+// or one they have answered before with the same buyer (to try it again).
+async function assertServedOrRetry(q, user, drillId, persona) {
+  const served = await q.one(`SELECT 1 FROM practice_draws WHERE learner_id = $1 AND drill_id = $2 AND persona = $3`, [user.id, drillId, persona]);
+  if (served) return;
+  const before = await q.one(`SELECT 1 FROM attempts WHERE learner_id = $1 AND drill_id = $2 AND persona = $3 AND turn_number = 1 LIMIT 1`, [user.id, drillId, persona]);
+  if (before) return;
+  throw new HttpError(403, 'not_served', 'Questions come from the stages in the Practice Studio. Choose a stage to get your next question.');
+}
+
+// The rep's unfinished conversation on this question and buyer (for an assignment, on that exercise):
+// its latest reply. A new conversation waits until it is finished.
+async function unfinishedOn(q, userId, drillId, persona, assignmentItemId = null) {
+  return q.one(
+    `SELECT a.id FROM attempts a
+      WHERE a.learner_id = $1 AND a.drill_id = $2 AND a.persona = $3 AND a.assignment_item_id IS NOT DISTINCT FROM $4
+        AND a.turn_number < a.replies_planned
+        AND NOT EXISTS (SELECT 1 FROM attempts n WHERE n.conversation_id = a.conversation_id AND n.turn_number = a.turn_number + 1)
+      ORDER BY a.submitted_at DESC LIMIT 1`,
+    [userId, drillId, persona, assignmentItemId],
+  );
+}
+
 // Resolve what a learner will practice: drill version, persona, settings, and sources.
 export async function resolvePractice(q, config, user, input) {
   let drill;
@@ -57,7 +80,8 @@ export async function resolvePractice(q, config, user, input) {
     personaKey = item.persona;
     assigned = item;
   } else {
-    if (input.drillVersionId) {
+    // Managers may practice the version they previewed; reps always practice the current version.
+    if (input.drillVersionId && user.isManager) {
       drill = await q.one(`${DRILL_VERSION_SQL} WHERE v.id = $1 AND d.id = $2`, [input.drillVersionId, input.drillId]).catch(() => null);
     }
     if (!drill) {
@@ -69,6 +93,7 @@ export async function resolvePractice(q, config, user, input) {
     if (drill.status !== 'active' && !user.isManager) throw notFound('That drill is not available.');
     personaKey = input.persona || drill.personas[0];
     if (!drill.personas.includes(personaKey)) throw new HttpError(400, 'validation_failed', 'That persona is not part of this drill.');
+    if (!user.isManager) await assertServedOrRetry(q, user, drill.id, personaKey);
     const pick = (v, d) => (Number.isInteger(v) && v >= 1 && v <= 5 ? v : d);
     // Reps practice at the levels each question sets. Only managers change them, for example to try a
     // drill at another level before assigning it.
@@ -137,13 +162,18 @@ export async function createAttempt(db, config, user, body, { provider }) {
       throw conflict('coaching_available', 'Coaching is available for this drill, so submit it for coaching.');
     }
     if (body.mode === 'unscored' && ctx.assigned) {
-      throw conflict('unscored_assignment', 'Unscored practice cannot complete an assigned exercise. Practice it from the drill library instead.');
+      throw conflict('unscored_assignment', 'Unscored practice cannot complete an assigned exercise. Practice from a stage in the Practice Studio instead.');
     }
 
     // Serialize attempt numbering per learner + drill + persona.
     await q.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [`${user.id}:${ctx.drill.id}:${ctx.persona.key}`]);
     const dup = await q.one(`SELECT id FROM attempts WHERE learner_id = $1 AND client_request_id = $2`, [user.id, body.clientRequestId]);
     if (dup) return { attemptId: dup.id, runId: null, duplicate: true };
+    // A rep finishes a conversation before starting another on the same question.
+    if (!user.isManager) {
+      const open = await unfinishedOn(q, user.id, ctx.drill.id, ctx.persona.key, ctx.assigned?.id || null);
+      if (open) throw conflict('conversation_unfinished', 'You have an unfinished conversation on this question. Finish it first.', { attemptId: open.id });
+    }
     const num = await q.one(
       `SELECT COALESCE(max(attempt_number), 0) + 1 AS n,
               COALESCE(max(coached_number), 0) + 1 AS coached
@@ -204,14 +234,13 @@ export async function createAttempt(db, config, user, body, { provider }) {
   });
 }
 
-// The buyer's line a reply answers: the coach's pushback after the previous reply, or, in unscored
-// practice, the drill's next written pushback.
+// The buyer's line a reply answers (see buyerLineAfter). In coached practice it waits for the previous
+// reply's coaching.
 async function counterAfter(q, prev) {
-  if (prev.mode === 'coached') {
-    const ev = prev.evaluation_id ? await q.one(`SELECT feedback FROM evaluations WHERE id = $1`, [prev.evaluation_id]) : null;
-    return { ready: Boolean(ev), line: ev?.feedback?.buyerReaction?.trim() || null };
-  }
-  return { ready: true, line: (prev.scenario.pushbacks || [])[prev.turn_number - 1] || null };
+  const ev = prev.mode === 'coached' && prev.evaluation_id ? await q.one(`SELECT feedback FROM evaluations WHERE id = $1`, [prev.evaluation_id]) : null;
+  if (prev.mode === 'coached' && !ev) return { ready: false, line: null };
+  const line = buyerLineAfter({ mode: prev.mode, turnNumber: prev.turn_number, buyerReaction: ev?.feedback?.buyerReaction, pushbacks: prev.scenario.pushbacks });
+  return { ready: true, line };
 }
 
 // A reply to the buyer's pushback: the next turn of the rep's conversation, coached like the first.

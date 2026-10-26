@@ -245,8 +245,8 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“Wait, do the leads come from you, or do we still have to bring them in ourselves?”',
       '“We only get maybe ten web inquiries a month. Is this even worth it for us?”',
+      '“If we only use ten of the 50, aren’t we paying for leads we’ll never use?”',
       '“Honestly, I don’t see how software helps if we don’t have more leads. Convince me.”',
     ],
     assessed: ['product_accuracy', 'discovery', 'persuasion'],
@@ -275,7 +275,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“I really just need a range. Can you put a ballpark in your reply?”',
+      '“Even if we talk, I can’t sign off on anything. Our managing partner approves all marketing spend.”',
       '“Two other agencies sent pricing right away. Why can’t you?”',
       '“If you’re way over our budget, I don’t want to waste 15 minutes. What’s the smallest engagement you take on?”',
     ],

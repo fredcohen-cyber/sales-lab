@@ -75,7 +75,7 @@ function ConversationSummary({ conversation, scenario, isOwn, againLink, assigne
   const { scoreState, score, ranked, repliesPlanned } = conversation;
   const why = {
     awaiting_coaching: 'The score appears once every reply has been coached.',
-    pending_review: 'A reply is waiting for a manager to review a possible critical failure, so the score is not final yet.',
+    pending_review: 'A reply is waiting for a manager’s review, so the conversation score is not final yet. Each reply’s own score is shown with it.',
     disputed: 'A manager disputed the coaching on a reply, so this conversation has no score that counts.',
     unscored: 'This was unscored practice, so it has no score.',
   };
@@ -153,6 +153,10 @@ function ReplyBox({ conversation, attempt, persona, userId }) {
     } catch (e) {
       if (e.code === 'timeout' || e.code === 'network') {
         setError({ message: 'Sales Lab could not confirm your reply was saved. Your text is still here; send it again. It will not be saved twice.' });
+      } else if (e.code === 'already_replied' && e.details?.attemptId) {
+        // Answered already, for example in another tab: show that reply.
+        writeDraft(key, '');
+        navigate(`/attempts/${e.details.attemptId}`);
       } else {
         setError(e);
         requestId.current = null;

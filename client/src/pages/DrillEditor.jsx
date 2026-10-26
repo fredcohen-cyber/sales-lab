@@ -283,6 +283,15 @@ export function DrillEditor() {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const toggle = (k, v) => setForm((f) => ({ ...f, [k]: f[k].includes(v) ? f[k].filter((x) => x !== v) : [...f[k], v] }));
+  // A drill for one role keeps all its criteria in “What a good answer does”: when one of two roles is
+  // unticked, what the other role's own field said moves there, where it stays visible and editable.
+  const toggleRole = (role) =>
+    setForm((f) => {
+      const roles = f.roles.includes(role) ? f.roles.filter((x) => x !== role) : [...f.roles, role];
+      if (roles.length !== 1 || f.roles.length < 2) return { ...f, roles };
+      const kept = (f.roleGuidance[roles[0]] || '').trim();
+      return { ...f, roles, roleGuidance: {}, goodLooksLike: kept ? `${f.goodLooksLike.trim()}\n${kept}` : f.goodLooksLike };
+    });
 
   const sectionsMissing = form.sourceRefs.some((r) => r.wholeSource === false && r.sections.length === 0);
   const save = async () => {
@@ -374,11 +383,11 @@ export function DrillEditor() {
               For
             </span>
             <label className="checkbox">
-              <input type="checkbox" checked={form.roles.includes('ae')} onChange={() => toggle('roles', 'ae')} />
+              <input type="checkbox" checked={form.roles.includes('ae')} onChange={() => toggleRole('ae')} />
               Account executives
             </label>
             <label className="checkbox">
-              <input type="checkbox" checked={form.roles.includes('am')} onChange={() => toggle('roles', 'am')} />
+              <input type="checkbox" checked={form.roles.includes('am')} onChange={() => toggleRole('am')} />
               Account managers
             </label>
           </div>
