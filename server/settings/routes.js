@@ -6,7 +6,7 @@ import { clientIp, requireManager } from '../auth/middleware.js';
 import { aiConfigured } from '../config.js';
 import { ProviderError } from '../ai/provider.js';
 import { COLLECTION_KINDS } from '../knowledge/sections.js';
-import { ALLOWED_EMAIL_DOMAINS, BRANDS, CRITICAL_FAILURE_TYPES, DEPTH_TEXT, DIFFICULTY_TEXT, DIMENSION_KEYS, EVIDENCE_BASIS, EXPERIENCE, REVIEW_STATUS, ROLES, SKEPTICISM_TEXT, STAGES, SUBJECTS } from '../domain.js';
+import { ALLOWED_EMAIL_DOMAINS, BRANDS, CRITICAL_FAILURE_TYPES, DEPTH_TEXT, DIFFICULTY_TEXT, DIMENSION_KEYS, EVIDENCE_BASIS, EXPERIENCE, PRODUCT_LINES, REVIEW_STATUS, ROLES, SKEPTICISM_TEXT, STAGES, SUBJECTS } from '../domain.js';
 
 export async function currentRubric(q) {
   return q.one(
@@ -29,6 +29,7 @@ export function settingsRoutes({ db, config, provider }) {
         roles: ROLES,
         experience: EXPERIENCE,
         brands: BRANDS,
+        productLines: PRODUCT_LINES,
         subjects: SUBJECTS,
         evidenceBasis: EVIDENCE_BASIS,
         collectionKinds: COLLECTION_KINDS,

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { notFound, parseBody, route } from '../lib/errors.js';
 import { previewOf } from './scenario.js';
 import { attemptView, createAttempt, resolvePractice, retryCoaching } from './service.js';
-import { drawQuestion, stageOverview } from './feed.js';
+import { drawQuestion, parseFilters, stageOverview } from './feed.js';
 import { CONVERSATION_SUMMARY_SQL, withConversationScore } from './conversation.js';
 import { scheduleEvaluation } from '../ai/evaluate.js';
 import { UNAVAILABLE_TEXT } from '../drills/service.js';
@@ -72,21 +72,26 @@ export function practiceRoutes({ db, config, provider, log }) {
     }),
   );
 
-  // The stages a person can practice, with how much of each they have done.
+  // The stages a person can practice, with how much of each they have done, optionally narrowed to one
+  // product line and one buyer (?product=&persona=).
   r.get(
     '/stages',
     route(async (req, res) => {
       res.set('Cache-Control', 'no-store');
-      res.json({ stages: await db.tx((q) => stageOverview(q, config, req.user)) });
+      res.json({
+        stages: await db.tx(async (q) => stageOverview(q, config, req.user, await parseFilters(q, req.query))),
+      });
     }),
   );
 
-  // Serve a stage's question: the unfinished conversation, the question waiting, or a new one.
+  // Serve a stage's question: the unfinished conversation, the question waiting, or a new one. The body
+  // may narrow it to a product line and a buyer: { product, persona }.
   r.post(
     '/stages/:stage/draw',
     route(async (req, res) => {
       const out = await db.tx(async (q) => {
-        const drawn = await drawQuestion(q, config, req.user, String(req.params.stage));
+        const filters = await parseFilters(q, req.body || {});
+        const drawn = await drawQuestion(q, config, req.user, String(req.params.stage), filters);
         if (drawn.resumeAttemptId) return { resumeAttemptId: drawn.resumeAttemptId };
         const p = await resolvePractice(q, config, req.user, { drillId: drawn.drillId, persona: drawn.persona });
         return { ...previewPayload(p, req.user), stage: req.params.stage };

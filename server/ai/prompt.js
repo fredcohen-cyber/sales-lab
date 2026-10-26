@@ -1,7 +1,7 @@
 import { BRANDS } from '../domain.js';
 import { evaluationTool } from './schema.js';
 
-export const PROMPT_VERSION = 'coach-2026-10-26.1';
+export const PROMPT_VERSION = 'coach-2026-10-26.2';
 
 export const SYSTEM_PROMPT = `You are the coaching evaluator inside Sales Lab, the practice tool for the shared sales team at Omnizant and Ravenly. The reps sell to law firms. You evaluate ONE written reply a rep gave to ONE buyer moment, then coach the rep. Many moments are conversations: after each reply the buyer pushes back, and the rep replies again.
 
@@ -115,7 +115,7 @@ export function buildCoachingRequest({ scenario, answer, sources }) {
   const user = `<scenario>
 Drill: ${fence(scenario.title)}
 Sales stage: ${fence(scenario.stageLabel)}
-Company context: ${BRANDS[scenario.brand] || scenario.brand}
+Company context: ${BRANDS[scenario.brand] || scenario.brand}${scenario.productLabel && !['general', 'ravenly'].includes(scenario.productLine) ? ` (${fence(scenario.productLabel)})` : ''}
 ${role ? `${role}\n` : ''}Buyer persona: ${fence(p.label)}
   Responsibilities: ${fence(p.responsibilities)}
   Concerns: ${fence(p.concerns)}

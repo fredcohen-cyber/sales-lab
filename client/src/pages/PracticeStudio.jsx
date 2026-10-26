@@ -7,25 +7,89 @@ import { PlusIcon } from '../components/Icons.jsx';
 import { NextUpCard } from './Home.jsx';
 
 const TRACK_TITLE = { ae: 'Account executive stages', am: 'Account manager stages' };
+// Product lines in the order reps see them in the filter.
+const PRODUCT_ORDER = ['ravenly', 'omnizant_ai_search', 'omnizant_web', 'general'];
 
-function StageTile({ stage }) {
+// A rep's last filters, remembered on this device only.
+const filtersKey = (userId) => `${userId}:practice-filters`;
+export function savedPracticeFilters(userId) {
+  try {
+    const v = JSON.parse(localStorage.getItem(filtersKey(userId)) || '{}');
+    return { product: typeof v.product === 'string' ? v.product : '', buyer: typeof v.buyer === 'string' ? v.buyer : '' };
+  } catch {
+    return { product: '', buyer: '' };
+  }
+}
+function savePracticeFilters(userId, filters) {
+  try {
+    localStorage.setItem(filtersKey(userId), JSON.stringify(filters));
+  } catch {
+    /* storage unavailable: filters still work for this visit */
+  }
+}
+// The query string for a product and buyer, as the stage endpoints and links take it.
+export const filterQuery = ({ product, buyer }, { persona = 'buyer' } = {}) => {
+  const q = new URLSearchParams();
+  if (product) q.set('product', product);
+  if (buyer) q.set(persona, buyer);
+  return q.toString();
+};
+
+function PracticeFilters({ meta, filters, onChange }) {
+  const products = PRODUCT_ORDER.filter((k) => meta.productLines?.[k]);
+  return (
+    <div className="filters" role="search" aria-label="Narrow the questions">
+      <div className="field">
+        <label htmlFor="pf-product">Product</label>
+        <select id="pf-product" value={filters.product} onChange={(e) => onChange({ ...filters, product: e.target.value })}>
+          <option value="">All products</option>
+          {products.map((k) => (
+            <option key={k} value={k}>
+              {meta.productLines[k].label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="field">
+        <label htmlFor="pf-buyer">Buyer</label>
+        <select id="pf-buyer" value={filters.buyer} onChange={(e) => onChange({ ...filters, buyer: e.target.value })}>
+          <option value="">All buyers</option>
+          {meta.personas.map((p) => (
+            <option key={p.key} value={p.key}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      {(filters.product || filters.buyer) && (
+        <button type="button" className="btn btn-quiet btn-small" onClick={() => onChange({ product: '', buyer: '' })}>
+          Clear filters
+        </button>
+      )}
+    </div>
+  );
+}
+
+function StageTile({ stage, filters }) {
+  const narrowed = Boolean(filters.product || filters.buyer);
   const status = stage.openAttemptId ? 'Conversation in progress' : stage.waiting ? 'Question waiting' : null;
-  const progress = stage.answered
-    ? `You have answered ${stage.answered} of ${stage.questions} question${stage.questions === 1 ? '' : 's'}`
-    : `${stage.questions} question${stage.questions === 1 ? '' : 's'}`;
+  const count = `${stage.questions} question${stage.questions === 1 ? '' : 's'}${stage.concepts ? ` on ${stage.concepts} concept${stage.concepts === 1 ? '' : 's'}` : ''}`;
+  const progress = stage.answered ? `You have answered ${stage.answered} of ${count}` : count;
   if (!stage.questions) {
     return (
       <div className="drill stage-tile stage-tile-empty" aria-disabled="true">
         <h3>{stage.label}</h3>
         <p className="drill-line">{stage.description}</p>
         <div className="drill-foot">
-          <span className="tiny muted">No questions for your role yet.</span>
+          <span className="tiny muted">{narrowed ? 'No questions for these filters yet.' : 'No questions for your role yet.'}</span>
+          {status && <span className="badge badge-info">{status}</span>}
         </div>
       </div>
     );
   }
+  const query = filterQuery(filters);
   return (
-    <Link to={`/practice/stage/${stage.key}`} className="drill stage-tile" aria-describedby={`stage-${stage.key}-progress`}>
+    <Link to={`/practice/stage/${stage.key}${query ? `?${query}` : ''}`} className="drill stage-tile" aria-describedby={`stage-${stage.key}-progress`}>
       <h3>{stage.label}</h3>
       <p className="drill-line">{stage.description}</p>
       <div className="drill-foot">
@@ -39,8 +103,9 @@ function StageTile({ stage }) {
   );
 }
 
-function StageGrid({ user }) {
-  const { data, error, loading, reload } = useLoad(() => get('/practice/stages'), []);
+function StageGrid({ user, filters }) {
+  const query = filterQuery(filters, { persona: 'persona' });
+  const { data, error, loading, reload } = useLoad(() => get(`/practice/stages${query ? `?${query}` : ''}`), [query]);
   if (error) return <ErrorNotice error={error} retry={reload} />;
   if (loading && !data) return <Loading />;
   const stages = data.stages;
@@ -54,7 +119,7 @@ function StageGrid({ user }) {
         <h2 id={`track-${g.track}`}>{TRACK_TITLE[g.track]}</h2>
         <div className="drill-list">
           {g.stages.map((s) => (
-            <StageTile key={s.key} stage={s} />
+            <StageTile key={s.key} stage={s} filters={filters} />
           ))}
         </div>
       </section>
@@ -79,6 +144,7 @@ function QuestionBank({ user, meta }) {
   const drills = useMemo(() => {
     const list = data?.drills || [];
     const brand = filter('brand');
+    const product = filter('product');
     const persona = filter('persona');
     const role = filter('role');
     const subject = filter('subject');
@@ -86,6 +152,7 @@ function QuestionBank({ user, meta }) {
     return list.filter(
       (d) =>
         (!brand || d.brand === brand) &&
+        (!product || d.productLine === product) &&
         (!persona || d.personas.includes(persona)) &&
         (!role || d.roles.includes(role)) &&
         (!subject || d.subject === subject) &&
@@ -110,6 +177,17 @@ function QuestionBank({ user, meta }) {
             <option value="ravenly">Ravenly</option>
             <option value="omnizant">Omnizant</option>
             <option value="both">Both brands</option>
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="f-product">Product</label>
+          <select id="f-product" value={filter('product')} onChange={(e) => setFilter('product', e.target.value)}>
+            <option value="">All</option>
+            {PRODUCT_ORDER.filter((k) => meta.productLines?.[k]).map((k) => (
+              <option key={k} value={k}>
+                {meta.productLines[k].label}
+              </option>
+            ))}
           </select>
         </div>
         <div className="field">
@@ -167,6 +245,7 @@ function QuestionBank({ user, meta }) {
                 <p className="drill-line">{d.buyerLine}</p>
                 <div className="drill-foot">
                   <BrandChip brand={d.brand} />
+                  {d.productLine?.startsWith('omnizant_') && <span className="chip">{meta.productLines[d.productLine].label.replace(/^Omnizant /, '')}</span>}
                   <span className="chip">{meta.subjects[d.subject]}</span>
                   <span className="chip">{d.roles.map((r) => (r === 'am' ? 'AM' : 'AE')).join(' and ')}</span>
                   <span className="chip">Level {d.defaults.difficulty}</span>
@@ -182,11 +261,30 @@ function QuestionBank({ user, meta }) {
   );
 }
 
+// The practice view's filters: from the link when it has them, otherwise the ones last used here.
+function usePracticeFilters(user, meta, params, setParams) {
+  const fromUrl = params.has('product') || params.has('buyer');
+  const saved = savedPracticeFilters(user.id);
+  const raw = fromUrl ? { product: params.get('product') || '', buyer: params.get('buyer') || '' } : saved;
+  // Ignore values this workspace doesn't have (an old link, or a removed persona).
+  const filters = {
+    product: meta.productLines?.[raw.product] ? raw.product : '',
+    buyer: meta.personas.some((p) => p.key === raw.buyer) ? raw.buyer : '',
+  };
+  const setFilters = (next) => {
+    savePracticeFilters(user.id, next);
+    const p = new URLSearchParams(filterQuery(next));
+    setParams(p, { replace: true });
+  };
+  return [filters, setFilters];
+}
+
 export function PracticeStudio() {
   const { user } = useAuth();
   const { meta } = useMeta();
   const [params, setParams] = useSearchParams();
   const view = user.isManager && params.get('view') === 'bank' ? 'bank' : 'practice';
+  const [filters, setFilters] = usePracticeFilters(user, meta, params, setParams);
   const cur = useLoad(() => get('/curriculum/mine'), []);
   useEffect(() => {
     document.title = `${view === 'bank' ? 'Question bank' : 'Practice Studio'} · Sales Lab`;
@@ -238,7 +336,8 @@ export function PracticeStudio() {
               <NextUpCard next={cur.data.next} />
             </div>
           )}
-          <StageGrid user={user} />
+          <PracticeFilters meta={meta} filters={filters} onChange={setFilters} />
+          <StageGrid user={user} filters={filters} />
         </>
       ) : (
         <QuestionBank user={user} meta={meta} />

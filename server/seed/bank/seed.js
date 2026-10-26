@@ -4,7 +4,9 @@ import { BANK_QUESTIONS, EXISTING_UPDATES, productOf } from './index.js';
 import { SEED_DRILLS } from '../drills.js';
 
 export const SEEDED_DRILL_NOTE = 'Seeded from the supplied Ravenly reference and Sales Playbook.';
-export const BANK_NOTE = 'Practice Studio question bank, written from the approved Sales Playbook and Ravenly product knowledge.';
+export const BANK_NOTE = 'Practice Studio question bank, written from the approved Sales Playbook and product knowledge.';
+// The note on the questions seeded before the bank drew on Omnizant's product knowledge.
+const FIRST_BANK_NOTE = 'Practice Studio question bank, written from the approved Sales Playbook and Ravenly product knowledge.';
 export const UPGRADE_NOTE = 'Added the buyer’s follow-up objections and, where the drill is for both roles, what a good answer does for each role.';
 
 // Sections of the approved collections, found by the start of their titles.
@@ -127,7 +129,7 @@ export async function classifyBankDrills(q, log = () => {}, { questions = [...SE
          FROM drills d
         WHERE d.slug = $1 AND v.id = d.current_version_id AND v.change_note = ANY($4::text[])
           AND (v.product_line <> $2 OR v.concept <> $3)`,
-      [b.slug, productOf(b), b.concept || b.slug, [SEEDED_DRILL_NOTE, BANK_NOTE, UPGRADE_NOTE]],
+      [b.slug, productOf(b), b.concept || b.slug, [SEEDED_DRILL_NOTE, FIRST_BANK_NOTE, BANK_NOTE, UPGRADE_NOTE]],
     );
     changed += r.rowCount;
   }

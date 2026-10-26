@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { HttpError, notFound, parseBody, route } from '../lib/errors.js';
 import { audit } from '../lib/audit.js';
 import { clientIp, requireManager } from '../auth/middleware.js';
-import { BRANDS, DIMENSION_KEYS, STAGE_KEYS, SUBJECTS } from '../domain.js';
+import { BRANDS, DIMENSION_KEYS, PRODUCT_LINES, STAGE_KEYS, SUBJECTS, defaultProductLine } from '../domain.js';
 import { coachingAvailability, DRILL_SQL, shapeDrill, sourceIndexFor } from './service.js';
 
 const level = z.number().int().min(1).max(5);
@@ -42,7 +42,20 @@ const drillSchema = z.object({
     .default([]),
   changeNote: z.string().max(500).default(''),
   status: z.enum(['draft', 'active', 'archived']).optional(),
+  // What the question sells (for the Practice Studio's product filter); defaults from the brand.
+  productLine: z.enum(Object.keys(PRODUCT_LINES)).optional(),
+  // Questions that test the same skill share a concept, so the feed rotates through concepts.
+  concept: z.string().trim().max(120).default(''),
 });
+
+// The product line must belong to the question's brand.
+function tidyProductLine(body) {
+  const line = body.productLine || defaultProductLine(body.brand);
+  if (PRODUCT_LINES[line].brand !== body.brand) {
+    throw new HttpError(400, 'validation_failed', `${PRODUCT_LINES[line].label} is not a product of ${BRANDS[body.brand]}. Choose a product that matches the brand.`);
+  }
+  body.productLine = line;
+}
 
 // Role expectations only for a drill for both roles (a drill for one role keeps all its criteria in
 // goodLooksLike, as the editor shows it), and no empty ones.
@@ -54,6 +67,7 @@ function tidyRoleGuidance(body) {
 
 async function validateRefs(q, body) {
   tidyRoleGuidance(body);
+  tidyProductLine(body);
   const personas = new Set((await q.many(`SELECT key FROM personas`)).map((p) => p.key));
   if (body.personas.some((p) => !personas.has(p))) throw new HttpError(400, 'validation_failed', 'Choose personas from the list.');
   for (const key of Object.keys(body.personaLines)) {
@@ -83,8 +97,8 @@ async function insertDrillVersion(q, drillId, body, userId) {
   return q.one(
     `INSERT INTO drill_versions (drill_id, version, title, brand, subject, stage, roles, personas, situation, buyer_line, persona_lines,
        objective, good_looks_like, assessed_dimensions, default_difficulty, default_skepticism, default_depth, source_refs, change_note, created_by,
-       role_guidance, pushbacks)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING id, version`,
+       role_guidance, pushbacks, product_line, concept)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24) RETURNING id, version`,
     [
       drillId,
       next.v,
@@ -108,6 +122,8 @@ async function insertDrillVersion(q, drillId, body, userId) {
       userId,
       JSON.stringify(body.roleGuidance || {}),
       JSON.stringify(body.pushbacks || []),
+      body.productLine,
+      body.concept || '',
     ],
   );
 }
@@ -125,14 +141,15 @@ export function drillRoutes({ db, config }) {
       const rows = await db.many(`${DRILL_SQL} ${status ? 'WHERE d.status = $1' : ''} ORDER BY v.title`, status ? [status] : []);
       const index = await sourceIndexFor(db, rows);
       let drills = rows.map((row) => shapeDrill(row, coachingAvailability(config, row, index), { forManager }));
-      const { brand, stage, persona, role, subject } = req.query;
+      const { brand, stage, persona, role, subject, product } = req.query;
       drills = drills.filter(
         (d) =>
           (!brand || d.brand === brand || (brand !== 'both' && d.brand === 'both')) &&
           (!stage || d.stage === stage) &&
           (!persona || d.personas.includes(persona)) &&
           (!role || d.roles.includes(role)) &&
-          (!subject || d.subject === subject),
+          (!subject || d.subject === subject) &&
+          (!product || d.productLine === product),
       );
       res.json({ drills });
     }),

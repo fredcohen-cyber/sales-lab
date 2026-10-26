@@ -50,7 +50,7 @@ function levelsFromQuery(params) {
 
 // A stage serves one question at a time (see StageRunner); a manager can also open any question from
 // the question bank. Reps never choose the buyer or the levels: each question sets them.
-export function DrillRunner({ stage = null, initialPreview = null }) {
+export function DrillRunner({ stage = null, initialPreview = null, backHref = null }) {
   const { drillId: routeDrillId, itemId } = useParams();
   const [params] = useSearchParams();
   const { user } = useAuth();
@@ -152,7 +152,7 @@ export function DrillRunner({ stage = null, initialPreview = null }) {
     }
   };
 
-  const backTo = assigned ? '/curriculum' : user.isManager && !fed ? '/practice?view=bank' : '/practice';
+  const backTo = assigned ? '/curriculum' : user.isManager && !fed ? '/practice?view=bank' : backHref || '/practice';
   const backLabel = assigned ? 'Curriculum' : user.isManager && !fed ? 'the question bank' : 'Practice Studio';
   if (loadError) {
     return (
@@ -178,6 +178,7 @@ export function DrillRunner({ stage = null, initialPreview = null }) {
           <div className="row">
             <span className="chip">{s.stageLabel}</span>
             <BrandChip brand={s.brand} />
+            {s.productLine?.startsWith('omnizant_') && <span className="chip">{s.productLabel.replace(/^Omnizant /, '')}</span>}
             <span className="chip">{meta.subjects[s.subject]}</span>
           </div>
           <h1 id="drill-title">{s.title}</h1>

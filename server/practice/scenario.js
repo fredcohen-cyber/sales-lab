@@ -1,4 +1,4 @@
-import { DEPTH_TEXT, DIFFICULTY_TEXT, pushbacksFor, REP_ROLE_CONTEXT, ROLES, SKEPTICISM_TEXT, STAGES, stageLabel } from '../domain.js';
+import { DEPTH_TEXT, DIFFICULTY_TEXT, pushbacksFor, REP_ROLE_CONTEXT, ROLES, SKEPTICISM_TEXT, STAGES, stageLabel, PRODUCT_LINES, defaultProductLine } from '../domain.js';
 
 // The rep role an answer is judged for: the rep's own role when the drill is written for it, otherwise
 // (managers practicing, or a drill for the other role) the role the drill's stage trains.
@@ -36,6 +36,8 @@ export function buildScenario({ drill, persona, settings, rubricDimensions, sour
     stage: drill.stage,
     stageLabel: stageLabel(drill.stage),
     brand: drill.brand,
+    productLine: drill.product_line || defaultProductLine(drill.brand),
+    productLabel: PRODUCT_LINES[drill.product_line || defaultProductLine(drill.brand)]?.label || null,
     subject: drill.subject,
     repRole,
     repRoleLabel: ROLES[repRole],

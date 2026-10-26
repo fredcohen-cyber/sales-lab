@@ -353,6 +353,37 @@ test('learners see only their own records', async ({ browser }) => {
   await ana.context().close();
 });
 
+test('Ana narrows the Practice Studio to one product and one buyer, and a stage serves a question that fits', async ({ browser }) => {
+  const ana = await newPage(browser);
+  await signIn(ana, ANA.email, ANA.password);
+  await expect(ana.getByRole('heading', { name: 'Welcome back, Ana' })).toBeVisible();
+  await ana.goto('/practice');
+  await expect(ana.getByRole('heading', { name: 'Account manager stages' })).toBeVisible();
+  const filters = ana.getByRole('search', { name: 'Narrow the questions' });
+  await filters.getByLabel('Product').selectOption('ravenly');
+  await filters.getByLabel('Buyer').selectOption('office_manager');
+  await expect(ana).toHaveURL(/\/practice\?product=ravenly&buyer=office_manager$/);
+  // An account manager stage with questions for these filters, and its tile counts only those.
+  const { stages } = await (await ana.request.get('/api/practice/stages?product=ravenly&persona=office_manager')).json();
+  const stage = stages.find((s) => s.track === 'am' && s.questions > 0);
+  expect(stage, 'an account manager stage has Ravenly questions for an office manager').toBeTruthy();
+  const tile = ana.getByRole('link', { name: new RegExp(`^${stage.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) });
+  await expect(tile).toContainText(`${stage.questions} question${stage.questions === 1 ? '' : 's'} on ${stage.concepts} concept`);
+  await shot(ana, '29-practice-filters');
+  await tile.click();
+  await expect(ana).toHaveURL(new RegExp(`/practice/stage/${stage.key}\\?product=ravenly&buyer=office_manager$`));
+  await expect(ana.getByText('About this buyer: Office manager or intake director')).toBeVisible();
+  // The filters are remembered on this device until cleared.
+  await ana.goto('/practice');
+  await expect(filters.getByLabel('Product')).toHaveValue('ravenly');
+  await expect(filters.getByLabel('Buyer')).toHaveValue('office_manager');
+  await filters.getByRole('button', { name: 'Clear filters' }).click();
+  await expect(filters.getByLabel('Product')).toHaveValue('');
+  await expect(filters.getByLabel('Buyer')).toHaveValue('');
+  await expect(ana).toHaveURL(/\/practice$/);
+  await ana.context().close();
+});
+
 test('signing out ends the session, clears unsent drafts, and returns to the sign-in page', async () => {
   await vic.goto(state.drillUrl);
   await vic.getByRole('textbox', { name: 'Your answer' }).fill('A private draft Vic has not submitted yet.');

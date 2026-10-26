@@ -24,7 +24,12 @@ const BLANK = {
   sourceRefs: [],
   changeNote: '',
   status: 'active',
+  productLine: 'ravenly',
+  concept: '',
 };
+
+// The product lines a brand's questions can sell (mirrors PRODUCT_LINES on the server).
+const productLinesFor = (meta, brand) => Object.entries(meta.productLines || {}).filter(([, p]) => p.brand === brand);
 
 // Product and competitive facts about a brand support each other's drills (as on the server).
 const SUPPORTING_SUBJECTS = { product: ['competitive'], competitive: ['product'], sales_technique: [] };
@@ -273,6 +278,8 @@ export function DrillEditor() {
           changeNote: '',
           status: d.status,
           version: d.version,
+          productLine: d.productLine,
+          concept: d.concept || '',
         }),
       )
       .catch(setLoadError);
@@ -344,12 +351,36 @@ export function DrillEditor() {
           <Field label="Title" id="d-title">
             <input id="d-title" type="text" value={form.title} maxLength={140} onChange={(e) => set('title', e.target.value)} />
           </Field>
+          <Field
+            label="Concept (optional)"
+            id="d-concept"
+            hint="Questions that test the same skill share a concept, for example “price-too-expensive”. The Practice Studio rotates through concepts, so reps meet each skill from several angles."
+          >
+            <input id="d-concept" type="text" value={form.concept} maxLength={120} onChange={(e) => set('concept', e.target.value)} />
+          </Field>
           <div className="form-row">
             <Field label="Brand" id="d-brand">
-              <select id="d-brand" value={form.brand} onChange={(e) => set('brand', e.target.value)}>
+              <select
+                id="d-brand"
+                value={form.brand}
+                onChange={(e) => {
+                  const brand = e.target.value;
+                  // Keep the product when it belongs to the new brand; otherwise use the brand's first.
+                  setForm((f) => ({ ...f, brand, productLine: productLinesFor(meta, brand).some(([k]) => k === f.productLine) ? f.productLine : productLinesFor(meta, brand)[0]?.[0] }));
+                }}
+              >
                 <option value="ravenly">Ravenly</option>
                 <option value="omnizant">Omnizant</option>
                 <option value="both">Both brands</option>
+              </select>
+            </Field>
+            <Field label="Product" id="d-product" hint="Reps can filter the Practice Studio by product.">
+              <select id="d-product" value={form.productLine} onChange={(e) => set('productLine', e.target.value)}>
+                {productLinesFor(meta, form.brand).map(([k, p]) => (
+                  <option key={k} value={k}>
+                    {p.label}
+                  </option>
+                ))}
               </select>
             </Field>
             <Field label="Subject" id="d-subject">
