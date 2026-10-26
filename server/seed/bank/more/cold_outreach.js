@@ -412,7 +412,7 @@ export const QUESTIONS = [
   {
     slug: 'cold-omnizant-referrals-only-v3',
     concept: 'cold-omnizant-referrals-only',
-    title: 'Office manager calls the website a business card',
+    title: 'Office manager says the firm runs on referrals',
     brand: 'omnizant',
     product: 'omnizant_web',
     subject: 'sales_technique',
@@ -423,12 +423,12 @@ export const QUESTIONS = [
     situation:
       'You are cold calling a four-attorney estate planning and elder law firm for Omnizant. The office manager, who handles the firm’s vendors, including the company that hosts its website, picks up and hears your reason for calling.',
     buyerLine:
-      '“I appreciate the call, but our attorneys get nearly every client by referral. The website is basically a business card, and I can’t see them spending money on it.”',
+      '“I appreciate the call, but our attorneys get nearly every client by referral, and I can’t see them spending money on marketing.”',
     objective:
       'Respect the firm’s referral model, learn how referred clients and the website connect, and offer a small next step that helps her even if the firm never markets online.',
     goodLooksLike: [
       '- Agrees that a referral-driven practice is a strength and does not argue that the firm needs marketing.',
-      '- Plays back what she said without judgment, for example that the site works like a digital business card, and asks one question about it, such as whether referred clients look the firm up before calling and what they find.',
+      '- Plays back what she said without judgment and asks one question about it, such as whether referred clients look the firm up before calling and what they find.',
       '- Offers the complimentary website review as a credibility and health check rather than marketing, covering public things such as page speed, whether pages are properly linked, and whether the firm’s details and Google Business Profile are consistent, with no logins or data needed.',
       '- Is upfront that the review is free and mainly informative and that any services would be a separate conversation, and makes no claims about results.',
       '- Offers to book 15 minutes at a specific time, with her and any attorney she wants on the invite.',

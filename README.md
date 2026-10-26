@@ -199,12 +199,13 @@ Automated tests use a test-only stand-in for the AI service that cannot be enabl
 
 ## Status
 
-Implemented and covered by automated tests (149 server tests and 24 browser tests): company email and
+Implemented and covered by automated tests (156 server tests and 25 browser tests): company email and
 password sign-in with manager-created accounts only, private single-use setup and reset links, sign-in
 throttling, deactivation and session revocation, server-side roles and learner privacy, the knowledge
 library as collections of sections with versions, approval, evidence basis, ordering, and document
-splitting, drills with relevance checks, the Practice Studio with stages that serve questions at random,
-practice conversations with per-reply coaching and buyer pushbacks, role-specific expectations, retries,
+splitting, drills with relevance checks, the Practice Studio with stages that serve questions at random
+and rotate through concepts, product and buyer filters, practice conversations with per-reply coaching
+and buyer pushbacks, role-specific expectations, retries,
 and a coaching queue, Team Coaching with per-item review of critical failures and
 flags, Curriculum assignments and learning paths, the Manager Dashboard and rep reports with CSV export,
 and recovery from failed, stuck, or queued coaching. The code was also reviewed independently for security
@@ -218,8 +219,9 @@ Needs verification or material:
 - Omnizant product material so far is the AI Search Plans positioning brief (story and language, but no
   prices, quantities, or deliverable lists) and what 14 booked calls taught (the website review offer and
   competitor angles). The company and service facts reps stated on those calls are a draft until a manager
-  confirms them, the outlines for Web development, SEO, and GEO are still to be written, and there are no
-  Omnizant product drills yet. Sales-technique drills apply to both brands.
+  confirms them, and the outlines for Web development, SEO, and GEO are still to be written. So questions
+  about Omnizant's websites and SEO practice technique (apart from the website review itself), while AI
+  Search Plans questions are scored against the brief. Sales-technique questions apply to both brands.
 - Company logo files have not been added (see above).
 - Out of scope for this version: voice, full-call simulation, CRM integrations, automated emails or
   reminders, and imports beyond pasted text, `.txt`, and `.md`.

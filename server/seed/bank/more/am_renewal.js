@@ -84,11 +84,11 @@ export const QUESTIONS = [
     product: 'ravenly',
     subject: 'product',
     stage: 'am_renewal',
-    roles: ['am', 'ae'],
+    roles: ['am'],
     personas: ['marketing_manager'],
     personaLines: {},
     situation:
-      'The marketing manager of a 40-attorney personal injury firm is preparing a Ravenly agreement for the partners’ signature. She will be accountable for the firm’s lead and source reporting, and the partners asked her what the firm would keep if it ever left Ravenly. If you are an AE, the firm is about to sign its first agreement; if you are an AM, the firm is renewing.',
+      'You manage Ravenly for a 40-attorney personal injury firm whose agreement renews next month. The marketing manager, who is accountable for the firm’s lead and source reporting, is preparing the renewal for the partners’ signature, and the partners asked her what the firm would keep if it ever left Ravenly.',
     buyerLine:
       '“Before this goes to the partners: if we leave Ravenly in a year or two, what do we walk away with? The lead history, the source data, all of it? I need a precise answer, not just ‘you own your data.’”',
     objective:
@@ -98,20 +98,10 @@ export const QUESTIONS = [
       '- Does not quote one retention or export window as settled: the privacy page describes deletion after 14 days, while the terms describe a 30-day post-termination retention and export window, so the approved answer for her agreement is needed.',
       '- Does not promise a complete export or a migration format: CSV export controls exist, for example on the lead list, but an export control does not guarantee export completeness or a bulk migration format.',
       '- Asks which data the firm would need to keep and in what form, such as lead records, sources, and recorded outcomes, so the request to the policy owner is specific.',
-      '- Commits to current written documentation by a specific date, before the partners meet.',
+      '- Checks the firm’s actual signed agreement rather than quoting the public pages, offers no contract change or special export or deletion commitment to secure the renewal, and asks what prompted the partners’ question now, since a vendor review or a competing offer can signal a renewal at risk.',
+      '- Commits to current written documentation by a specific date before the partners sign, and keeps the renewal moving with that dated follow-up.',
     ].join('\n'),
-    roleGuidance: {
-      ae: [
-        '- Gets the approved answer before the partners’ signature meeting, so the question does not stall the deal.',
-        '- Asks who else reviews data terms for the firm, and includes them in the follow-up.',
-        '- Does not offer a contract change or a special export or deletion commitment to win the signature.',
-      ].join('\n'),
-      am: [
-        '- Checks the firm’s actual signed agreement and renewal date rather than quoting the public pages.',
-        '- Asks what prompted the question now, such as a vendor review or a competing offer, since it can signal a renewal at risk.',
-        '- Keeps the renewal moving with a dated follow-up while the approved answer is obtained.',
-      ].join('\n'),
-    },
+    roleGuidance: {},
     pushbacks: [
       '“Can I export the whole history to a spreadsheet the day we leave, sources and outcomes included?”',
       '“Do the AI summaries and scores come with us, or only the contact details?”',
@@ -138,21 +128,21 @@ export const QUESTIONS = [
     objective:
       'Answer what is published about data and the phone number accurately, leave what the agreement governs to an approved answer, and find out why the attorney is thinking of leaving.',
     goodLooksLike: [
-      '- Answers the data question first, attributed to the published terms: users retain ownership of their data, and the terms address export and deletion after termination.',
+      '- Answers the data question directly, attributed to the published terms: users retain ownership of their data, and the terms address export and deletion after termination.',
       '- Does not quote a single retention period as settled: the privacy page and the terms differ, 14 days against 30, so offers the approved answer for the attorney’s own agreement.',
-      '- On the number, says the terms include a porting provision with a seven-day window after termination, and confirms how it applies to this number and agreement rather than promising the attorney can keep it.',
+      '- On the number, does not promise the attorney can keep it or quote a porting deadline as settled: the terms address number porting after termination, so the rep confirms in writing how that provision, including its time limit, applies to this number and agreement.',
       '- Asks what is behind the thought of leaving, such as cost, how much the attorney uses it, or a change in the practice.',
       '- Commits to send the approved answer in writing by a specific date before the renewal date.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“So can I keep texting clients from that number after I leave?”',
+      '“Could I download a copy of all my leads now, before I decide, just in case?”',
       '“Can you just delete everything the day I cancel? I don’t want client details sitting on your servers.”',
       '“If I can’t get a straight answer about my own clients’ information, why would I renew?”',
     ],
     assessed: ['product_accuracy', 'empathy_clarity', 'discovery', 'advancing'],
     defaults: [2, 2, 4],
-    sources: [{ collection: 'ravenly-product', sections: ['11 · ', '21 · ', '18 · '] }],
+    sources: [{ collection: 'ravenly-product', sections: ['11 · ', '21 · ', '18 · ', '06 · '] }],
   },
   {
     slug: 'renew-budget-downgrade-launch-v2',
@@ -247,7 +237,7 @@ export const QUESTIONS = [
     goodLooksLike: [
       '- Does not disparage Intaker or call it a chatbot; acknowledges that it advertises an AI texting agent that qualifies, books, transfers, and follows up with inquiries.',
       '- Asks what her texting involves today: how many leads, what she sends, and which part takes the most time, such as the first reply, repeat attempts, or scheduling.',
-      '- Is accurate about what Ravenly can take on: an approved acknowledgement text and timed follow-up steps that send SMS or email and create tasks, once set up and tested, not an agent that holds the conversation for her.',
+      '- Is accurate about what Ravenly can take on: an approved acknowledgement text and timed follow-up steps that send SMS or email and create tasks, once set up and tested; does not present these as an agent that holds the conversation for her, and does not claim Ravenly has no such capability either, since one was not established, offering to confirm what is current if she needs it.',
       '- Names the prerequisites honestly: confirms that the firm’s Launch plan includes the texting and automations she would need, and that messaging registration, a configured sender, approved templates, and opt-in handling are in place, with SMS usage charges confirmed.',
       '- Does not claim Ravenly is cheaper or accept the beaten price without a current, complete Intaker quote; compares lead definitions, implementation, usage, and contract term.',
       '- Proposes a dated step before the renewal, such as setting up and testing an acknowledgement sequence on her real inquiries, or running the same inquiries through both products.',
@@ -261,7 +251,7 @@ export const QUESTIONS = [
     assessed: ['product_accuracy', 'discovery', 'objection_handling', 'advancing'],
     defaults: [4, 4, 4],
     sources: [
-      { collection: 'ravenly-product', sections: ['Ravenly vs Intaker', '14 · ', '08 · ', '12 · ', '10 · '] },
+      { collection: 'ravenly-product', sections: ['01 · ', '14 · ', '08 · ', '12 · ', '10 · '] },
       { collection: 'sales-playbook', sections: ['6. '] },
     ],
   },
@@ -284,7 +274,7 @@ export const QUESTIONS = [
       'Answer the LSA question honestly, respect what Intaker advertises, and move the decision to the firm’s real requirements and a like-for-like comparison before renewal.',
     goodLooksLike: [
       '- Does not disparage Intaker; acknowledges that its LSA product promotes AI qualification, follow-up, warm transfers, and routing, as Intaker’s own claims.',
-      '- Answers the question directly and accurately: Ravenly’s LSA integration describes importing leads and replying in the Google thread, with a reply automation, but the rep does not present it as an agent that holds the conversation on its own, and checks how the firm’s integration is set up.',
+      '- Answers the question directly and accurately: Ravenly’s LSA integration describes importing leads and replying in the Google thread, with a reply automation; the rep does not present it as an agent that holds the conversation on its own, does not claim Ravenly has no such capability either, since one was not established, offers to confirm what is current if the firm needs it, and checks how the firm’s integration is set up.',
       '- Explains that leads arrive on a 15-minute import cadence, which can run slower, so time until import and time to respond after import are measured separately; promises no instant reply.',
       '- Compares like for like before agreeing that Intaker is cheaper: asks for the complete quote and normalizes lead definitions, implementation, usage, and contract term.',
       '- Asks whether the firm needs an agent that holds the conversation or fast, team-owned follow-up, and proposes a dated comparison on the firm’s real LSA scenarios before renewal.',
@@ -298,7 +288,7 @@ export const QUESTIONS = [
     assessed: ['product_accuracy', 'objection_handling', 'persuasion', 'advancing'],
     defaults: [3, 4, 4],
     sources: [
-      { collection: 'ravenly-product', sections: ['Ravenly vs Intaker', '14 · ', '08 · ', '12 · ', '18 · '] },
+      { collection: 'ravenly-product', sections: ['Ravenly vs Intaker', '14 · ', '08 · ', '01 · ', '18 · '] },
       { collection: 'sales-playbook', sections: ['6. '] },
     ],
   },
@@ -320,7 +310,7 @@ export const QUESTIONS = [
     objective:
       'Give her a clear path to an accurate answer: separate the trial offer from the paid agreement, confirm the firm’s actual terms instead of guessing, and learn whether anything is behind the question.',
     goodLooksLike: [
-      '- Explains that the cancel-anytime and no-long-term-contracts wording describes the trial offer, and that a paid agreement has its own terms, which contain renewal and nonrenewal provisions.',
+      '- Explains that the cancel-anytime and no-long-term-contracts wording comes from the trial offer and does not automatically describe a paid agreement, whose terms contain renewal and nonrenewal provisions.',
       '- Does not say which provision applies to the firm or quote a notice period as settled; checks the firm’s actual order form and agreement.',
       '- Commits to send her an approved written summary of the firm’s renewal and notice terms by a specific date, from whoever owns contract terms.',
       '- Asks, without pressure, whether anything is behind the question, such as a partner reviewing costs or a plan to change vendors.',
@@ -355,7 +345,7 @@ export const QUESTIONS = [
       'Stay calm and accountable, avoid guessing which terms govern or promising a waiver, get an approved answer quickly, and protect the relationship whatever the outcome.',
     goodLooksLike: [
       '- Acknowledges why the trial wording and the invoice feel inconsistent, without arguing, blaming the firm, or getting defensive.',
-      '- Does not void the invoice, promise a refund or waiver, or tell the partner the firm is bound; explains that trial wording does not automatically describe the paid agreement, and that the firm’s actual order form and agreement govern.',
+      '- Does not void the invoice, promise a refund or waiver, or tell the partner the firm is bound; explains that trial wording does not automatically describe the paid agreement, and that the answer depends on the firm’s actual order form and agreement, which the rep is having reviewed.',
       '- Does not quote a notice period or a refund rule as settled, even though the terms contain renewal, nonrenewal, and refund provisions; gets the approved reading from whoever owns contract terms.',
       '- Commits to a specific near date, such as the next business day, for a written answer, and asks whether he will wait for it before disputing the charge.',
       '- Asks what led the partners to decide to cancel, since the reason shapes what happens next.',
@@ -460,10 +450,10 @@ export const QUESTIONS = [
     objective:
       'Help her answer accurately from Ravenly’s published policy statements, attributed as such, and get approved documentation for anything the published material does not settle.',
     goodLooksLike: [
-      '- Shares what the privacy policy describes, attributed as policy statements: US hosting on AWS, Twilio for SMS and voice, and CallRail.',
+      '- Shares what the privacy policy describes, attributed as policy statements: US hosting on AWS, Twilio for SMS and voice, and CallRail, without presenting these as everyone who handles the firm’s data, since the terms also refer to third-party AI providers; gets the complete current list from approved documentation.',
       '- Notes that the policy says MFA is available, data is encrypted in transit and at rest, and role-based access is used, and presents these as vendor policy statements, not independently verified certifications.',
-      '- Does not tell her to answer yes on multifactor login for the firm: the policy says MFA is available, so whether the firm’s users have it turned on needs to be checked.',
-      '- Does not answer what the published material does not settle, such as certifications or backup recovery, and gets current approved documentation from the right internal owner.',
+      '- Does not tell her to answer yes on multifactor login: the policy says only that MFA is available, so the rep checks what the insurer is asking (Ravenly’s own access, the firm’s logins, or both), confirms whether it is turned on for the firm’s users, and gets approved wording before she answers.',
+      '- Does not answer what the published material does not settle, such as certifications, breach history, or backup recovery, and gets current approved documentation from the right internal owner.',
       '- Commits to a date for written answers, and asks what else the questionnaire covers and when it is due.',
     ].join('\n'),
     roleGuidance: {},
@@ -702,8 +692,8 @@ export const QUESTIONS = [
       'Respond to the evidence without defending the score blindly, explain its purpose and the inputs the firm controls without reverse-engineering its math, and agree on a fix to review before the renewal decision.',
     goodLooksLike: [
       '- Asks to go through the three leads and what made each one strong or weak, instead of defending the scores.',
-      '- Says plainly that a complete scoring formula is not published: the intelligence breakdown shows components such as intent, legitimacy, potential value, and case-type value, but the displayed components have not formed a simple sum, so the rep does not calculate or reverse-engineer the total.',
-      '- Explains the score’s purpose: a 0 to 100 aid that helps staff prioritize review, shown beside the original answers; it is not an acceptance decision.',
+      '- Says plainly that a complete scoring formula is not published: the intelligence breakdown shows components such as intent, legitimacy, potential value, and case-type value, but how they combine into the total, including any normalization or cap, has not been established, so the rep does not add them up or reverse-engineer the total.',
+      '- Explains the score’s purpose: a 0 to 100 aid that helps staff prioritize review, checked against the original answers; it is not an acceptance decision.',
       '- Names what the firm controls: case-type priority and its own criteria for ideal cases and dealbreakers, which adjust the score without automatically rejecting a lead.',
       '- Does not promise accuracy, and proposes a dated review of the three leads and the criteria with the intake lead before the renewal decision.',
     ].join('\n'),
@@ -734,11 +724,11 @@ export const QUESTIONS = [
       '“We were told new leads would get a text back automatically. Eight months later, my team is still texting people from their personal phones. I’m not recommending a renewal for something we never got.”',
     objective: 'Own the gap without blaming anyone, find out what it has cost her team, and agree on a dated plan to resolve messaging before asking for the renewal.',
     goodLooksLike: [
-      '- Acknowledges the frustration and takes ownership of getting it resolved, without blaming her team or making excuses.',
-      '- Explains plainly that texting depends on completed messaging registration and a configured sender, and that the account’s registration status has to be checked and resolved.',
+      '- Acknowledges that the firm expected automatic text replies from launch and has gone eight months without them, and takes ownership of resolving it without blaming her team or the original sale.',
+      '- Explains in plain terms what an automatic text back depends on: completed messaging registration, a configured sender, and an acknowledgement automation that has been set up and tested, and says the account’s registration warning will be checked and resolved.',
       '- Asks what texting from personal phones has cost the team, such as conversations kept outside the lead record and slower first replies, and how quickly new inquiries hear back today.',
-      '- Does not promise a go-live date before the registration status is confirmed, and confirms any messaging usage charges.',
-      '- Proposes a dated plan: check the registration status, approve the acknowledgement message and opt-in handling, test it with her team, then review the renewal on a set date.',
+      '- Gives her no go-live date to pass to the partners until the registration status is confirmed, and confirms messaging usage charges before texting starts.',
+      '- Proposes a dated plan she can show the partners: confirm the registration status, approve the acknowledgement message and opt-in handling, test it with her team, and move the team’s texting with leads off personal phones and into Ravenly, then review the renewal on a set date.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -864,11 +854,11 @@ export const QUESTIONS = [
     personaLines: {},
     situation:
       'You are Omnizant’s account manager for a solo estate planning attorney whose SEO retainer renews at the end of the month. Business has been slow since the summer, and the attorney emails you about the renewal.',
-    buyerLine: '“I’m stopping SEO when the contract is up. Money’s tight, and honestly, I can’t point to one client it brought me. Maybe I’ll start again next year.”',
+    buyerLine: '“I’m stopping SEO when the contract is up. Money’s tight, and most of the calls it brings are people I can’t help. Maybe I’ll start again next year.”',
     objective: 'Separate the cash problem from the doubt about results, respond honestly without scare tactics or promises, and agree on a decision or a dated review.',
     goodLooksLike: [
-      '- Acknowledges both concerns without arguing, and isolates which one drives the decision: the cash, or not seeing clients from the work.',
-      '- Asks how the attorney learns where new clients come from and what the attorney expected the work to produce, so the review rests on the firm’s own data.',
+      '- Acknowledges both concerns without arguing, and isolates which one drives the decision: the cash, or the kind of inquiries the work brings in.',
+      '- Asks which matters the attorney wants more of, how the attorney learns where new clients come from, and what the attorney expected the work to produce, so the review rests on the firm’s own data.',
       '- Is honest that no one can say exactly what a pause will do, without scare tactics, invented timelines, or promises about rankings, leads, or clients.',
       '- If cash is the issue, discusses a trade such as a smaller scope for a period rather than a straight discount, and offers to confirm what is possible.',
       '- Does not invent Omnizant prices, terms, or results.',
@@ -989,7 +979,7 @@ export const QUESTIONS = [
     defaults: [3, 3, 2],
     sources: [
       { collection: 'sales-playbook', sections: ['6. ', '3. ', '5. '] },
-      { collection: 'omnizant-ai-search', sections: ['Messaging guidance', 'How the plans fit'] },
+      { collection: 'omnizant-ai-search', sections: ['Messaging guidance', 'How the plans fit', 'How we earn confidence'] },
     ],
   },
   {
