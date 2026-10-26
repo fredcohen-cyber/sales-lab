@@ -72,7 +72,8 @@ Knowledge is kept in **collections** made of **sections**:
   closing, objections, follow-up, language, and practice.
 - **Product knowledge** has one collection per brand. Ravenly's is grouped into Start here, Positioning
   and fit, Product capabilities, Pricing and packaging, Competitive (including the Intaker and Juvo Leads
-  battlecards), Selling Ravenly, and Claims and sources. Omnizant's starts as draft outlines for Web
+  battlecards, and the sales team's Ravenly vs Intaker battle card, aligned with the Intaker research),
+  Selling Ravenly, and Claims and sources. Omnizant's starts as draft outlines for Web
   development, SEO, and GEO. **Omnizant AI Search Plans (GEO)** holds the positioning brief for the
   Advantage AI and Max AI plans, one approved section per part of the brief (from
   `server/seed/sources/omnizant-ai-search-plans.md`; the supplied original is in `server/seed/originals/`).
@@ -180,7 +181,7 @@ Automated tests use a test-only stand-in for the AI service that cannot be enabl
 
 ## Status
 
-Implemented and covered by automated tests (147 server tests and 23 browser tests): company email and
+Implemented and covered by automated tests (148 server tests and 24 browser tests): company email and
 password sign-in with manager-created accounts only, private single-use setup and reset links, sign-in
 throttling, deactivation and session revocation, server-side roles and learner privacy, the knowledge
 library as collections of sections with versions, approval, evidence basis, ordering, and document

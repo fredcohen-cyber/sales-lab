@@ -31,6 +31,7 @@ test('the library lists the playbook and product knowledge as contents pages', a
   for (const group of ['Positioning and fit', 'Product capabilities', 'Competitive', 'Selling Ravenly']) {
     await expect(ravenly.getByRole('heading', { name: group, level: 4 })).toBeVisible();
   }
+  await expect(ravenly.getByText('Ravenly vs Intaker battle card')).toBeVisible();
   const omnizant = page.locator('article.collection').filter({ has: page.getByRole('heading', { name: 'Omnizant product knowledge' }) });
   await expect(omnizant.getByText('Draft', { exact: true })).toHaveCount(3);
   // The AI Search Plans brief is its own collection of approved sections.
@@ -68,6 +69,16 @@ test('the AI Search Plans collection reads as one brief', async () => {
   await expect(page.getByRole('cell', { name: 'Get Found' })).toBeVisible();
   await expect(page.getByText('Caveats for every section')).toBeVisible();
   await shot(page, '44-ai-search-plans');
+});
+
+test('the Ravenly vs Intaker battle card sits with the other Intaker material', async () => {
+  await page.goto('/knowledge');
+  const ravenly = page.locator('article.collection').filter({ has: page.getByRole('heading', { name: 'Ravenly product knowledge' }) });
+  await ravenly.getByRole('link', { name: 'Ravenly vs Intaker battle card' }).click();
+  await expect(page.getByRole('heading', { name: 'Ravenly vs Intaker battle card', level: 1 })).toBeVisible();
+  await expect(page.getByRole('cell', { name: '$80/month' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^4\. Ask how the team works in Intaker today/ })).toBeVisible();
+  await shot(page, '45-intaker-battle-card');
 });
 
 test('editing one section waits for approval without touching the others', async () => {

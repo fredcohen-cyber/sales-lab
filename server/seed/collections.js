@@ -121,3 +121,26 @@ export const OMNIZANT_AI_SEARCH = {
   subjects: (section) =>
     ['the story we tell', 'messaging guidance for the team'].includes(sectionTitleKey(section.title)) ? ['product', 'sales_technique'] : ['product'],
 };
+
+// Sections Fred supplied after launch for an existing collection, one seed step each. Each is added
+// approved at the end of its group.
+export const RAVENLY_VS_INTAKER = {
+  seedKey: 'ravenly-vs-intaker-v1',
+  collectionSlug: 'ravenly-product',
+  title: 'Ravenly vs Intaker battle card',
+  group: 'Competitive',
+  file: 'sources/ravenly-vs-intaker.md',
+  brand: 'ravenly',
+  subjects: ['competitive', 'product'],
+  asOfDate: '2026-10-26',
+  evidenceBasis: 'documented',
+  caveats:
+    'The sales team’s Ravenly vs Intaker battle card, aligned with 14 · Intaker battlecard (Intaker’s public website as of October 11, 2026). ' +
+    'Intaker capabilities are what Intaker publicly markets, not tested. The Intaker prices come from an undated screenshot: confirm a current, complete quote before comparing costs. ' +
+    'Ravenly’s strengths here are demonstrable, not proven exclusive.',
+  changeNote:
+    'Supplied by Fred Cohen (Ravenly vs Intaker Battle Card, October 26, 2026). At his request, the claims that conflicted with 14 · Intaker battlecard were rewritten to match it: ' +
+    'Intaker is no longer described as a chatbot with light automation or as having no lead scoring, its pricing is marked unverified, and the unsourced point about its interface became a discovery approach. ' +
+    'Ravenly’s scoring follows 05 · Qualification, scoring, and routing, and its pricing basis follows 12 · Packaging, pricing, trial, and commercial discovery. The pricing screenshot is transcribed as a table.',
+};
+export const ADDED_SECTIONS = [RAVENLY_VS_INTAKER];

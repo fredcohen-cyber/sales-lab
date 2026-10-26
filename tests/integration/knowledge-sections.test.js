@@ -7,8 +7,8 @@ import { addUser, drillBySlug, ownerClient, prepare, sectionBy, startTestApp, su
 import { parseSections } from '../../server/lib/text.js';
 import { SEED_DRILLS } from '../../server/seed/drills.js';
 import { BANK_QUESTIONS, EXISTING_UPDATES } from '../../server/seed/bank/index.js';
-import { createDocumentCollection, createSeedCollections, seed } from '../../server/seed/index.js';
-import { OMNIZANT_AI_SEARCH } from '../../server/seed/collections.js';
+import { addDocumentSection, createDocumentCollection, createSeedCollections, seed } from '../../server/seed/index.js';
+import { ADDED_SECTIONS, OMNIZANT_AI_SEARCH, RAVENLY_VS_INTAKER } from '../../server/seed/collections.js';
 import { loadSourceText } from '../../server/knowledge/service.js';
 import { buildCoachingRequest } from '../../server/ai/prompt.js';
 
@@ -53,7 +53,7 @@ test('the playbook, the Ravenly guide, and the AI Search Plans brief are collect
     lib.data.collections.map((c) => [c.slug, c.kind, c.brand, c.counts.approved, c.counts.drafts]),
     [
       ['sales-playbook', 'playbook', 'both', 10, 0],
-      ['ravenly-product', 'product', 'ravenly', 22, 0],
+      ['ravenly-product', 'product', 'ravenly', 23, 0],
       ['omnizant-product', 'product', 'omnizant', 0, 3],
       ['omnizant-ai-search', 'product', 'omnizant', 6, 0],
     ],
@@ -77,8 +77,9 @@ test('every section keeps the exact text, title, and metadata it had in the docu
     const rows = await h.db.many(
       `SELECT v.title, v.content, v.brand, v.as_of_date, v.caveats, v.evidence_basis, v.approved_at FROM knowledge_sources s
          JOIN knowledge_collections c ON c.id = s.collection_id JOIN knowledge_versions v ON v.id = s.approved_version_id
-        WHERE c.slug = $1 ORDER BY s.position`,
-      [collection],
+        WHERE c.slug = $1 AND NOT v.title = ANY($2::text[]) ORDER BY s.position`,
+      // Sections added to a collection later are not part of its document.
+      [collection, ADDED_SECTIONS.filter((a) => a.collectionSlug === collection).map((a) => a.title)],
     );
     const expected = parseSections(doc.content).filter((s) => s.key !== 'intro');
     assert.equal(rows.length, expected.length);
@@ -124,6 +125,31 @@ test('the AI Search Plans brief is its own Omnizant collection, its text unchang
   // Running the seed step again changes nothing.
   assert.equal(await h.db.tx((q) => createDocumentCollection(q, { id: null }, () => {}, OMNIZANT_AI_SEARCH)), null);
   assert.equal((await h.db.one(`SELECT count(*)::int AS n FROM knowledge_collections WHERE slug = 'omnizant-ai-search'`)).n, 1);
+});
+
+test('the Ravenly vs Intaker battle card joins the Competitive group, aligned with the Intaker research', async () => {
+  const ravenly = await collectionBySlug('ravenly-product');
+  const sections = (await owner.get(`/api/knowledge/collections/${ravenly.id}`)).data.sections;
+  const competitive = sections.filter((s) => s.group === 'Competitive').map((s) => s.title);
+  assert.deepEqual(competitive, ['13 · Competitive landscape: choose the right comparison', '14 · Intaker battlecard', '15 · Juvo Leads battlecard', 'Ravenly vs Intaker battle card']);
+  const card = sections.find((s) => s.title === RAVENLY_VS_INTAKER.title);
+  assert.ok(card.isApproved);
+  const row = await h.db.one(
+    `SELECT v.content, v.subjects, v.evidence_basis, v.as_of_date, v.caveats, v.change_note FROM knowledge_sources s JOIN knowledge_versions v ON v.id = s.approved_version_id WHERE s.id = $1`,
+    [card.id],
+  );
+  assert.equal(row.content, readFileSync(new URL('../../server/seed/sources/ravenly-vs-intaker.md', import.meta.url), 'utf8').trim());
+  assert.deepEqual([row.subjects, row.evidence_basis, row.as_of_date], [['competitive', 'product'], 'documented', '2026-10-26']);
+  assert.match(row.change_note, /rewritten to match it/);
+  // None of the claims 14 · Intaker battlecard tells reps not to make.
+  for (const claim of [/no lead scoring in intaker/i, /chatbot with (light )?automation/i, /user feedback points/i, /cluttered or unintuitive/i, /aligns with \*\*lead quality/i]) {
+    assert.doesNotMatch(row.content, claim);
+  }
+  assert.match(row.content, /\| Starter \| \$80\/month \| 1 \| 300 \|/);
+  assert.match(row.content, /No current Intaker price has been verified/);
+  // Reps can read it, and running the seed step again adds nothing.
+  assert.equal((await rep.get(`/api/knowledge/${card.id}`)).status, 200);
+  assert.equal(await h.db.tx((q) => addDocumentSection(q, { id: null }, () => {}, RAVENLY_VS_INTAKER)), null);
 });
 
 test('every seeded drill now points at the sections it pointed at before, in the same order', async () => {

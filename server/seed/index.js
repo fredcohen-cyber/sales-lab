@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_DIMENSIONS, DEFAULT_PERSONAS } from '../domain.js';
 import { SEED_DRILLS, SEED_PATHS } from './drills.js';
-import { OMNIZANT_AI_SEARCH, SEED_COLLECTIONS } from './collections.js';
+import { ADDED_SECTIONS, OMNIZANT_AI_SEARCH, SEED_COLLECTIONS } from './collections.js';
 import { createCollection, createSection, splitDocument, splitSourceIntoCollection } from '../knowledge/sections.js';
 import { seedQuestionBank, SEEDED_DRILL_NOTE } from './bank/seed.js';
 import { createPasswordLink, linkUrl } from '../users/links.js';
@@ -215,6 +215,45 @@ export async function seed(db, config, { log = console.log } = {}) {
 
   // Omnizant's GEO offer, the AI Search Plans, from the positioning brief Fred supplied.
   await once(db, OMNIZANT_AI_SEARCH.seedKey, (q) => createDocumentCollection(q, owner, log, OMNIZANT_AI_SEARCH), log);
+
+  // Single sections supplied later for existing collections, such as the Ravenly vs Intaker battle card.
+  for (const spec of ADDED_SECTIONS) await once(db, spec.seedKey, (q) => addDocumentSection(q, owner, log, spec), log);
+}
+
+// Adds one approved section, from a supplied document, at the end of its group in an existing collection
+// (see ADDED_SECTIONS). Nothing is added when the collection is missing or already has a section with
+// that title.
+export async function addDocumentSection(q, owner, log, spec) {
+  const collection = await q.one(`SELECT * FROM knowledge_collections WHERE slug = $1`, [spec.collectionSlug]);
+  if (!collection) {
+    log(`[seed] “${spec.title}” was not added: there is no collection “${spec.collectionSlug}”`);
+    return null;
+  }
+  const exists = await q.one(
+    `SELECT 1 FROM knowledge_sources s JOIN knowledge_versions v ON v.id = s.latest_version_id
+      WHERE s.collection_id = $1 AND s.status <> 'archived' AND lower(v.title) = lower($2)`,
+    [collection.id, spec.title],
+  );
+  if (exists) {
+    log(`[seed] ${collection.name} already has a section “${spec.title}”, so it was left as it is`);
+    return null;
+  }
+  const made = await createSection(q, {
+    collection,
+    title: spec.title,
+    content: (await readFile(path.join(HERE, spec.file), 'utf8')).trim(),
+    brand: spec.brand,
+    subjects: spec.subjects,
+    asOfDate: spec.asOfDate,
+    caveats: spec.caveats,
+    evidenceBasis: spec.evidenceBasis,
+    group: spec.group,
+    changeNote: spec.changeNote,
+    approve: true,
+    actorId: owner.id,
+  });
+  log(`[seed] ${collection.name}: added “${spec.title}”`);
+  return made;
 }
 
 // A collection of approved sections made from one supplied document (see OMNIZANT_AI_SEARCH). Nothing
