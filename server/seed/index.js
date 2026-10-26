@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_DIMENSIONS, DEFAULT_PERSONAS } from '../domain.js';
 import { SEED_DRILLS, SEED_PATHS } from './drills.js';
-import { ADDED_SECTIONS, OMNIZANT_AI_SEARCH, SEED_COLLECTIONS } from './collections.js';
+import { ADDED_SECTIONS, CALL_LEARNINGS, OMNIZANT_AI_SEARCH, SEED_COLLECTIONS } from './collections.js';
 import { createCollection, createSection, splitDocument, splitSourceIntoCollection } from '../knowledge/sections.js';
 import { seedQuestionBank, SEEDED_DRILL_NOTE } from './bank/seed.js';
 import { createPasswordLink, linkUrl } from '../users/links.js';
@@ -218,10 +218,65 @@ export async function seed(db, config, { log = console.log } = {}) {
 
   // Single sections supplied later for existing collections, such as the Ravenly vs Intaker battle card.
   for (const spec of ADDED_SECTIONS) await once(db, spec.seedKey, (q) => addDocumentSection(q, owner, log, spec), log);
+
+  // What 14 booked Omnizant calls taught: playbook field notes and new Omnizant sections.
+  await once(db, CALL_LEARNINGS.seedKey, (q) => addCallLearnings(q, owner, log, CALL_LEARNINGS), log);
 }
 
-// Adds one approved section, from a supplied document, at the end of its group in an existing collection
-// (see ADDED_SECTIONS). Nothing is added when the collection is missing or already has a section with
+// Field notes for existing sections (a new approved version with the notes at the end) and new sections.
+export async function addCallLearnings(q, owner, log, spec) {
+  let appended = 0;
+  for (const a of spec.appendTo) {
+    if (await appendToSection(q, owner, log, { ...a, asOfDate: spec.asOfDate, changeNote: spec.changeNote })) appended += 1;
+  }
+  let added = 0;
+  for (const s of spec.sections) {
+    if (await addDocumentSection(q, owner, log, { ...s, asOfDate: spec.asOfDate, evidenceBasis: 'documented', changeNote: spec.changeNote })) added += 1;
+  }
+  log(`[seed] call learnings: field notes added to ${appended} sections, ${added} new sections`);
+  return { appended, added };
+}
+
+// Adds text at the end of a section's approved version, as a new approved version. A section is left as
+// it is when it cannot be found, has an unapproved draft (which the new version would leave behind), or
+// already has the text.
+export async function appendToSection(q, owner, log, { collectionSlug, titleStart, file, asOfDate, changeNote }) {
+  const rows = await q.many(
+    `SELECT s.id, s.latest_version_id, s.approved_version_id, v.* FROM knowledge_sources s
+       JOIN knowledge_collections c ON c.id = s.collection_id JOIN knowledge_versions v ON v.id = s.approved_version_id
+      WHERE c.slug = $1 AND s.status = 'approved' AND v.title LIKE $2`,
+    [collectionSlug, `${titleStart.replace(/[%_\\]/g, '\\$&')}%`],
+  );
+  const where = `${collectionSlug} › ${titleStart}`;
+  if (rows.length !== 1) {
+    log(`[seed] field notes for “${where}” were not added: ${rows.length} approved sections match`);
+    return null;
+  }
+  const sec = rows[0];
+  if (sec.latest_version_id !== sec.approved_version_id) {
+    log(`[seed] field notes for “${where}” were not added: the section has an unapproved draft`);
+    return null;
+  }
+  const addition = (await readFile(path.join(HERE, file), 'utf8')).trim();
+  const firstLine = addition.split('\n')[0];
+  if (sec.content.includes(firstLine)) {
+    log(`[seed] “${where}” already has these field notes`);
+    return null;
+  }
+  const next = await q.one(`SELECT COALESCE(max(version), 0) + 1 AS v FROM knowledge_versions WHERE source_id = $1`, [sec.source_id]);
+  const v = await q.one(
+    `INSERT INTO knowledge_versions (source_id, version, title, brand, subjects, personas, as_of_date, caveats, content, change_note, created_by,
+       approved_at, approved_by, evidence_basis)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now(), $11, $12) RETURNING id`,
+    [sec.source_id, next.v, sec.title, sec.brand, sec.subjects, sec.personas, asOfDate || sec.as_of_date, sec.caveats, `${sec.content.trim()}\n\n${addition}`, changeNote, owner.id, sec.evidence_basis],
+  );
+  await q.query(`UPDATE knowledge_sources SET latest_version_id = $2, approved_version_id = $2, updated_at = now() WHERE id = $1`, [sec.source_id, v.id]);
+  log(`[seed] added field notes to “${sec.title}” (version ${next.v})`);
+  return { sourceId: sec.source_id, versionId: v.id, version: next.v };
+}
+
+// Adds one section (approved unless the spec says approve: false), from a supplied document, at the end of
+// its group in an existing collection (see ADDED_SECTIONS). Nothing is added when the collection is missing or already has a section with
 // that title.
 export async function addDocumentSection(q, owner, log, spec) {
   const collection = await q.one(`SELECT * FROM knowledge_collections WHERE slug = $1`, [spec.collectionSlug]);
@@ -249,10 +304,10 @@ export async function addDocumentSection(q, owner, log, spec) {
     evidenceBasis: spec.evidenceBasis,
     group: spec.group,
     changeNote: spec.changeNote,
-    approve: true,
+    approve: spec.approve !== false,
     actorId: owner.id,
   });
-  log(`[seed] ${collection.name}: added “${spec.title}”`);
+  log(`[seed] ${collection.name}: added “${spec.title}”${spec.approve === false ? ' as a draft' : ''}`);
   return made;
 }
 

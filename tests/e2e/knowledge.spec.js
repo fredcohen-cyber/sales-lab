@@ -33,7 +33,9 @@ test('the library lists the playbook and product knowledge as contents pages', a
   }
   await expect(ravenly.getByText('Ravenly vs Intaker battle card')).toBeVisible();
   const omnizant = page.locator('article.collection').filter({ has: page.getByRole('heading', { name: 'Omnizant product knowledge' }) });
-  await expect(omnizant.getByText('Draft', { exact: true })).toHaveCount(3);
+  // Draft outlines, and the company facts from the calls waiting for confirmation.
+  await expect(omnizant.getByText('Draft', { exact: true })).toHaveCount(4);
+  await expect(omnizant.getByText('Competitor angles from Omnizant’s calls')).toBeVisible();
   // The AI Search Plans brief is its own collection of approved sections.
   const geo = page.locator('article.collection').filter({ has: page.getByRole('heading', { name: 'Omnizant AI Search Plans (GEO)' }) });
   await expect(geo.getByText('How the plans fit: Advantage AI and Max AI')).toBeVisible();
@@ -114,7 +116,8 @@ test('sections are reordered and grouped without new versions, and new sections 
   await page.getByRole('button', { name: 'Save order and groups' }).click();
   await expect(page.getByText('Order and groups saved')).toBeVisible();
   await page.goto('/knowledge');
-  await expect(omnizant.locator('.contents-title')).toHaveText(['Web development', 'GEO (generative engine optimization)', 'SEO (search engine optimization)']);
+  const fromCalls = ['Omnizant at a glance', 'The complimentary website review', 'Competitor angles from Omnizant’s calls'];
+  await expect(omnizant.locator('.contents-title')).toHaveText(['Web development', 'GEO (generative engine optimization)', 'SEO (search engine optimization)', ...fromCalls]);
   await expect(omnizant.getByRole('heading', { name: 'Build', level: 4 })).toBeVisible();
 
   await omnizant.getByRole('link', { name: 'Add section' }).click();
@@ -128,7 +131,7 @@ test('sections are reordered and grouped without new versions, and new sections 
   await expect(page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link', { name: 'Omnizant product knowledge' })).toBeVisible();
   await page.goto('/knowledge');
   // A new section joins the end of its group.
-  await expect(omnizant.locator('.contents-title')).toHaveText(['Web development', 'Website care plans', 'GEO (generative engine optimization)', 'SEO (search engine optimization)']);
+  await expect(omnizant.locator('.contents-title')).toHaveText(['Web development', 'Website care plans', 'GEO (generative engine optimization)', 'SEO (search engine optimization)', ...fromCalls]);
 });
 
 test('a long document splits into sections once its pending draft is approved', async () => {

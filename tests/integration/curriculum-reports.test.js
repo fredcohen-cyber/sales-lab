@@ -263,6 +263,9 @@ test('rubric weights are versioned; new attempts use the new version, old ones k
 });
 
 test('knowledge library: drafts, approval, archive, and learner visibility', async () => {
+  // Seeded approved material may already cover Omnizant competitive knowledge, so count what this adds.
+  const covered = async () => (await owner.get('/api/knowledge')).data.coverage.counts.omnizant.competitive;
+  const before = await covered();
   const created = await owner.post('/api/knowledge', {
     title: 'Omnizant SEO competitors',
     brand: 'omnizant',
@@ -276,18 +279,17 @@ test('knowledge library: drafts, approval, archive, and learner visibility', asy
   assert.equal(created.status, 201);
   const draft = await ae.get(`/api/knowledge/${created.data.id}`);
   assert.equal(draft.status, 404, 'learners cannot see drafts');
-  const lib = await owner.get('/api/knowledge');
-  assert.ok(lib.data.coverage.missing.some((m) => m.brand === 'omnizant' && m.subject === 'competitive'), 'draft does not count as coverage');
+  assert.equal(await covered(), before, 'a draft does not count as coverage');
   const v = await owner.get(`/api/knowledge/${created.data.id}`);
   await owner.post(`/api/knowledge/${created.data.id}/approve`, { versionId: v.data.version.id });
   const visible = await ae.get(`/api/knowledge/${created.data.id}`);
   assert.equal(visible.status, 200);
   assert.equal(visible.data.version.asOfDate, '2026-10-01');
   assert.equal(visible.data.version.caveats, 'Draft from sales; confirm pricing.');
-  const lib2 = await owner.get('/api/knowledge');
-  assert.ok(!lib2.data.coverage.missing.some((m) => m.brand === 'omnizant' && m.subject === 'competitive'));
+  assert.equal(await covered(), before + 1, 'approving it counts');
   await owner.post(`/api/knowledge/${created.data.id}/archive`, {});
   assert.equal((await ae.get(`/api/knowledge/${created.data.id}`)).status, 404);
+  assert.equal(await covered(), before, 'an archived source no longer counts');
   const learnerList = await ae.get('/api/knowledge');
   assert.ok(learnerList.data.sources.every((s) => s.status === 'approved'));
 });

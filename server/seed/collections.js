@@ -144,3 +144,53 @@ export const RAVENLY_VS_INTAKER = {
     'Ravenly’s scoring follows 05 · Qualification, scoring, and routing, and its pricing basis follows 12 · Packaging, pricing, trial, and commercial discovery. The pricing screenshot is transcribed as a table.',
 };
 export const ADDED_SECTIONS = [RAVENLY_VS_INTAKER];
+
+// What 14 booked Omnizant outbound calls (October 2026) taught, distilled from the transcripts and analysis
+// Fred supplied. Field notes go at the end of the matching Sales Playbook sections as a new approved
+// version; Omnizant gets new sections. Company facts the reps stated wait as a draft for Fred to confirm.
+// The transcripts themselves are not stored: they name prospects and their email addresses.
+export const CALL_LEARNINGS = {
+  seedKey: 'call-learnings-2026-10-v1',
+  asOfDate: '2026-10-26',
+  changeNote:
+    'Field notes from 14 booked Omnizant outbound calls (October 2026), distilled from the call transcripts and analysis supplied by Fred Cohen.',
+  appendTo: [
+    { collectionSlug: 'sales-playbook', titleStart: '2. Openers', file: 'sources/field-notes/playbook-2-openers.md' },
+    { collectionSlug: 'sales-playbook', titleStart: '3. Discovery', file: 'sources/field-notes/playbook-3-discovery.md' },
+    { collectionSlug: 'sales-playbook', titleStart: '5. Closing', file: 'sources/field-notes/playbook-5-closing.md' },
+    { collectionSlug: 'sales-playbook', titleStart: '6. Objections', file: 'sources/field-notes/playbook-6-objections.md' },
+  ],
+  sections: [
+    {
+      collectionSlug: 'omnizant-product',
+      title: 'Omnizant at a glance',
+      group: 'About Omnizant',
+      file: 'sources/field-notes/omnizant-at-a-glance.md',
+      brand: 'omnizant',
+      subjects: ['product'],
+      approve: false,
+      caveats: 'Facts as reps stated them on calls in October 2026, not yet confirmed. Approve only after checking each one.',
+    },
+    {
+      collectionSlug: 'omnizant-product',
+      title: 'The complimentary website review',
+      group: 'Selling Omnizant',
+      file: 'sources/field-notes/omnizant-website-review.md',
+      brand: 'omnizant',
+      subjects: ['product', 'sales_technique'],
+      approve: true,
+      caveats: 'How reps described and offered the review on 14 booked calls in October 2026. These calls show what worked, not how often it works.',
+    },
+    {
+      collectionSlug: 'omnizant-product',
+      title: 'Competitor angles from Omnizant’s calls',
+      group: 'Competitive',
+      file: 'sources/field-notes/omnizant-competitor-angles.md',
+      brand: 'omnizant',
+      subjects: ['competitive'],
+      approve: true,
+      caveats:
+        'From 14 booked Omnizant calls in October 2026. Competitor experiences are what firms reported on those calls, not verified facts; the FindLaw sale is from Thomson Reuters’ announcement of December 2, 2024.',
+    },
+  ],
+};

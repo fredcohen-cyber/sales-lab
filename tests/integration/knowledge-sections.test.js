@@ -7,8 +7,8 @@ import { addUser, drillBySlug, ownerClient, prepare, sectionBy, startTestApp, su
 import { parseSections } from '../../server/lib/text.js';
 import { SEED_DRILLS } from '../../server/seed/drills.js';
 import { BANK_QUESTIONS, EXISTING_UPDATES } from '../../server/seed/bank/index.js';
-import { addDocumentSection, createDocumentCollection, createSeedCollections, seed } from '../../server/seed/index.js';
-import { ADDED_SECTIONS, OMNIZANT_AI_SEARCH, RAVENLY_VS_INTAKER } from '../../server/seed/collections.js';
+import { addCallLearnings, addDocumentSection, createDocumentCollection, createSeedCollections, seed } from '../../server/seed/index.js';
+import { ADDED_SECTIONS, CALL_LEARNINGS, OMNIZANT_AI_SEARCH, RAVENLY_VS_INTAKER } from '../../server/seed/collections.js';
 import { loadSourceText } from '../../server/knowledge/service.js';
 import { buildCoachingRequest } from '../../server/ai/prompt.js';
 
@@ -46,7 +46,7 @@ const drillBody = (fields) => ({
 });
 const docVersion = (title, content) => ({ title, brand: 'omnizant', subjects: ['product'], content });
 
-test('the playbook, the Ravenly guide, and the AI Search Plans brief are collections of approved sections; Omnizant product knowledge starts as drafts', async () => {
+test('the playbook, the Ravenly guide, and the AI Search Plans brief are collections of approved sections; Omnizant product knowledge starts with draft outlines', async () => {
   const lib = await owner.get('/api/knowledge');
   assert.equal(lib.status, 200);
   assert.deepEqual(
@@ -54,7 +54,7 @@ test('the playbook, the Ravenly guide, and the AI Search Plans brief are collect
     [
       ['sales-playbook', 'playbook', 'both', 10, 0],
       ['ravenly-product', 'product', 'ravenly', 23, 0],
-      ['omnizant-product', 'product', 'omnizant', 0, 3],
+      ['omnizant-product', 'product', 'omnizant', 2, 4],
       ['omnizant-ai-search', 'product', 'omnizant', 6, 0],
     ],
   );
@@ -76,7 +76,7 @@ test('every section keeps the exact text, title, and metadata it had in the docu
     );
     const rows = await h.db.many(
       `SELECT v.title, v.content, v.brand, v.as_of_date, v.caveats, v.evidence_basis, v.approved_at FROM knowledge_sources s
-         JOIN knowledge_collections c ON c.id = s.collection_id JOIN knowledge_versions v ON v.id = s.approved_version_id
+         JOIN knowledge_collections c ON c.id = s.collection_id JOIN knowledge_versions v ON v.source_id = s.id AND v.version = 1
         WHERE c.slug = $1 AND NOT v.title = ANY($2::text[]) ORDER BY s.position`,
       // Sections added to a collection later are not part of its document.
       [collection, ADDED_SECTIONS.filter((a) => a.collectionSlug === collection).map((a) => a.title)],
@@ -152,6 +152,37 @@ test('the Ravenly vs Intaker battle card joins the Competitive group, aligned wi
   assert.equal(await h.db.tx((q) => addDocumentSection(q, { id: null }, () => {}, RAVENLY_VS_INTAKER)), null);
 });
 
+test('lessons from the Omnizant calls are added to the playbook as field notes, and to Omnizant as new sections', async () => {
+  const notes = (file) => readFileSync(new URL(`../../server/seed/${file}`, import.meta.url), 'utf8').trim();
+  for (const a of CALL_LEARNINGS.appendTo) {
+    const versions = await h.db.many(
+      `SELECT v.version, v.content, v.as_of_date, v.change_note, v.approved_at, s.approved_version_id = v.id AS current
+         FROM knowledge_sources s JOIN knowledge_collections c ON c.id = s.collection_id JOIN knowledge_versions v ON v.source_id = s.id
+        WHERE c.slug = $1 AND s.status = 'approved' AND s.id = (SELECT s2.id FROM knowledge_sources s2 JOIN knowledge_versions v2 ON v2.id = s2.approved_version_id
+          WHERE s2.collection_id = c.id AND v2.title LIKE $2 || '%') ORDER BY v.version`,
+      [a.collectionSlug, a.titleStart],
+    );
+    assert.deepEqual(versions.map((v) => [v.version, v.current]), [[1, false], [2, true]], a.titleStart);
+    const [first, second] = versions;
+    // The playbook's own text is unchanged; the notes follow it.
+    assert.equal(second.content, `${first.content.trim()}\n\n${notes(a.file)}`);
+    assert.match(second.content, /### From the field/);
+    assert.deepEqual([second.as_of_date, second.change_note], ['2026-10-26', CALL_LEARNINGS.changeNote]);
+    assert.ok(second.approved_at);
+  }
+  // No prospect contact details reach the library.
+  const all = [...CALL_LEARNINGS.appendTo, ...CALL_LEARNINGS.sections].map((x) => notes(x.file)).join('\n');
+  assert.doesNotMatch(all, /@[a-z0-9-]+\.(com|net)|\d{3}[-.)\s]\d{3}[-.\s]\d{4}/i);
+  // Omnizant now has approved competitive material; the company facts wait for confirmation.
+  const lib = await owner.get('/api/knowledge');
+  assert.ok(!lib.data.coverage.missing.some((m) => m.brand === 'omnizant'));
+  const glance = lib.data.sources.find((s) => s.title === 'Omnizant at a glance');
+  assert.ok(glance, 'managers see the draft');
+  assert.equal((await rep.get(`/api/knowledge/${glance.id}`)).status, 404, 'reps do not, until it is approved');
+  // Running the step again adds nothing.
+  assert.deepEqual(await h.db.tx((q) => addCallLearnings(q, { id: null }, () => {}, CALL_LEARNINGS)), { appended: 0, added: 0 });
+});
+
 test('every seeded drill now points at the sections it pointed at before, in the same order', async () => {
   const COLLECTION_FILE = { 'sales-playbook': 'sales-playbook', 'ravenly-product': 'ravenly-sales-training' };
   for (const d of SEED_DRILLS) {
@@ -218,11 +249,14 @@ test('reps read approved collections only; managers also see drafts', async () =
   const lib = await rep.get('/api/knowledge');
   assert.deepEqual(
     lib.data.collections.map((c) => c.slug),
-    ['sales-playbook', 'ravenly-product', 'omnizant-ai-search'],
+    ['sales-playbook', 'ravenly-product', 'omnizant-product', 'omnizant-ai-search'],
   );
   assert.ok(lib.data.sources.every((s) => s.status === 'approved' && s.collectionId), 'no drafts and no archived documents');
+  // Reps see only a collection's approved sections; managers also see its drafts.
   const omnizant = await collectionBySlug('omnizant-product');
-  assert.equal((await rep.get(`/api/knowledge/collections/${omnizant.id}`)).status, 404);
+  const forRep = await rep.get(`/api/knowledge/collections/${omnizant.id}`);
+  assert.equal(forRep.status, 200);
+  assert.deepEqual(forRep.data.sections.map((s) => s.title), ['The complimentary website review', 'Competitor angles from Omnizant’s calls']);
   const draft = await owner.get(`/api/knowledge/collections/${omnizant.id}`);
   assert.equal(draft.status, 200);
   assert.deepEqual(
@@ -231,6 +265,9 @@ test('reps read approved collections only; managers also see drafts', async () =
       ['Web development', false, 'Services'],
       ['SEO (search engine optimization)', false, 'Services'],
       ['GEO (generative engine optimization)', false, 'Services'],
+      ['Omnizant at a glance', false, 'About Omnizant'],
+      ['The complimentary website review', true, 'Selling Omnizant'],
+      ['Competitor angles from Omnizant’s calls', true, 'Competitive'],
     ],
   );
   const playbook = await collectionBySlug('sales-playbook');

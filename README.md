@@ -69,12 +69,15 @@ shown 12 pixels tall.
 Knowledge is kept in **collections** made of **sections**:
 
 - The **Sales Playbook** (both brands) holds sales technique: mindset, openers, discovery, presenting,
-  closing, objections, follow-up, language, and practice.
+  closing, objections, follow-up, language, and practice. Openers, Discovery, Closing, and Objections end
+  with field notes from 14 booked Omnizant outbound calls (October 2026), in `server/seed/sources/field-notes/`.
 - **Product knowledge** has one collection per brand. Ravenly's is grouped into Start here, Positioning
   and fit, Product capabilities, Pricing and packaging, Competitive (including the Intaker and Juvo Leads
   battlecards, and the sales team's Ravenly vs Intaker battle card, aligned with the Intaker research),
   Selling Ravenly, and Claims and sources. Omnizant's starts as draft outlines for Web
-  development, SEO, and GEO. **Omnizant AI Search Plans (GEO)** holds the positioning brief for the
+  development, SEO, and GEO, and adds what the same calls taught: the complimentary website review,
+  competitor angles for FindLaw, Justia, Scorpion, and LawLytics, and a draft of company facts the reps
+  stated, waiting for a manager to confirm them. **Omnizant AI Search Plans (GEO)** holds the positioning brief for the
   Advantage AI and Max AI plans, one approved section per part of the brief (from
   `server/seed/sources/omnizant-ai-search-plans.md`; the supplied original is in `server/seed/originals/`).
 - A **section** is the unit you edit. It has its own text, brand, subjects, buyer personas, evidence
@@ -197,10 +200,11 @@ Needs verification or material:
 - Real coaching has only been exercised with the test stand-in. After adding the API key, run a few
   conversations and review the first evaluations and pushbacks in Team Coaching to calibrate the rubric and
   targets.
-- Omnizant product material so far is the AI Search Plans positioning brief, which gives the story and
-  language but no prices, quantities, or deliverable lists. Omnizant product knowledge still holds draft
-  outlines for Web development, SEO, and GEO, no Omnizant competitive material has been supplied, and
-  there are no Omnizant product drills yet. Sales-technique drills apply to both brands.
+- Omnizant product material so far is the AI Search Plans positioning brief (story and language, but no
+  prices, quantities, or deliverable lists) and what 14 booked calls taught (the website review offer and
+  competitor angles). The company and service facts reps stated on those calls are a draft until a manager
+  confirms them, the outlines for Web development, SEO, and GEO are still to be written, and there are no
+  Omnizant product drills yet. Sales-technique drills apply to both brands.
 - Company logo files have not been added (see above).
 - Out of scope for this version: voice, full-call simulation, CRM integrations, automated emails or
   reminders, and imports beyond pasted text, `.txt`, and `.md`.
