@@ -844,10 +844,10 @@ export const QUESTIONS = [
     objective: 'Explain progress honestly in the attorney’s terms, connect the work to his own client data, and agree on what to review from now on.',
     goodLooksLike: [
       '- Acknowledges the gap between the reports and his caseload directly, without defending the work.',
-      '- Separates the activity measures in the reports from what he cares about, new clients and the cases he wants, and is honest about what is known and not yet known.',
+      '- Explains in plain terms the difference between the activity the reports describe and the outcome he cares about, new clients in the cases he wants, and is honest about what is not yet known.',
       '- Asks how new clients reach him, how he records where they came from, and which kinds of cases he wants more of.',
-      '- Does not promise rankings, leads, or cases, does not invent results or timelines, and offers to confirm what the reporting can show.',
-      '- Proposes a simpler review built on a few measures he chooses, with a dated next meeting.',
+      '- Does not try to win him over with a forecast: no promised rankings, leads, or cases, no invented results or timelines, and an offer to confirm what the reporting can show.',
+      '- Agrees with him on two or three measures that matter to a solo practice, such as new consultations and where they came from, and a date to review them together.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -877,13 +877,13 @@ export const QUESTIONS = [
     buyerLine:
       '“The partners are in trial most of next month, and protecting their time is my job. Let’s skip this quarter and pick it up after the new year.”',
     objective:
-      'Respect the office manager’s role and the partners’ time while keeping a short, useful review on the calendar, so you learn what has changed before it becomes a problem.',
+      'Work with the office manager rather than around her to keep a short, useful review on the calendar, so you learn what has changed at the firm before it becomes a problem.',
     goodLooksLike: [
       '- Respects her role and the partners’ schedule and does not try to go around her.',
       '- Offers a much shorter format, such as 15 minutes, or a first review with her, since she runs the day-to-day work and can cover much of it.',
-      '- Gives one specific reason the review helps the firm, tied to its goals rather than your agenda.',
-      '- Asks one quick question that could surface a change, such as staffing, a new practice area, or how the team is using what you provide.',
-      '- Offers two specific times and asks who should be on the invite, instead of “let me know what works.”',
+      '- Gives her one reason the review is worth the partners’ time, tied to the firm’s goals rather than your agenda, so she can justify it to them.',
+      '- Asks her one quick question that could surface a change, since she would hear of it first, such as staffing, a new practice area, or how the team is using what you provide.',
+      '- Offers two specific times outside the trial and asks which partner should join, instead of “let me know what works.”',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -915,7 +915,7 @@ export const QUESTIONS = [
     goodLooksLike: [
       '- Acknowledges the rebrand workload and offers a much shorter format, such as 15 minutes.',
       '- Gives one specific reason the review helps her now, tied to her goals, such as making sure the rebrand does not disrupt what is already working.',
-      '- Asks one quick question that could surface a change, such as new pages, a new agency, or new goals from the partners.',
+      '- Uses the rebrand to ask one quick question that could surface a change, such as new pages, a new agency, or new goals from the partners.',
       '- Offers to send a short summary before the call so the meeting stays brief, rather than replacing the meeting with an email.',
       '- Offers two specific times while you are both still on the call, and avoids needy or passive phrasing such as “no problem, take your time.”',
     ].join('\n'),
