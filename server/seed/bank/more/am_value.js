@@ -234,11 +234,11 @@ export const QUESTIONS = [
     objective:
       'Learn what the new practice needs, explain the published scope for practice areas and users accurately, and recommend one way forward the office manager can take to the partners, without inventing upgrade terms.',
     goodLooksLike: [
-      '- Asks about the new practice before answering: expected inquiry volume, what the associate needs to know before a first call, and who will work those inquiries.',
+      '- Before answering, asks what she knows about the new practice: how many bankruptcy inquiries the firm expects, what the associate wants to know before a first call, and whether the associate will work those inquiries herself.',
       '- States the published scope accurately: Launch lists three practice areas for custom bot and form flows and two users, and the firm is using all of both; Ascend lists five practice areas and five users.',
       '- Offers to confirm whether a practice area or a user can be added to Launch and how it would be priced, and how a plan change works mid-term, rather than inventing add-on terms.',
       '- If moving to Ascend comes up, gives her the published rates to brief the partners: $199 a month on yearly billing or $229 monthly, against $99 or $119 for Launch, with the actual terms confirmed in a quote.',
-      '- Mentions that the public trial page lists bankruptcy among its practice-area templates, as a possible starting point to be confirmed for this account and approved by the firm.',
+      '- Points out that bankruptcy is among the practice-area templates on Ravenly’s public trial page, which could give the associate a head start, subject to confirming it for this account and her review of the questions.',
       '- Recommends one option and agrees on a dated next step, such as a short call with the partner who approves spending.',
     ].join('\n'),
     roleGuidance: {},
@@ -272,7 +272,7 @@ export const QUESTIONS = [
     objective:
       'Learn what the new group needs, explain the published scope honestly under pressure, and recommend one way forward without inventing an exception, add-on terms, or a Summit price.',
     goodLooksLike: [
-      '- Stays calm and asks about the new group first: expected inquiry volume, what its attorneys need to know before a first call, and who will work those inquiries.',
+      '- Stays calm and asks about the new group before debating plans: how many employment inquiries it expects each month, what its attorneys must know before a first call, and who on the intake team will handle them.',
       '- States the published scope accurately: Ascend lists five practice areas, all in use, and Summit, a custom-quote plan, lists flexible practice areas, users, and volume.',
       '- Does not promise an exception or invent terms: offers to confirm by a set date whether one more practice area can be added to Ascend and how it would be priced, and gives no Summit price or range.',
       '- Raises the lead allowance: the new group may push the firm past Ascend’s 50 monthly leads, and what happens at the allowance must be confirmed rather than guessed.',
