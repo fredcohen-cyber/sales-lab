@@ -78,6 +78,17 @@ export function anthropicHeaders({ anthropicKey, anthropicWorkspaceId }) {
   return headers;
 }
 
+// A reminder needs enough of the time limit left to be worth sending.
+const MIN_REMINDER_MS = 10_000;
+
+function addUsage(a, b) {
+  if (!a) return b || null;
+  if (!b) return a;
+  const sum = { ...a };
+  for (const [k, v] of Object.entries(b)) if (typeof v === 'number') sum[k] = (typeof sum[k] === 'number' ? sum[k] : 0) + v;
+  return sum;
+}
+
 function anthropicProvider(config) {
   const { model, maxOutputTokens } = config.ai;
   const headers = anthropicHeaders(config.ai);
@@ -85,27 +96,52 @@ function anthropicProvider(config) {
     name: 'anthropic',
     model,
     async evaluate(request, { timeoutMs, signal }) {
-      const json = await postJson(
-        'https://api.anthropic.com/v1/messages',
-        headers,
-        {
-          model,
-          max_tokens: maxOutputTokens,
-          system: request.system,
-          messages: [{ role: 'user', content: request.user }],
-          tools: [request.tool],
-          tool_choice: { type: 'tool', name: request.tool.name },
-        },
-        timeoutMs,
-        signal,
-      );
+      const startedAt = Date.now();
+      const toolName = request.tool.name;
+      // Newer Claude models reject a tool_choice that forces a tool ("tool" or "any"), so the model
+      // chooses ("auto"). The system prompt tells it to answer only through the tool, and a reply
+      // in plain text gets one reminder before the run counts as incomplete.
+      const send = (messages, ms) =>
+        postJson(
+          'https://api.anthropic.com/v1/messages',
+          headers,
+          {
+            model,
+            max_tokens: maxOutputTokens,
+            system: request.system,
+            messages,
+            tools: [request.tool],
+            tool_choice: { type: 'auto' },
+          },
+          ms,
+          signal,
+        );
+      const findCall = (json) => (json.content || []).find((b) => b.type === 'tool_use' && b.name === toolName);
+
+      const messages = [{ role: 'user', content: request.user }];
+      let json = await send(messages, timeoutMs);
       if (json.stop_reason === 'refusal') throw new ProviderError('refusal', RUN_ERROR_MESSAGES.refusal);
-      const block = (json.content || []).find((b) => b.type === 'tool_use' && b.name === request.tool.name);
+      let usage = json.usage || null;
+      let block = findCall(json);
+
+      const remainingMs = timeoutMs - (Date.now() - startedAt);
+      if (!block && json.stop_reason === 'end_turn' && remainingMs >= MIN_REMINDER_MS) {
+        const reminder = [
+          ...messages,
+          ...(json.content?.length ? [{ role: 'assistant', content: json.content }] : []),
+          { role: 'user', content: `Record your evaluation now by calling the ${toolName} tool. Do not reply in plain text.` },
+        ];
+        json = await send(reminder, remainingMs);
+        if (json.stop_reason === 'refusal') throw new ProviderError('refusal', RUN_ERROR_MESSAGES.refusal);
+        usage = addUsage(usage, json.usage);
+        block = findCall(json);
+      }
+
       if (!block) {
         const why = json.stop_reason === 'max_tokens' ? 'response cut off at max_tokens' : `no tool call (stop_reason ${json.stop_reason})`;
         throw new ProviderError('invalid_response', RUN_ERROR_MESSAGES.invalid_response, { detail: why });
       }
-      return { output: block.input, usage: json.usage || null, model: json.model || model };
+      return { output: block.input, usage, model: json.model || model };
     },
     async ping({ timeoutMs = 20_000 } = {}) {
       const json = await postJson(
