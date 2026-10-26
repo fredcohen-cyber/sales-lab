@@ -198,7 +198,7 @@ export const QUESTIONS = [
       'Take the risk concern seriously, compare the two models on equal terms without promising savings, and agree on how the firm will judge the numbers.',
     goodLooksLike: [
       '- Acknowledges that per-lead billing feels lower-risk and asks what he means by risk: paying in slow months, paying for poor-fit leads, or not seeing a return.',
-      '- Explains that the units differ: Juvo’s posted rate is $40 per human chat lead and includes Juvo’s people holding the conversation, while Ravenly is a subscription priced per month, with lead allowances that exclude phone calls and spam, worked by the firm’s own staff.',
+      '- Explains that the units differ: Juvo’s posted rate is $40 per human chat lead and includes Juvo’s people holding the conversation, while Ravenly is a subscription priced per month, with lead allowances that exclude phone calls and spam, and the firm’s own staff do the intake work.',
       '- Uses arithmetic only as an illustration, such as 25 billable Juvo chat leads at the posted rate coming to $1,000 before other services or terms, and does not present it as a quote or as proof that either option costs less.',
       '- Proposes a scoped worksheet covering billable-lead definitions, staff time, conversion outcomes, onboarding, usage, and contract terms, and asks how Juvo defines a billable lead for the firm today.',
       '- Builds the case from the firm’s own baseline, such as monthly inquiries, retained rate, and value per retained matter, and does not promise savings or more signed cases.',
@@ -602,7 +602,7 @@ export const QUESTIONS = [
     objective:
       'Help her build an accurate, fair picture of her team’s daily work with each vendor, attribute competitor claims to the vendors, and steer toward testing with her team.',
     goodLooksLike: [
-      '- Frames each vendor by who does the work: with Ravenly, her team works leads in the firm’s own workspace (leads, stages, tasks, messages, and records); Intaker advertises a shared inbox, tasks, pipelines, and routing, plus AI agents for texting and Local Services Ads that it says qualify and follow up with inquiries; Juvo advertises its own people answering chat and texts with the firm’s scripts, then delivering leads by email, SMS, or CRM with a fast-dial connection.',
+      '- Frames each vendor by who does the work: with Ravenly, her team works leads in the firm’s own workspace (leads, stages, tasks, messages, and records); Intaker advertises a shared inbox, tasks, pipelines, and routing, plus AI agents for texting and Local Services Ads that it says qualify and follow up with inquiries; Juvo advertises its own people answering chat with firm-approved scripts and texts with custom intake knowledge, then delivering leads by email, SMS, or CRM with a fast-dial connection.',
       '- Attributes competitor capabilities to each vendor’s public materials and does not claim either lacks automation, reporting, scheduling, or integrations.',
       '- Is accurate about Ravenly’s follow-up: SMS, email, and task automations with her team doing the communicating, not an autonomous texting agent.',
       '- Suggests rows that matter to her team, such as who answers a new inquiry, who owns the next step after a handoff, how leads from forms, chat, and calls are reconciled, and what her team must set up.',
