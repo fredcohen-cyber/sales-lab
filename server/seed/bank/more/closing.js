@@ -286,7 +286,7 @@ export const QUESTIONS = [
     goodLooksLike: [
       '- Agrees that retained cases matter, and recaps what the trial did show against each agreed measure, without inventing results.',
       '- Is honest that a 10-day trial validates setup and workflow usability and may be too short to show retained revenue.',
-      '- Does not promise an extension or invent terms, and explains that more trial days would not settle the question reliably: retained outcomes lag inquiries, and a short window is easily skewed by traffic mix, campaign changes, and seasonality.',
+      '- Does not promise an extension or invent terms, and explains why a few more weeks may still not settle it: retention lags the inquiry, and any window has to control for traffic mix, campaign changes, and seasonality.',
       '- Proposes a scope-based decision now, with documented fit, open dependencies, the current quote, and owners, plus a dated review of outcomes after launch against the same measures.',
       '- Offers to help her present the evidence to the partners, with assumptions labeled and no calculator figures shown as results, and asks for a dated decision.',
     ].join('\n'),
@@ -690,11 +690,11 @@ export const QUESTIONS = [
     buyerLine: '“Hi! He told me we’re going ahead and that I’m your contact. What do you need from me to get us started?”',
     objective: 'Stop selling, confirm what was agreed, and turn the yes into paperwork, a clear list of what she supplies, and a dated kickoff.',
     goodLooksLike: [
-      '- Thanks her briefly and stops selling: no new features and no reopening of the decision.',
+      '- Thanks her briefly and treats the managing partner’s decision as made: no new features, and no reselling it to her.',
       '- Confirms what was agreed (Ascend on the yearly selection), that the order form will set out the terms, and who will sign it.',
       '- Names the first things the firm supplies: the practice areas and case types to start with, the users and teams, website access or the person who manages the site, and approval of the intake questions and consent wording.',
       '- Proposes a specific kickoff date and time, and asks which of her team should attend.',
-      '- Does not promise a go-live date before website access and approvals are known.',
+      '- Does not give her a go-live date to pass on to the managing partner before website access and approvals are known.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -912,7 +912,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“She’s at closings all week. Honestly, it’ll be whenever I can catch her.”',
+      '“Before she signs, she’ll want to know when you’d start and how long the new site would take. What do I tell her?”',
       '“Our current website company has us under contract until spring. Does that change anything?”',
       '“She sometimes has a lawyer friend look over contracts first. That could add a couple of weeks.”',
     ],
@@ -951,7 +951,7 @@ export const QUESTIONS = [
     pushbacks: [
       '“My administrator has signing authority. Work it out with her.”',
       '“I can’t tell you when the trial ends. Juries take as long as they take.”',
-      '“If you start calling me during trial, the deal’s off. Are we clear?”',
+      '“If the trial goes badly, I may not feel like spending money on anything for a while. Are you going to hold me to what I said today?”',
     ],
     assessed: ['advancing', 'empathy_clarity', 'discovery'],
     defaults: [4, 3, 1],
