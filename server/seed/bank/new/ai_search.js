@@ -167,7 +167,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“Then what can you promise?”',
+      '“If you can’t promise that, what can you promise?”',
       '“Another agency told me last week they can get us recommended. Are they lying?”',
       '“Show me a firm you’ve gotten recommended, with numbers, or this conversation is over.”',
     ],
@@ -216,7 +216,7 @@ export const QUESTIONS = [
   },
   {
     slug: 'disc-ai-how-firm-appears',
-    title: 'Marketing manager wants AI search on the plan',
+    title: 'Marketing manager wants to go straight to Max AI',
     brand: 'omnizant',
     product: 'omnizant_ai_search',
     subject: 'product',
@@ -225,13 +225,13 @@ export const QUESTIONS = [
     personas: ['marketing_manager'],
     personaLines: {},
     situation:
-      'You are on a first video call for Omnizant with the marketing manager of a 20-attorney workers’ compensation firm. She replied to your email because next year’s marketing plan needs an AI search line, and she is not sure what belongs there.',
-    buyerLine: '“We know we need to do something about AI search next year. I just don’t know what. Where do firms like ours usually start?”',
+      'You are on a first video call for Omnizant with the marketing manager of a 20-attorney workers’ compensation firm. She replied to your email, which named the two AI Search Plans, because next year’s marketing plan needs an AI search line.',
+    buyerLine: '“The partners already said they want ongoing work, so let’s go straight to Max AI. What do you need from me to get it into next year’s plan?”',
     objective:
       'Before recommending anything, learn how the firm thinks about AI search, whether it needs a reliable foundation or ongoing work to expand discovery, and the business reason it would invest.',
     goodLooksLike: [
-      '- Does not jump to a plan, a price, or a promise of AI mentions; says briefly that the right starting point depends on what the firm needs.',
-      '- Asks how she believes the firm appears in AI search today and what prompted the question, such as something a partner noticed.',
+      '- Does not take the order, quote a price, or promise AI mentions before asking a few questions; says briefly that the right plan depends on what the firm needs.',
+      '- Asks how she believes the firm appears in AI search today and what led the partners to want ongoing work, such as something a partner noticed.',
       '- Asks questions that separate a need for a reliable foundation, such as a baseline and accurate, complete information about the firm, from a wish for ongoing work to expand discovery.',
       '- Asks for the business reason in her terms, such as which kinds of workers’ compensation cases the firm wants more of and how the partners will judge the spend.',
       '- Asks how inquiries are captured and followed up today and how she tracks where they come from.',
@@ -247,7 +247,7 @@ export const QUESTIONS = [
     defaults: [3, 3, 2],
     sources: [
       { collection: 'omnizant-ai-search', sections: ['Positioning in brief', 'How the plans fit'] },
-      { collection: 'sales-playbook', sections: ['3. '] },
+      { collection: 'sales-playbook', sections: ['3. ', '1. '] },
     ],
   },
   {
@@ -290,7 +290,7 @@ export const QUESTIONS = [
   {
     slug: 'disc-ai-how-firm-appears-v3',
     concept: 'disc-ai-how-firm-appears',
-    title: 'Solo hears an AI app named another firm',
+    title: 'Solo asks which AI plan fits her practice',
     brand: 'omnizant',
     product: 'omnizant_ai_search',
     subject: 'product',
@@ -299,12 +299,12 @@ export const QUESTIONS = [
     personas: ['solo_attorney'],
     personaLines: {},
     situation:
-      'You are on a discovery call for Omnizant with a solo estate planning attorney who booked through your website. A longtime client told her that an AI app suggested another firm when the client asked about planning for her mother.',
-    buyerLine: '“One of my clients asked an AI app about planning for her mother, and it named a firm across town, not me. Should I be worried? What should I be doing?”',
+      'You are on a discovery call for Omnizant with a solo estate planning attorney who booked through your website. Your confirmation email named the two AI Search Plans, and she has never looked at how her firm shows up in AI search.',
+    buyerLine: '“Your email mentioned two AI plans, and honestly I’m lost. Which one is meant for a one-lawyer estate planning practice like mine?”',
     objective:
       'Learn how she thinks about AI search, what she actually wants from it, and the business reason to act, before suggesting anything.',
     goodLooksLike: [
-      '- Acknowledges the concern without alarming her or treating one AI answer as proof of how her firm appears in general.',
+      '- Welcomes the question and says briefly that the right plan depends on what she wants, without naming a plan, a price, or a firm size each plan is meant for.',
       '- Does not promise she will be named or recommended, since each AI platform decides its own answers.',
       '- Asks what she wants most: making sure people find accurate, complete information about her firm, or ongoing work to bring in more new estate planning clients.',
       '- Asks about the business reason in her terms, such as how many new matters she wants each month and how clients find her today.',
@@ -609,7 +609,7 @@ export const QUESTIONS = [
     assessed: ['product_accuracy', 'discovery', 'persuasion', 'advancing'],
     defaults: [3, 3, 3],
     sources: [
-      { collection: 'omnizant-ai-search', sections: ['Messaging guidance', 'How the plans fit', 'The role within'] },
+      { collection: 'omnizant-ai-search', sections: ['Messaging guidance', 'How the plans fit', 'The role within', 'How we earn confidence'] },
       { collection: 'sales-playbook', sections: ['6. '] },
     ],
   },
@@ -702,9 +702,9 @@ export const QUESTIONS = [
     objective:
       'Explain the relationship accurately and confidently: a shared philosophy, a distinct defined scope, neither a rename nor a cut-down Symphony, and keep the recommendation on what the firm needs.',
     goodLooksLike: [
-      '- Does not get defensive and does not accept either framing: the AI plans are neither Symphony renamed nor a version of it with pieces missing.',
+      '- Does not get defensive and accepts neither framing: says plainly that Advantage AI is not Symphony under a new name or a cut-down Symphony, but a separate offer with its own defined scope focused on AI search visibility; it does not include every Symphony service, and the two are not interchangeable.',
       '- Explains the relationship with Symphony’s framework: both follow the same philosophy, helping people find a firm, choose it, and become clients, while the AI plans have their own defined scope focused on AI search visibility.',
-      '- Does not imply Advantage AI includes Symphony’s services, and does not describe Symphony’s services, results, or price from hearsay.',
+      '- Does not describe Symphony’s services, results, or price from hearsay, and offers to confirm the specifics of each offer.',
       '- Explains why Advantage AI fits what the firm said: establishing a baseline, identifying inaccurate or missing information, and strengthening foundational signals, with Omnizant Growth Studio included.',
       '- Asks what he wants from either offer, then proposes a dated next step to confirm the scope of what he would buy.',
     ].join('\n'),
@@ -1027,7 +1027,7 @@ export const QUESTIONS = [
       'Without criticizing FindLaw, learn what he wants to improve and where the current arrangement falls short, and use only what he says to show where the AI Search Plans could help.',
     goodLooksLike: [
       '- Respects the long relationship, says nothing negative about FindLaw, and makes no claims about what FindLaw does or does not offer.',
-      '- If it uses the sale as a hook, states only the fact, that FindLaw was sold to Internet Brands in a sale that closed in December 2024, and asks about his experience rather than saying the service changed.',
+      '- If it uses the sale as a hook, states the sale as the only fact (FindLaw was sold to Internet Brands; the sale closed in December 2024), frames anything more as what other firms report, and asks about his experience rather than saying his service changed.',
       '- Asks what he wishes his provider did differently, whether he gets enough qualified inquiries, and how clearly he can tie his spend to new clients.',
       '- Connects the AI Search Plans only to gaps he names, such as how the firm appears when people use AI to research a legal problem, or capturing and following up on inquiries with Omnizant Growth Studio.',
       '- Promises no AI mentions, results, or savings, and invents no prices.',
@@ -1147,7 +1147,7 @@ export const QUESTIONS = [
     roleGuidance: {},
     pushbacks: [
       '“Every agency that can’t deliver says it can’t guarantee. That sounds like an excuse.”',
-      '“What would you guarantee, then? Anything?”',
+      '“If you won’t match it, what would you guarantee? Anything?”',
       '“Last chance. Cut your price by a third to make up for no guarantee, and you have a deal.”',
     ],
     assessed: ['product_accuracy', 'objection_handling', 'persuasion', 'advancing'],
@@ -1255,7 +1255,7 @@ export const QUESTIONS = [
     pushbacks: [
       '“What’s the difference with the other one, though? I’d like to know what I’m not getting.”',
       '“Could I start with one plan and switch later if it isn’t right?”',
-      '“I’d still rather look it over on my own. Just send it.”',
+      '“Money’s tight until a settlement comes in next month. Can we hold off and start then?”',
     ],
     assessed: ['product_accuracy', 'persuasion', 'advancing'],
     defaults: [2, 2, 3],
@@ -1277,7 +1277,7 @@ export const QUESTIONS = [
     personaLines: {},
     situation:
       'You are closing with the marketing manager of a 40-attorney personal injury firm. Discovery showed the firm’s information is accurate and well established, and the partners want to grow AI-assisted discovery in two new markets. She presents to the partners on Thursday.',
-    buyerLine: '“I want to bring both Advantage AI and Max AI to the partners on Thursday and let them choose. They hate being told what to buy.”',
+    buyerLine: '“I’m bringing both Advantage AI and Max AI to the partners on Thursday and letting them choose. They hate being told what to buy. Give me one good reason to walk in with a single plan, because I won’t get a second shot at this.”',
     objective:
       'Keep one recommendation, Max AI, built from discovery, equip her to present it, and close for a decision meeting with the partners.',
     goodLooksLike: [
@@ -1319,7 +1319,7 @@ export const QUESTIONS = [
       '- Acknowledges that wanting evidence is reasonable, without arguing or sounding needy.',
       '- Isolates the real issue: doubt that AI search matters, budget, timing, or something from the meeting that did not sit right.',
       '- Quotes no statistics about how many people use AI to find lawyers and makes no predictions; if it describes someone researching an employment dispute with AI before looking for a lawyer, it presents that as an example, not a measurement.',
-      '- Offers one concrete idea that gives him evidence sooner, such as looking together at how the firm appears today for a few questions its prospective clients might ask, stating the questions, platforms, and date as a snapshot.',
+      '- Offers one concrete idea that gives him the firm’s own evidence sooner, such as having intake start recording now where each new employment inquiry came from, including any caller who names an AI tool, and which inquiries become consultations and retained matters, while being honest that this shows observed sources and cannot capture every influence on a decision.',
       '- Ends with a yes, a no, or a dated next step, not an open “check back in six months.”',
     ].join('\n'),
     roleGuidance: {},
@@ -1361,7 +1361,7 @@ export const QUESTIONS = [
     roleGuidance: {},
     pushbacks: [
       '“He’s pretty firm about it. I don’t want to bug him.”',
-      '“Could you just set a reminder to call me in six months?”',
+      '“If I bring it up with him again, he’ll ask what’s changed since the meeting. What would I even tell him?”',
       '“Honestly, I don’t think he’s convinced it’s worth the money at all. Six months might turn into never.”',
     ],
     assessed: ['product_accuracy', 'empathy_clarity', 'advancing'],
@@ -1390,7 +1390,7 @@ export const QUESTIONS = [
     goodLooksLike: [
       '- Acknowledges her position and the partners’ caution without arguing with them.',
       '- Invents no statistics, trends, or client results to manufacture evidence, and does not present illustrative client journeys as measured demand.',
-      '- Reframes the wait: the useful question is how this firm appears in AI search and what happens when prospective clients reach out, and Advantage AI starts by establishing that baseline and finding inaccurate or missing information, so the firm would learn from its own data rather than waiting on the industry.',
+      '- Reframes the wait: the useful question is how this firm appears in AI search and what happens when prospective clients reach out; Advantage AI establishes a baseline of how the firm appears and identifies inaccurate or missing information, and Omnizant Growth Studio connects the website to lead activity, so the firm would learn from its own data rather than waiting on the industry.',
       '- Suggests what the firm can do now either way, such as tracking inquiry sources and recording consultations and retained clients, so any later decision rests on its own records.',
       '- Offers a concrete next step, such as a short session with the partners on a set date or a dated decision point with an agreed measure.',
     ].join('\n'),

@@ -93,7 +93,7 @@ export const QUESTIONS = [
       '- Names Omnizant first and says plainly that they chose the marketing and vendor option in the phone menu, without implying an existing relationship.',
       '- Asks about the relationship rather than authority, for example “Who there handles the relationship between the firm and Scorpion? Is that you, or someone else?”',
       '- Confirms her role before pitching, such as whether she would be the one to change the website if the firm added a partner, and whether she works with Scorpion directly.',
-      '- Gives a reason about the firm, such as asking what its experience with Scorpion has been over time, without criticizing Scorpion or claiming its results decline.',
+      '- Gives a reason about the firm, such as asking what its experience with Scorpion has been over time; frames anything other firms report (for example that things start out great and then slowly drop off) as what they say, without criticizing Scorpion or stating as fact that its results decline.',
       '- Offers a free 15-minute review next week whose findings are useful to whoever works on the site, and asks who else should be on the invite.',
     ].join('\n'),
     roleGuidance: {},
@@ -105,7 +105,7 @@ export const QUESTIONS = [
     assessed: ['discovery', 'objection_handling', 'empathy_clarity', 'advancing'],
     defaults: [4, 4, 1],
     sources: [
-      { collection: 'sales-playbook', sections: ['2. ', '6. '] },
+      { collection: 'sales-playbook', sections: ['2. ', '6. ', '5. '] },
       { collection: 'omnizant-product', sections: ['The complimentary website review', 'Competitor angles'] },
     ],
   },
@@ -168,7 +168,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“The system says you’re calling about our website. Are you with our web company?”',
+      '“Who are you with, exactly? Are you with the company that does our website?”',
       '“We put that system in to cut down on sales calls. Why should I give you any time?”',
       '“I handle the vendors, but anything that costs money goes to the partners, and they can’t stand these calls.”',
     ],
@@ -306,7 +306,7 @@ export const QUESTIONS = [
     goodLooksLike: [
       '- Acknowledges her experience without arguing that her service has gotten worse or criticizing FindLaw.',
       '- Separates fact from report: the fact is that Thomson Reuters sold FindLaw to Internet Brands, closing in December 2024; the rest is what other firms have told Omnizant, which says nothing certain about her account.',
-      '- Does not invent names, numbers, or firms to back up the line.',
+      '- Does not invent names, numbers, or firms to back up the line; if asked how many FindLaw firms have moved to Omnizant, says they don’t know the number and offers to check, rather than guessing or saying that many have switched.',
       '- Turns to her experience with one open question, such as what she would change about her site if she could.',
       '- Offers a free 15-minute review as a check rather than a verdict, for example “For all I know, everything’s great,” and asks for a specific time, or accepts a no without chasing.',
     ].join('\n'),
@@ -344,8 +344,8 @@ export const QUESTIONS = [
       '- Asks about his experience in an open way, for example noting that some firms say things start out great and then slowly drop off, and asking what his experience has been, without claiming that happened to him.',
       '- Does not ask him to switch: offers a free 15-minute review with findings he could act on with Scorpion, another vendor, or Omnizant.',
       '- Takes the pressure off, for example “It’s not going to be a high-pressure sales call,” and says that if he ever wants Omnizant’s services, that would be a separate call.',
-      '- Makes no promises about rankings, leads, or cases, and asks for a specific time next week.',
-      '- If asked whether Omnizant works with competing firms nearby, describes only Omnizant’s own policy once it is confirmed, and makes no claim about whom Scorpion works with.',
+      '- Makes no promises about rankings, leads, cases, downtime, or how long a move would take (those details would be confirmed if it ever came to that), and asks for a specific time next week.',
+      '- If asked whether Omnizant works with competing firms nearby, says only what they know and offers to confirm Omnizant’s own policy rather than guessing it, and makes no claim about whom Scorpion works with.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -416,10 +416,11 @@ export const QUESTIONS = [
       'Respect the relationship and his decision, do not argue for a rebuild or about price, and earn a short review that commits him to nothing, or end the call gracefully.',
     goodLooksLike: [
       '- Answers in a sentence or two, acknowledges the long relationship, and does not criticize Scorpion or the other callers.',
-      '- Does not argue for a rebuild, and does not quote, confirm, or compare Omnizant prices; offers to confirm specifics only if he ever asks for them.',
+      '- Does not argue for a rebuild, and does not quote, confirm, or compare Omnizant prices; if asked whether he would lose his site, makes no claim about Scorpion’s terms or Omnizant’s, asks what his agreement says happens to his site and content if he leaves, and offers to confirm specifics.',
       '- Agrees that anyone can build a good-looking site, then moves to what it produces, such as how he captures and converts the leads it brings, with one open question.',
       '- Offers a free 15-minute review he can use with Scorpion or anyone else, and says that if he ever wants Omnizant’s services, that would be a separate call.',
       '- Shows detachment: if he still says no, accepts it without chasing or pleading.',
+      '- Makes no promise of more cases, leads, or rankings, even when pressed for a yes or no.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -451,7 +452,7 @@ export const QUESTIONS = [
       'Ground the name quickly, then turn “call me tomorrow” into a specific 15-minute slot with an invite instead of an open callback.',
     goodLooksLike: [
       '- Keeps it short, spells the name (O-M-N-I-Z-A-N-T), and gives one grounding fact the rep can stand behind so she can place the company or look it up.',
-      '- Does not state unconfirmed company details, such as a founding year, a headcount, or client numbers, as settled.',
+      '- Does not state unconfirmed company details, such as where the company is headquartered, a founding year or years in business, a headcount, or client numbers, as settled.',
       '- Turns the callback into a time, for example “What time works for you tomorrow? Would 11:00 to 11:15 work?”, rather than “I’ll try you tomorrow.”',
       '- Confirms her email by reading it back and says they will send a video meeting invite, such as a Google Meet, for that slot.',
       '- Says in a sentence what the 15 minutes is for: a free review of the firm’s website.',
@@ -522,10 +523,11 @@ export const QUESTIONS = [
     objective: 'Make the company easy to check out now, then turn “call me back tomorrow” into a specific short meeting with an invite.',
     goodLooksLike: [
       '- Spells the name and offers to wait while she looks Omnizant up, then stays quiet while she does.',
-      '- Gives one grounding fact the rep can stand behind, without stating unconfirmed details such as a founding year, headcount, or client numbers as settled.',
+      '- Gives one grounding fact the rep can stand behind, without stating unconfirmed details such as where the company is headquartered, a founding year or years in business, a headcount, or client numbers as settled.',
       '- Turns the callback into a specific slot by offering two times, and settles the time zone.',
       '- Once a time is agreed, verifies her email, sends the invite within a couple of minutes, and follows it with Omnizant’s website and credentials so she can check them before the meeting.',
-      '- Does not fill her silence with claims, and makes no promises about results.',
+      '- Does not fill her silence with claims, and makes no promises about results; if she asks for information before a time is set, leads to a short meeting rather than just sending it.',
+      '- If asked about clients in her state or for a reference, says only what they know (for example “I couldn’t tell you how many off the top of my head”) and offers to check, without guessing a number, saying “I’m sure we do,” or promising a reference.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -593,6 +595,7 @@ export const QUESTIONS = [
       '- Describes what the partner gets in plain terms: a short call on what is working on the site and what could improve, with recommendations the firm can carry out itself, with another vendor, or with Omnizant.',
       '- Says plainly it will not be a high-pressure sales call, and that talking about services would be a separate call.',
       '- Asks whether he should join or she will take it first, and books a specific time with whoever decides on the invite.',
+      '- If asked to just email the findings, explains that the review is a short video call where the rep walks through what they found and learns what the firm wants, does not promise a written report, and offers to hold it with her first or at a time that suits Mr. Grant.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -630,6 +633,7 @@ export const QUESTIONS = [
       '- Does not claim the review beats any tool or invent a method, data source, or result; points instead to what a conversation adds, such as recommendations and a discussion of what the firm wants from its site.',
       '- Says the findings are useful to whoever works on the site, including her own team, and that services would be a separate call.',
       '- Asks for a specific 15- to 20-minute slot, or accepts a no without chasing.',
+      '- If asked who will be on the call, says plainly who will run it and that they can ask a website specialist to join, and states no tenure or credentials they cannot confirm.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -747,7 +751,7 @@ export const QUESTIONS = [
     defaults: [3, 3, 4],
     sources: [
       { collection: 'omnizant-product', sections: ['The complimentary website review'] },
-      { collection: 'sales-playbook', sections: ['6. ', '2. '] },
+      { collection: 'sales-playbook', sections: ['6. ', '5. '] },
     ],
   },
   {
@@ -914,6 +918,7 @@ export const QUESTIONS = [
       '- Ties the review to credibility: whether the site loads quickly, its pages are properly linked, it is accessible, and the firm’s name, details, and reviews look consistent wherever clients check.',
       '- Does not claim that clients reject firms over their websites, and cites no statistics.',
       '- Asks for 15 minutes on a specific day, with the pressure taken off.',
+      '- If asked who will be on the call, says plainly who will run it and that they can ask a website specialist to join, and states no tenure or credentials they cannot confirm.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -1058,7 +1063,7 @@ export const QUESTIONS = [
       '- Credits her work and agrees that anyone can now build a good-looking site, without disputing AI tools.',
       '- Moves from building pages to what happens after a visitor lands: how inquiries are captured and followed up, and how she shows the partners which ones become cases.',
       '- Offers the review as an outside check her team can act on itself, including items such as the Google Business Profile and consistent firm details online.',
-      '- Does not claim specific Omnizant tools, features, prices, or results, and offers to confirm any she asks about.',
+      '- Does not claim specific Omnizant tools, features, prices, clients, or results, and offers to confirm any she asks about, including whether a client could share results with her.',
       '- Asks for a specific 15- to 20-minute slot, or accepts a no without chasing.',
     ].join('\n'),
     roleGuidance: {},
@@ -1092,10 +1097,11 @@ export const QUESTIONS = [
       'Do not argue price: lay out briefly what would change for the firm based on what he told you, ask about site ownership rather than asserting it, and offer proof he can see.',
     goodLooksLike: [
       '- Does not argue, defend, or cut the price, and does not claim Omnizant is better value in general.',
-      '- Briefly connects the proposal to what he said he wants, such as getting more than hosting for the money, without adding services, prices, or timelines the proposal does not state.',
+      '- Briefly connects the proposal to what he said he wants, such as getting more than hosting for the money, without adding services, prices, or timelines that have not been confirmed.',
       '- Asks about ownership rather than asserting it, for example “What platform is your site built on, and what does your agreement say happens to your site and content if you leave?”',
       '- Offers proof instead of a longer argument: a short screen-share of sites Omnizant has moved from LawLytics, booked for a specific time.',
       '- Speaks respectfully of LawLytics, for example “LawLytics, to their credit, has been very professional in the handoff process,” and never criticizes it.',
+      '- If asked how many firms have moved from LawLytics, how long a move takes, or whether the site would go down, gives no count, timeline, or downtime promise: says what they know and offers to confirm.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -1133,6 +1139,7 @@ export const QUESTIONS = [
       '- Raises ownership as a question, for example what platform the site is built on and what his agreement says happens to the site and content if he leaves, without asserting that he does or does not own it.',
       '- Does not state migration counts, timelines, platforms, or ownership terms as settled, and offers to confirm them.',
       '- Offers a short screen-share of sites Omnizant has moved from LawLytics and asks for a specific time.',
+      '- Speaks respectfully of LawLytics and never criticizes it; if he worries about a fight on the way out, can say “LawLytics, to their credit, has been very professional in the handoff process.”',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -1166,7 +1173,7 @@ export const QUESTIONS = [
       'Reply briefly: do not argue price, connect the change to what she told you, raise ownership as a question, and offer a short screen-share at a specific time.',
     goodLooksLike: [
       '- Keeps the reply short and friendly, and does not argue, discount, or defend the price.',
-      '- Briefly names what would change for her, tied to what she said about paying mostly for hosting, without adding services, timelines, or results that have not been confirmed.',
+      '- Briefly names what would change for her, tied to what she said about paying mostly for hosting, without adding services, switching steps, timelines, or results that have not been confirmed.',
       '- Asks what her LawLytics agreement says happens to her site and content if she leaves, rather than asserting an answer.',
       '- Offers a short screen-share of sites Omnizant has moved from LawLytics, with two specific times.',
       '- Says nothing negative about LawLytics.',
@@ -1309,7 +1316,7 @@ export const QUESTIONS = [
       'Keep the momentum without pressure: offer a short screen-share and book it on this call, ideally with the attorney on the invite.',
     goodLooksLike: [
       '- Agrees that makes sense, then asks what he thinks the attorney will want to know.',
-      '- Offers a short screen-share booked now rather than waiting to hear back, for example “Does it make sense to set 15 minutes with both of you, so she hears it firsthand?”',
+      '- Offers a short screen-share of Omnizant’s work booked now rather than waiting to hear back, for example “Does it make sense to set 15 minutes with both of you, so she hears it firsthand?”, without claiming Omnizant has moved sites from Justia.',
       '- Puts the attorney on the invite if he agrees, or books him alone if he prefers, with a specific day and time either way.',
       '- Avoids “no problem, take your time” and “I’ll follow up.”',
       '- Does not add claims about results or prices to win him over.',
@@ -1318,7 +1325,7 @@ export const QUESTIONS = [
     pushbacks: [
       '“She doesn’t like being pulled into vendor calls. I usually filter these for her.”',
       '“Can you send me something I can forward to her instead?”',
-      '“I really can’t commit her time without asking her. I’ll get back to you.”',
+      '“She’s in court most of next week. Can we just leave it open, and I’ll call you when she’s free?”',
     ],
     assessed: ['objection_handling', 'advancing', 'discovery'],
     defaults: [3, 3, 1],
@@ -1336,12 +1343,12 @@ export const QUESTIONS = [
     personas: ['marketing_manager'],
     personaLines: {},
     situation:
-      'Ten days ago, after a free website review, the marketing manager of a 20-attorney immigration firm said she would talk over your offer of a short screen-share of Omnizant’s work with the managing partner and get back to you. You have heard nothing, so you call her.',
+      'Ten days ago, after a free website review in which you found that the firm’s office hours differ between its website and its Google Business Profile, the marketing manager of a 20-attorney immigration firm said she would talk over your offer of a short screen-share of Omnizant’s work with the managing partner and get back to you. You have heard nothing, so you call her.',
     buyerLine: '“Oh, hi. Sorry, I haven’t had a chance to talk to him yet. He’s been in trial. I’ll get back to you, I promise.”',
     objective:
       'Restart without sounding needy: bring a reason to talk, make it easy to involve the managing partner, and leave with a specific date.',
     goodLooksLike: [
-      '- Does not open with “just checking in” or any guilt about the silence; brings a reason, such as one point from the review that matters to her partners, or a clear next step.',
+      '- Does not open with “just checking in” or any guilt about the silence; brings a reason, such as the mismatched office hours from the review, or a clear next step.',
       '- Acknowledges the trial and keeps the next step small: a short screen-share with both of them once it ends.',
       '- Asks when the trial is expected to end and offers two specific times after it.',
       '- Asks what she thinks the managing partner will want to know, so the screen-share answers it.',
@@ -1380,7 +1387,7 @@ export const QUESTIONS = [
       '- Lowers the stakes for both of them: the review is free, needs no logins or access, and its findings are useful to whoever works on the site, including Gary.',
       '- Offers to set 15 minutes with both of them, and books a specific day and time on this call with Gary’s email on the invite.',
       '- Accepts a clear no gracefully if that is what surfaces, rather than chasing.',
-      '- Avoids “no problem, take your time” and “I’ll follow up.”',
+      '- Does not end on “no problem, take your time,” “I’ll follow up,” or an open promise to wait for Gary’s answer.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
