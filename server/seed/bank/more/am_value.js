@@ -709,7 +709,7 @@ export const QUESTIONS = [
     roleGuidance: {},
     pushbacks: [
       '“Did something break when you moved us over to the new site?”',
-      '“Every week this goes unfixed costs me cases. Why should I wait for a review?”',
+      '“Every week this goes unfixed costs me cases. What happens this week, not next month?”',
       '“My old provider never had this problem. Should I be calling them about going back?”',
     ],
     assessed: ['discovery', 'empathy_clarity', 'objection_handling', 'advancing'],
@@ -819,7 +819,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“Could you just write that summary for me so I can forward it?”',
+      '“Could you just write the partners a plain-English summary I can forward?”',
       '“The partners keep asking whether we’re getting more of the cases we actually want. Can your reports show that?”',
       '“One partner says if I can’t explain it, we should stop paying for it. What do I say to him?”',
     ],
@@ -923,7 +923,7 @@ export const QUESTIONS = [
     pushbacks: [
       '“What would we even cover that can’t wait until the rebrand is done?”',
       '“My partners haven’t asked for a review. Why do we need one?”',
-      '“If I agree to 15 minutes, it’ll turn into an hour, like every vendor meeting does.”',
+      '“Every vendor promises a quick call, and it always turns into an hour. Why would yours be different?”',
     ],
     assessed: ['empathy_clarity', 'persuasion', 'advancing'],
     defaults: [2, 2, 1],

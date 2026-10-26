@@ -55,7 +55,7 @@ export const QUESTIONS = [
     objective:
       'Correct the expectation that it runs itself, without blame or defensiveness, find where leads stall, and propose one workflow to set up first, with honest prerequisites and a realistic plan for the reports she needs.',
     goodLooksLike: [
-      '- Acknowledges the gap without blaming her or the intake team, and corrects the expectation plainly: no workflow runs until it has been configured, approved, and tested with the firm.',
+      '- Acknowledges the gap without blaming her or the intake team, and corrects the expectation plainly: workflows have to be configured for the firm, and each should be approved and tested before it goes live.',
       '- Asks where leads stall today, such as who owns a new inquiry once the email arrives and how quickly someone responds, before recommending anything.',
       '- Recommends one workflow to start: an approved acknowledgement to each new, non-spam inquiry by a channel the person agreed to, plus a task for the intake owner; names what to validate first: opt-in, sender setup, merge fields, and duplicate prevention.',
       '- Is honest about prerequisites: messaging registration must be complete before any text goes out, and the firm approves the templates and consent wording.',

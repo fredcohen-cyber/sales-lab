@@ -66,7 +66,7 @@ export const QUESTIONS = [
     ],
     assessed: ['advancing', 'persuasion', 'objection_handling'],
     defaults: [4, 3, 1],
-    sources: [{ collection: 'sales-playbook', sections: ['5. ', '1. ', '3. ', '6. '] }],
+    sources: [{ collection: 'sales-playbook', sections: ['5. ', '1. ', '3. ', '6. ', '8. '] }],
   },
 
   // ------------------------------------------------------------ ravenly-guarantee-ask
