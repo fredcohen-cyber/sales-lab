@@ -1,6 +1,7 @@
 // Seeds the Practice Studio question bank, and gives the drills seeded earlier the buyer's follow-up
 // objections and role expectations as a new version. Drills a manager has edited are left alone.
-import { BANK_QUESTIONS, EXISTING_UPDATES } from './index.js';
+import { BANK_QUESTIONS, EXISTING_UPDATES, productOf } from './index.js';
+import { SEED_DRILLS } from '../drills.js';
 
 export const SEEDED_DRILL_NOTE = 'Seeded from the supplied Ravenly reference and Sales Playbook.';
 export const BANK_NOTE = 'Practice Studio question bank, written from the approved Sales Playbook and Ravenly product knowledge.';
@@ -65,10 +66,10 @@ export async function seedQuestionBank(q, owner, log = () => {}, { questions = B
     const v = await q.one(
       `INSERT INTO drill_versions (drill_id, version, title, brand, subject, stage, roles, personas, situation, buyer_line, persona_lines,
          objective, good_looks_like, assessed_dimensions, default_difficulty, default_skepticism, default_depth, source_refs, change_note,
-         created_by, role_guidance, pushbacks)
+         created_by, role_guidance, pushbacks, product_line, concept)
        SELECT drill_id, 2, title, brand, subject, stage, roles, personas, situation, buyer_line, persona_lines,
               objective, good_looks_like, assessed_dimensions, default_difficulty, default_skepticism, default_depth, $6, $2,
-              $3, $4, $5
+              $3, $4, $5, product_line, concept
          FROM drill_versions WHERE id = $1
        RETURNING id`,
       [cur.id, UPGRADE_NOTE, owner.id, JSON.stringify(roleGuidance), JSON.stringify(add.pushbacks || []), JSON.stringify(refs)],
@@ -84,8 +85,8 @@ async function insertSeedVersion(q, drillId, version, b, ownerId) {
   return q.one(
     `INSERT INTO drill_versions (drill_id, version, title, brand, subject, stage, roles, personas, situation, buyer_line, persona_lines,
        objective, good_looks_like, assessed_dimensions, default_difficulty, default_skepticism, default_depth, source_refs, change_note,
-       created_by, role_guidance, pushbacks)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING id`,
+       created_by, role_guidance, pushbacks, product_line, concept)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24) RETURNING id`,
     [
       drillId,
       version,
@@ -109,6 +110,27 @@ async function insertSeedVersion(q, drillId, version, b, ownerId) {
       ownerId,
       JSON.stringify(b.roleGuidance || {}),
       JSON.stringify(b.pushbacks || []),
+      productOf(b),
+      b.concept || b.slug,
     ],
   );
+}
+
+// Sets each seeded question's product line and concept on its current version. Questions a manager has
+// edited since are left alone. These two fields only sort and filter questions, so they are updated in
+// place rather than as a new version.
+export async function classifyBankDrills(q, log = () => {}, { questions = [...SEED_DRILLS, ...BANK_QUESTIONS] } = {}) {
+  let changed = 0;
+  for (const b of questions) {
+    const r = await q.query(
+      `UPDATE drill_versions v SET product_line = $2, concept = $3
+         FROM drills d
+        WHERE d.slug = $1 AND v.id = d.current_version_id AND v.change_note = ANY($4::text[])
+          AND (v.product_line <> $2 OR v.concept <> $3)`,
+      [b.slug, productOf(b), b.concept || b.slug, [SEEDED_DRILL_NOTE, BANK_NOTE, UPGRADE_NOTE]],
+    );
+    changed += r.rowCount;
+  }
+  log(`[seed] question bank: product line and concept set on ${changed} questions`);
+  return changed;
 }

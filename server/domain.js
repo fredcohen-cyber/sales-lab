@@ -26,6 +26,16 @@ export const SUBJECTS = {
   competitive: 'Competitive knowledge',
 };
 
+// What a question sells, for the Practice Studio's product filter. Each line belongs to one brand; sales
+// technique questions that fit both brands are "general".
+export const PRODUCT_LINES = {
+  ravenly: { label: 'Ravenly', brand: 'ravenly' },
+  omnizant_ai_search: { label: 'Omnizant AI Search Plans', brand: 'omnizant' },
+  omnizant_web: { label: 'Omnizant websites and SEO', brand: 'omnizant' },
+  general: { label: 'Sales technique (both brands)', brand: 'both' },
+};
+export const defaultProductLine = (brand) => (brand === 'ravenly' ? 'ravenly' : brand === 'omnizant' ? 'omnizant_web' : 'general');
+
 // What kind of evidence a knowledge source holds. Coaching treats each differently.
 export const EVIDENCE_BASIS = {
   documented: 'Documented facts and approved guidance',
@@ -78,6 +88,15 @@ export const DEFAULT_PERSONAS = [
       'Owns lead generation, campaigns, agencies, the website, and reporting to partners at a multi-attorney firm. Influences the decision but usually does not own the final budget.',
     concerns:
       'Proving which channels produce retained cases, data accuracy and attribution, fit with the existing stack (analytics, ads, case management), workload, and having evidence to take to the partners.',
+  },
+  {
+    key: 'office_manager',
+    label: 'Office manager or intake director',
+    position: 4,
+    responsibilities:
+      'Runs the firm’s day-to-day operations: the front desk and intake team, vendors such as the website provider, schedules, and the attorneys’ calendars. Often the first person a vendor reaches, and the one whose team uses a new tool every day.',
+    concerns:
+      'Workload and disruption for the team, getting each inquiry to the right person quickly, scattered notifications and duplicate records, keeping the attorneys informed, and not wasting their time on vendors. Can book a meeting and recommend a decision, but rarely signs.',
   },
 ];
 

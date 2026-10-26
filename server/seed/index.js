@@ -1,11 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_DIMENSIONS, DEFAULT_PERSONAS } from '../domain.js';
+import { DEFAULT_DIMENSIONS, DEFAULT_PERSONAS, defaultProductLine } from '../domain.js';
 import { SEED_DRILLS, SEED_PATHS } from './drills.js';
 import { ADDED_SECTIONS, CALL_LEARNINGS, OMNIZANT_AI_SEARCH, SEED_COLLECTIONS } from './collections.js';
 import { createCollection, createSection, splitDocument, splitSourceIntoCollection } from '../knowledge/sections.js';
-import { seedQuestionBank, SEEDED_DRILL_NOTE } from './bank/seed.js';
+import { classifyBankDrills, seedQuestionBank, SEEDED_DRILL_NOTE } from './bank/seed.js';
 import { createPasswordLink, linkUrl } from '../users/links.js';
 import { audit } from '../lib/audit.js';
 
@@ -151,8 +151,9 @@ export async function seed(db, config, { log = console.log } = {}) {
         const drill = await q.one(`INSERT INTO drills (slug, status, created_by) VALUES ($1, 'active', $2) RETURNING id`, [d.slug, owner.id]);
         const v = await q.one(
           `INSERT INTO drill_versions (drill_id, version, title, brand, subject, stage, roles, personas, situation, buyer_line, persona_lines,
-             objective, good_looks_like, assessed_dimensions, default_difficulty, default_skepticism, default_depth, source_refs, change_note, created_by)
-           VALUES ($1, 1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING id`,
+             objective, good_looks_like, assessed_dimensions, default_difficulty, default_skepticism, default_depth, source_refs, change_note, created_by,
+             product_line, concept)
+           VALUES ($1, 1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) RETURNING id`,
           [
             drill.id,
             d.title,
@@ -173,6 +174,8 @@ export async function seed(db, config, { log = console.log } = {}) {
             JSON.stringify(refs),
             SEEDED_DRILL_NOTE,
             owner.id,
+            defaultProductLine(d.brand),
+            d.slug,
           ],
         );
         await q.query(`UPDATE drills SET current_version_id = $2 WHERE id = $1`, [drill.id, v.id]);
@@ -221,6 +224,36 @@ export async function seed(db, config, { log = console.log } = {}) {
 
   // What 14 booked Omnizant calls taught: playbook field notes and new Omnizant sections.
   await once(db, CALL_LEARNINGS.seedKey, (q) => addCallLearnings(q, owner, log, CALL_LEARNINGS), log);
+
+  // Buyer personas added after launch, such as the office manager or intake director.
+  await once(
+    db,
+    'personas-v2',
+    async (q) => {
+      for (const p of DEFAULT_PERSONAS) {
+        await q.query(`INSERT INTO personas (key, label, responsibilities, concerns, position) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (key) DO NOTHING`, [
+          p.key,
+          p.label,
+          p.responsibilities,
+          p.concerns,
+          p.position,
+        ]);
+      }
+    },
+    log,
+  );
+
+  // Three versions of every concept: questions added since the first bank, and each question's product
+  // line and concept.
+  await once(
+    db,
+    'question-bank-v2',
+    async (q) => {
+      await seedQuestionBank(q, owner, log);
+      await classifyBankDrills(q, log);
+    },
+    log,
+  );
 }
 
 // Field notes for existing sections (a new approved version with the notes at the end) and new sections.

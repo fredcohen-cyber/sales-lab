@@ -66,6 +66,7 @@ export const QUESTIONS = [
     slug: 'disc-omnizant-ai-search-partners',
     title: '“The partners keep asking about AI search”',
     brand: 'omnizant',
+    product: 'omnizant_ai_search',
     subject: 'sales_technique',
     stage: 'discovery',
     roles: ['ae', 'am'],

@@ -36,6 +36,7 @@ export const QUESTIONS = [
     slug: 'cold-omnizant-ai-answer-challenge',
     title: '“We came up in ChatGPT. Which is it?”',
     brand: 'omnizant',
+    product: 'omnizant_ai_search',
     subject: 'sales_technique',
     stage: 'cold_outreach',
     roles: ['ae'],

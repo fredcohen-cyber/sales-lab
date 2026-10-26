@@ -289,6 +289,7 @@ export const QUESTIONS = [
     slug: 'value-omnizant-geo-add-on',
     title: 'Asked whether to add GEO to an SEO program',
     brand: 'omnizant',
+    product: 'omnizant_ai_search',
     subject: 'sales_technique',
     stage: 'am_value',
     roles: ['am'],

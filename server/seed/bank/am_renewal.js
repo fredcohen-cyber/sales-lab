@@ -360,6 +360,7 @@ export const QUESTIONS = [
     slug: 'renew-omnizant-rival-agency',
     title: 'Rival agency promises AI citations for less',
     brand: 'omnizant',
+    product: 'omnizant_ai_search',
     subject: 'sales_technique',
     stage: 'am_renewal',
     roles: ['am'],
