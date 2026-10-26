@@ -383,7 +383,7 @@ export const QUESTIONS = [
       'Explain what pipeline value is without blaming the intake team or the software, find out why it reads high, and agree on fixes with owners that the intake director can take back to the partners.',
     goodLooksLike: [
       '- Acknowledges the pressure she is under and does not blame her team, the partners, or the onboarding.',
-      '- Explains that pipeline value is a recorded estimate, which can be seeded from each case type’s estimated value, not a prediction of settlements or fees, so a high figure alone does not show that intake is neglecting cases; no probability weighting was established, so offers to confirm whether any applies.',
+      '- Explains that pipeline value is a recorded estimate, which can be seeded from each case type’s estimated value, not a prediction of settlements or fees, so a high figure alone does not show that intake is neglecting cases; offers to confirm whether any probability weighting applies, since none was established.',
       '- Asks the questions her team can answer: which stage a lead goes to when it goes nowhere, how often stale leads are closed out, and what the case-type estimates were meant to represent, such as settlement amounts or expected fees.',
       '- Proposes fixes with owners: the partners agree on what the value should mean, the estimates are reviewed, and her team clears stale active leads, using the stage filters and inactive-lead indicators.',
       '- Gives her a plain explanation she can repeat to the partners and sets a dated review of the corrected figures, ideally with a partner present.',
@@ -491,7 +491,7 @@ export const QUESTIONS = [
     goodLooksLike: [
       '- Explains that the report pinpoints the questions where case-evaluation visitors drop off, and can be filtered by capture method and chatflow, but cannot say why they left.',
       '- Does not promise recovery emails: abandonment reporting does not establish them, and the automation triggers seen in Ravenly are events such as a new lead being created or a stage being set, not an abandoned session; offers to confirm with the product team.',
-      '- Notes that any email would depend on the consent each visitor gave, that consent behavior differs across the chat, webform, and case evaluation, and that the firm approves its own consent language and settings.',
+      '- Notes that any email would depend on the consent each visitor gave, that consent behavior may differ across the chat, webform, and case evaluation, and that the firm approves its own consent language and settings.',
       '- Suggests investigating the steps with the most drop-off, such as their wording, required fields, and the evaluation’s length, then comparing drop-off after an approved change.',
       '- Sets a date to go through the case evaluation’s questions together, starting with the step that loses the most visitors.',
     ].join('\n'),
@@ -667,8 +667,8 @@ export const QUESTIONS = [
       'Help the office manager give the partners an honest account: find out what the firm measures and expected, avoid promising results, and agree on a next step she can bring to the meeting.',
     goodLooksLike: [
       '- Acknowledges her position as the person who championed the project, without defending it or blaming the firm.',
-      '- Asks what the firm tracks today, such as calls, form inquiries, and consultations, how her team records where new clients found the firm, and what the partners expected by now.',
-      '- Says honestly that a new website alone does not guarantee more calls or cases, does not invent timelines, benchmarks, or results, and offers to confirm specifics before she repeats them.',
+      '- Asks what the firm can actually see today: whether calls, form inquiries, and consultations are counted, whether the front desk asks new clients how they found the firm, and what the partners expected by this point.',
+      '- Is straight with her that a new site does not by itself guarantee more calls or cases, and gives her no timelines, benchmarks, or results to repeat that no one has confirmed.',
       '- Does not use the moment to pitch another service; asks whether she wants ideas before offering any, and ties them to what the partners asked.',
       '- Offers something concrete for Friday, such as reviewing the site’s inquiries with her before the meeting or joining a short call with the partners, on a set date.',
     ].join('\n'),

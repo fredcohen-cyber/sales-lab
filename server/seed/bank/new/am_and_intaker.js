@@ -679,7 +679,7 @@ export const QUESTIONS = [
     personas: ['office_manager'],
     personaLines: {},
     situation:
-      'You are meeting the intake director of a 10-attorney personal injury firm that runs its intake on Intaker. The managing partner asked her to see whether Ravenly would help her team decide who to call first, and she is not convinced.',
+      'After a strong Ravenly demo, the managing partner of a 10-attorney personal injury firm asks you to walk his intake director through lead scoring before he decides. Her team works its inquiries in Intaker today, and she joins the call unconvinced.',
     buyerLine: '“Intaker already qualifies our leads with AI. I don’t see what Ravenly would add.”',
     objective:
       'Credit what Intaker advertises, find out how her team actually decides who to call first, and show how Ravenly’s scoring and context support that decision, without claiming better accuracy.',
@@ -693,7 +693,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“Intaker’s agent texts people and qualifies them before we ever touch them. Does Ravenly do that?”',
+      '“Intaker’s workflows already act on qualification status and route our leads. Why would we want a score on top of that?”',
       '“How is your score calculated? If I can’t explain it, my team won’t trust it.”',
       '“If your score marks a case low and it turns out to be our biggest case of the year, who’s accountable?”',
     ],
@@ -738,7 +738,7 @@ export const QUESTIONS = [
   {
     slug: 'comp-intaker-ai-qualification-v3',
     concept: 'comp-intaker-ai-qualification',
-    title: 'Will “qualified” mean the same after switching?',
+    title: 'Asked who controls how Ravenly qualifies leads',
     brand: 'ravenly',
     product: 'ravenly',
     subject: 'competitive',
@@ -747,27 +747,27 @@ export const QUESTIONS = [
     personas: ['marketing_manager'],
     personaLines: {},
     situation:
-      'You are on a video call with the marketing manager of a 25-attorney personal injury firm that has used Intaker for two years and is weighing a switch to Ravenly. Every month she reports qualified leads by channel to the partners.',
-    buyerLine: '“Intaker’s AI qualifies our leads, and I report qualified leads by channel to the partners every month. If we switch, will a qualified lead in Ravenly mean the same thing, or does my two-year trend line break?”',
+      'You are on a video call with the marketing manager of a 25-attorney personal injury firm that is comparing Ravenly with Intaker. She runs campaigns with an agency aimed at trucking and workplace injury cases, and she wants exact answers about how each product decides which leads are good.',
+    buyerLine: '“Intaker’s AI qualifies leads for us, and that’s fine, but our campaigns chase specific case types. In Ravenly, who decides what makes a lead good, and can I change it when our targeting changes? Exact answers, please.”',
     objective:
-      'Explain precisely how qualification, scoring, and reporting fit together in Ravenly, without claiming Intaker’s qualification is weaker, and plan how to keep her reporting defensible through a switch.',
+      'Give exact, accurate answers about how qualification and scoring are set up in Ravenly, credit Intaker’s advertised AI qualification, and agree on how to test the fit with her campaigns.',
     goodLooksLike: [
-      '- Credits that Intaker promotes AI qualification and that its workflows can act on qualification status, and does not claim its qualification or reporting is weaker.',
-      '- Separates Ravenly’s concepts precisely: the 0 to 100 score (high priority is above 80 in the notification preview), the case type’s High, Medium, or Low priority mode, and a report’s qualified status, which is not automatically the same as a high score, a consultation, or an accepted matter.',
-      '- Does not promise that Ravenly’s qualified count will match Intaker’s definition; explains that the firm agrees on its qualified and retained mappings during implementation, and asks how qualified is defined in her report today.',
-      '- Describes the reporting accurately: Lead Performance shows total, qualified, won, and lost leads by channel and source, and channel rules can align classification with an agency’s campaign conventions, with any historical reclassification reviewed in implementation.',
-      '- Asks which decision the partners make from the trend, so the definitions protect that decision.',
-      '- Proposes agreeing on definitions and testing the firm’s recent scenarios before any switch, with a dated review.',
+      '- Credits that Intaker promotes AI qualification in its texting and Local Services Ads agents and that its workflows act on qualification status, without claiming it lacks scoring or flexibility.',
+      '- Explains who sets the inputs: the firm sets each case type’s priority (High, Medium, or Low), writes its own criteria for ideal clients and cases and for additional factors or dealbreakers, and approves its intake questions, including any explicit disqualifiers.',
+      '- Is precise about the effect: the firm’s criteria adjust the score but do not automatically reject a lead, explicit disqualifiers are a separate control, and the AI score and summary support the team’s review rather than decide for it.',
+      '- Does not invent what the guide leaves open, such as a scoring formula, accuracy figures, how quickly a criteria change takes effect, or which users can edit the settings; offers to confirm them.',
+      '- Connects it to her campaigns: the Paid report breaks out campaigns, landing pages, and lead quality and retention, so she can see which campaigns bring the case types she wants once the firm agrees what qualified means.',
+      '- Proposes testing a few recent trucking and workplace inquiries against criteria she drafts, with a dated review.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“If a lead scores 85 in Ravenly, does that make it qualified?”',
-      '“Can you bring over my Intaker history so the trend just continues?”',
-      '“The partners will ask which system qualifies more accurately. What’s your answer?”',
+      '“If I write ‘trucking cases only’ into your criteria, will Ravenly drop everything else?”',
+      '“How fast does a new lead get its score? Our agency wants good leads flagged right away.”',
+      '“Our agency says AI scoring is a black box, whoever sells it. Why should the partners trust Ravenly’s?”',
     ],
-    assessed: ['product_accuracy', 'discovery', 'persuasion', 'advancing'],
+    assessed: ['product_accuracy', 'objection_handling', 'discovery', 'advancing'],
     defaults: [5, 4, 5],
-    sources: [{ collection: 'ravenly-product', sections: ['Ravenly vs Intaker', '14 · ', '05 · ', '09 · ', '20 · '] }],
+    sources: [{ collection: 'ravenly-product', sections: ['Ravenly vs Intaker', '14 · ', '05 · ', '09 · ', '08 · ', '11 · '] }],
   },
 
   // Ravenly against Intaker: “Intaker does chat, video, texting, and AI agents.”
