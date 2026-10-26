@@ -24,18 +24,26 @@ const BLANK = {
   status: 'active',
 };
 
+// Product and competitive facts about a brand support each other's drills (as on the server).
+const SUPPORTING_SUBJECTS = { product: ['competitive'], competitive: ['product'], sales_technique: [] };
+export const MAX_SOURCE_REFS = 50;
+
 // Mirrors the server's relevance rule (server/knowledge/service.js sourceFit) to explain each choice.
+// kind 'warn' means the choice is never used for coaching.
 function fitNote(source, form, meta) {
   if (!source) return null;
   const subjects = source.subjects || [];
+  const subject = meta.subjects[form.subject].toLowerCase();
   if (!(source.brand === 'both' || form.brand === 'both' || source.brand === form.brand)) {
     return { kind: 'warn', text: `Not used for coaching: it covers ${source.brand === 'omnizant' ? 'Omnizant' : 'Ravenly'}, and this drill is for ${form.brand === 'omnizant' ? 'Omnizant' : 'Ravenly'}.` };
   }
-  if (!subjects.includes(form.subject) && !subjects.includes('sales_technique')) {
-    return { kind: 'warn', text: `Not used for coaching: it does not cover ${meta.subjects[form.subject].toLowerCase()} or sales technique.` };
+  const related = (SUPPORTING_SUBJECTS[form.subject] || []).filter((x) => subjects.includes(x));
+  if (!subjects.includes(form.subject) && !related.length && !subjects.includes('sales_technique')) {
+    return { kind: 'warn', text: `Not used for coaching: it does not cover ${subject}, a related subject, or sales technique.` };
   }
   if (!subjects.includes(form.subject)) {
-    return { kind: 'info', text: `Supports sales technique only. Coaching also needs a source that covers ${meta.subjects[form.subject].toLowerCase()}.` };
+    const what = related.length ? meta.subjects[related[0]].toLowerCase() : 'sales technique';
+    return { kind: 'info', text: `Supporting material (${what}). Coaching also needs a source that covers ${subject}.` };
   }
   const limited = (source.personas || []).length ? form.personas.filter((p) => !source.personas.includes(p)) : [];
   if (limited.length) {
@@ -99,7 +107,7 @@ function SourcePicker({ value, onChange, form, meta }) {
   const setWhole = (id, whole) => onChange(value.map((r) => (r.sourceId !== id ? r : { ...r, wholeSource: whole })));
   const usable = value.some((ref) => {
     const s = sources.find((x) => x.id === ref.sourceId);
-    return s && s.status === 'approved' && (s.subjects || []).includes(form.subject) && !fitNote(s, form, meta)?.text.startsWith('Not used for coaching');
+    return s && s.status === 'approved' && (s.subjects || []).includes(form.subject) && fitNote(s, form, meta)?.kind !== 'warn';
   });
   const t = filter.trim().toLowerCase();
   const matches = (s) => !t || s.title.toLowerCase().includes(t) || selected.has(s.id);
@@ -109,6 +117,11 @@ function SourcePicker({ value, onChange, form, meta }) {
   const gone = value.filter((r) => !sources.some((s) => s.id === r.sourceId));
   return (
     <div className="stack-sm">
+      {value.length > MAX_SOURCE_REFS && (
+        <Notice kind="warn">
+          {`A drill can use at most ${MAX_SOURCE_REFS} sections. Remove ${value.length - MAX_SOURCE_REFS} to save it.`}
+        </Notice>
+      )}
       {value.length > 0 && !usable && (
         <Notice kind="warn">None of the chosen sections is approved and covers this drill’s brand and subject, so the drill runs as unscored practice.</Notice>
       )}

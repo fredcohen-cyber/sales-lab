@@ -135,6 +135,18 @@ test('source relevance: brand, subject, and persona', () => {
   assert.deepEqual(sourceFit(mpOnly, { brand: 'both', subject: 'sales_technique', persona: 'solo_attorney' }).reasons, ['persona']);
 });
 
+test('source relevance: product and competitive facts support each other, but never stand in', () => {
+  const pricing = { brand: 'ravenly', subjects: ['product'], personas: [] };
+  const battlecard = { brand: 'ravenly', subjects: ['competitive'], personas: [] };
+  // A competitor comparison needs the product's own facts, and a product drill may need the competitive context.
+  assert.deepEqual(sourceFit(pricing, { brand: 'ravenly', subject: 'competitive' }), { usable: true, primary: false, reasons: [] });
+  assert.deepEqual(sourceFit(battlecard, { brand: 'ravenly', subject: 'product' }), { usable: true, primary: false, reasons: [] });
+  assert.equal(sourceFit(battlecard, { brand: 'ravenly', subject: 'competitive' }).primary, true);
+  // Product facts are not sales technique, and a related subject never crosses brands.
+  assert.deepEqual(sourceFit(pricing, { brand: 'ravenly', subject: 'sales_technique' }).reasons, ['subject']);
+  assert.deepEqual(sourceFit(battlecard, { brand: 'omnizant', subject: 'product' }).reasons, ['brand']);
+});
+
 test('quote matching stays fast on hostile input and refuses long elided quotes', () => {
   const text = Array.from({ length: 1200 }, (_, i) => ['the', 'cat', 'sat', 'on', 'mat'][i % 5]).join(' ');
   const many = Array.from({ length: 8 }, () => 'the cat sat on').join(' ... ') + ' ... zebra stripes here';

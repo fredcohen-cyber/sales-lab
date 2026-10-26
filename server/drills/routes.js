@@ -31,7 +31,7 @@ const drillSchema = z.object({
         wholeSource: z.boolean().optional(),
       }),
     )
-    .max(30, 'Choose at most 30 sections.')
+    .max(50, 'Choose at most 50 sections.')
     .default([]),
   changeNote: z.string().max(500).default(''),
   status: z.enum(['draft', 'active', 'archived']).optional(),

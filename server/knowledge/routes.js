@@ -6,7 +6,7 @@ import { clientIp, requireManager } from '../auth/middleware.js';
 import { parseSections } from '../lib/text.js';
 import { isValidDateString } from '../lib/time.js';
 import { coverage, listCollections, loadVersionSections, mapSections, shapeCollection, shapeSourceRow, SOURCE_LIST_ORDER, SOURCE_LIST_SQL } from './service.js';
-import { COLLECTION_KINDS, createCollection, positionFor, splitSourceIntoCollection } from './sections.js';
+import { COLLECTION_KINDS, createCollection, positionFor, previewSplit, splitSourceIntoCollection } from './sections.js';
 import { BRANDS, EVIDENCE_BASIS, SUBJECTS } from '../domain.js';
 
 const MAX_CONTENT = 1_000_000;
@@ -48,6 +48,13 @@ const placementSchema = z.object({ collectionId: z.string().uuid().nullable(), g
 const splitSchema = z
   .object({ collectionId: z.string().uuid().optional(), newCollection: collectionSchema.optional() })
   .refine((b) => Boolean(b.collectionId) !== Boolean(b.newCollection), { message: 'Choose a collection for the sections, or name a new one.' });
+
+// A document that was split lives on only as history; its sections are edited instead.
+function refuseIfSplit(src) {
+  if (src?.split_into_collection_id) {
+    throw new HttpError(409, 'document_split', 'This document was split into sections. Edit, approve, or restore the sections in its collection instead.');
+  }
+}
 
 // The version a reader sees: managers see the approved version, or the draft when nothing is approved yet.
 const shownVersion = (forManager) => (forManager ? 'COALESCE(s.approved_version_id, s.latest_version_id)' : 's.approved_version_id');
@@ -153,7 +160,7 @@ export function knowledgeRoutes({ db }) {
                 v.id AS version_id, v.version, v.title, v.brand, v.subjects, v.personas, v.as_of_date, v.caveats, v.evidence_basis, v.content
            FROM knowledge_sources s JOIN knowledge_versions v ON v.id = ${shownVersion(forManager)}
           WHERE s.collection_id = $1 AND ${visible(forManager)}
-          ORDER BY s.position`,
+          ORDER BY s.position, s.created_at, s.id`,
         [c.id],
       );
       if (!forManager && rows.length === 0) throw notFound('That collection was not found.');
@@ -229,7 +236,7 @@ export function knowledgeRoutes({ db }) {
           throw new HttpError(409, 'stale_order', 'The sections in this collection changed while you were arranging them. Reload and try again.');
         }
         for (const [i, s] of sections.entries()) {
-          await q.query(`UPDATE knowledge_sources SET position = $2, group_label = $3 WHERE id = $1`, [s.id, i + 1, s.group]);
+          await q.query(`UPDATE knowledge_sources SET position = $2, group_label = $3 WHERE id = $1 AND collection_id = $4`, [s.id, i + 1, s.group, c.id]);
         }
         await audit(q, { actorId: req.user.id, action: 'knowledge.arranged', entityType: 'knowledge_collection', entityId: c.id, details: { sections: ids.length }, ip: clientIp(req) });
       });
@@ -272,7 +279,7 @@ export function knowledgeRoutes({ db }) {
       if (collection) {
         const siblings = await db.many(
           `SELECT s.id, v.title FROM knowledge_sources s JOIN knowledge_versions v ON v.id = ${shownVersion(forManager)}
-            WHERE s.collection_id = $1 AND ${visible(forManager)} ORDER BY s.position`,
+            WHERE s.collection_id = $1 AND ${visible(forManager)} ORDER BY s.position, s.created_at, s.id`,
           [collection.id],
         );
         const i = siblings.findIndex((x) => x.id === source.id);
@@ -294,6 +301,8 @@ export function knowledgeRoutes({ db }) {
             [JSON.stringify([{ sourceId: source.id }])],
           )
         : undefined;
+      // Managers see what splitting a long document would create (null when it cannot be split).
+      const splitPreview = forManager ? await previewSplit(db, source) : undefined;
       res.json({
         source: {
           id: source.id,
@@ -305,6 +314,7 @@ export function knowledgeRoutes({ db }) {
           group: source.group_label,
           neighbors,
           splitInto,
+          splitPreview,
           usedBy,
         },
         version: {
@@ -378,6 +388,7 @@ export function knowledgeRoutes({ db }) {
       const out = await db.tx(async (q) => {
         const src = await q.one(`SELECT * FROM knowledge_sources WHERE id = $1 FOR UPDATE`, [req.params.id]);
         if (!src) throw notFound('That source was not found.');
+        refuseIfSplit(src);
         const v = await insertVersion(q, src.id, body, req.user.id);
         await q.query(`UPDATE knowledge_sources SET latest_version_id = $2, updated_at = now() WHERE id = $1`, [src.id, v.id]);
         await audit(q, {
@@ -419,6 +430,7 @@ export function knowledgeRoutes({ db }) {
       await db.tx(async (q) => {
         const v = await q.one(`SELECT id FROM knowledge_versions WHERE id = $1 AND source_id = $2`, [versionId, req.params.id]);
         if (!v) throw notFound('That version was not found.');
+        refuseIfSplit(await q.one(`SELECT * FROM knowledge_sources WHERE id = $1 FOR UPDATE`, [req.params.id]));
         await approveVersion(q, req.params.id, versionId, req.user.id, clientIp(req));
       });
       res.json({ ok: true });
@@ -434,6 +446,7 @@ export function knowledgeRoutes({ db }) {
       await db.tx(async (q) => {
         const src = await q.one(`SELECT * FROM knowledge_sources WHERE id = $1 FOR UPDATE`, [req.params.id]).catch(() => null);
         if (!src) throw notFound('That source was not found.');
+        refuseIfSplit(src);
         let position = src.position;
         if (body.collectionId && (body.collectionId !== src.collection_id || body.group !== src.group_label)) {
           const c = await q.one(`SELECT id FROM knowledge_collections WHERE id = $1 FOR UPDATE`, [body.collectionId]);
@@ -475,7 +488,7 @@ export function knowledgeRoutes({ db }) {
           collectionId = made.id;
         }
         const result = await splitSourceIntoCollection(q, { sourceId: req.params.id, collectionId, actorId: req.user.id, ip: clientIp(req) });
-        return { collectionId, sections: result.sections.length, drillVersionsUpdated: result.drillVersionsUpdated };
+        return { collectionId, sections: result.sections.length, drillVersionsUpdated: result.drillVersionsUpdated, unmatched: result.unmatched.length };
       });
       res.json(out);
     }),
@@ -505,8 +518,14 @@ export function knowledgeRoutes({ db }) {
       await db.tx(async (q) => {
         const src = await q.one(`SELECT * FROM knowledge_sources WHERE id = $1 FOR UPDATE`, [req.params.id]);
         if (!src) throw notFound('That source was not found.');
+        refuseIfSplit(src);
         const status = src.approved_version_id ? 'approved' : 'draft';
-        await q.query(`UPDATE knowledge_sources SET status = $2, archived_at = NULL, archived_by = NULL, updated_at = now() WHERE id = $1`, [src.id, status]);
+        const position = src.collection_id ? await positionFor(q, src.collection_id, src.group_label, { excludeId: src.id }) : src.position;
+        await q.query(`UPDATE knowledge_sources SET status = $2, position = $3, archived_at = NULL, archived_by = NULL, updated_at = now() WHERE id = $1`, [
+          src.id,
+          status,
+          position,
+        ]);
         await audit(q, { actorId: req.user.id, action: 'knowledge.restored', entityType: 'knowledge_source', entityId: src.id, details: { status }, ip: clientIp(req) });
       });
       res.json({ ok: true });

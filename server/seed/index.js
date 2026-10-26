@@ -207,26 +207,35 @@ export async function seed(db, config, { log = console.log } = {}) {
 
   // The playbook and the Ravenly guide become collections of sections that are edited one at a time.
   // Drills move to the matching sections; the two documents stay archived for history.
-  await once(
-    db,
-    'knowledge-sections-v1',
-    async (q) => {
-      for (const c of SEED_COLLECTIONS) {
-        const collection =
-          (await q.one(`SELECT * FROM knowledge_collections WHERE slug = $1`, [c.slug])) ||
-          (await createCollection(q, { slug: c.slug, name: c.name, kind: c.kind, brand: c.brand, description: c.description, position: c.position, actorId: owner.id }));
-        if (c.from) {
-          const doc = await q.one(`SELECT id, status, collection_id, split_into_collection_id FROM knowledge_sources WHERE slug = $1`, [c.from]);
-          if (doc && doc.status !== 'archived' && !doc.collection_id && !doc.split_into_collection_id) {
-            const out = await splitSourceIntoCollection(q, { sourceId: doc.id, collectionId: collection.id, actorId: owner.id, meta: c.meta, intro: 'skip' });
-            log(`[seed] ${c.name}: ${out.sections.length} sections; ${out.drillVersionsUpdated} drill versions now point at them`);
-          }
+  await once(db, 'knowledge-sections-v1', (q) => createSeedCollections(q, owner, log), log);
+}
+
+// Creates the starting collections. A document that cannot be split (edited since it was supplied, or
+// archived) is left as it is and reported in the log, so the server always starts.
+export async function createSeedCollections(q, owner, log, collections = SEED_COLLECTIONS) {
+  for (const c of collections) {
+    const collection =
+      (await q.one(`SELECT * FROM knowledge_collections WHERE slug = $1`, [c.slug])) ||
+      (await createCollection(q, { slug: c.slug, name: c.name, kind: c.kind, brand: c.brand, description: c.description, position: c.position, actorId: owner.id }));
+    if (c.from) {
+      const doc = await q.one(`SELECT id, status, collection_id, split_into_collection_id FROM knowledge_sources WHERE slug = $1`, [c.from]);
+      if (doc && doc.status !== 'archived' && !doc.collection_id && !doc.split_into_collection_id) {
+        await q.query('SAVEPOINT split_document');
+        try {
+          const out = await splitSourceIntoCollection(q, { sourceId: doc.id, collectionId: collection.id, actorId: owner.id, meta: c.meta, intro: 'skip' });
+          await q.query('RELEASE SAVEPOINT split_document');
+          log(`[seed] ${c.name}: ${out.sections.length} sections; ${out.drillVersionsUpdated} drill versions now point at them`);
+          if (out.unmatched.length) log(`[seed] ${c.name}: ${out.unmatched.length} drill references could not follow their section and still point at the archived document`);
+        } catch (err) {
+          await q.query('ROLLBACK TO SAVEPOINT split_document');
+          log(`[seed] ${c.name}: left “${c.from}” as one document (${err.message})`);
         }
-        for (const d of c.drafts || []) {
-          await createSection(q, { collection, title: d.title, content: d.content, brand: c.brand, subjects: d.subjects, group: d.group, changeNote: 'Outline to fill in.', actorId: owner.id });
-        }
+      } else if (doc) {
+        log(`[seed] ${c.name}: “${c.from}” is archived or already split, so it was not split`);
       }
-    },
-    log,
-  );
+    }
+    for (const d of c.drafts || []) {
+      await createSection(q, { collection, title: d.title, content: d.content, brand: c.brand, subjects: d.subjects, group: d.group, changeNote: 'Outline to fill in.', actorId: owner.id });
+    }
+  }
 }

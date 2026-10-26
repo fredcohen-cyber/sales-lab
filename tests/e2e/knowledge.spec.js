@@ -105,3 +105,33 @@ test('sections are reordered and grouped without new versions, and new sections 
   // A new section joins the end of its group.
   await expect(omnizant.locator('.contents-title')).toHaveText(['Web development', 'Website care plans', 'GEO (generative engine optimization)', 'SEO (search engine optimization)']);
 });
+
+test('a long document splits into sections once its pending draft is approved', async () => {
+  const headers = { 'x-requested-with': 'SalesLab' };
+  const fields = { title: 'Omnizant SEO handbook', brand: 'omnizant', subjects: ['product'] };
+  const text = (weeks) =>
+    `# Omnizant SEO handbook\n\nHow we sell SEO to law firms.\n\n## Audits\n\nA technical audit in ${weeks} weeks.\n\n## Local SEO\n\nMap pack visibility for each office.`;
+  const made = await page.request.post('/api/knowledge', { headers, data: { ...fields, content: text(3), approve: true } });
+  expect(made.status()).toBe(201);
+  const { id } = await made.json();
+  expect((await page.request.post(`/api/knowledge/${id}/versions`, { headers, data: { ...fields, content: text(2) } })).status()).toBe(201);
+
+  await page.goto(`/knowledge/${id}`);
+  await page.getByRole('button', { name: 'Split into sections' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Split into sections' });
+  await expect(dialog.getByText('Version 2 is not approved yet')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Split into 2 sections' })).toBeDisabled();
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+
+  await page.getByRole('button', { name: 'Approve this version' }).click();
+  await page.getByRole('dialog', { name: 'Approve this version?' }).getByRole('button', { name: 'Approve version 2' }).click();
+  await expect(page.getByText('Version approved')).toBeVisible();
+  await page.getByRole('button', { name: 'Split into sections' }).click();
+  await expect(dialog.getByText('The text before the first heading becomes the collection’s description.')).toBeVisible();
+  await dialog.getByLabel('Collection name').fill('Omnizant SEO');
+  await shot(page, '43-split-document');
+  await dialog.getByRole('button', { name: 'Split into 2 sections' }).click();
+  await expect(page.getByRole('heading', { name: 'Omnizant SEO', level: 1 })).toBeVisible();
+  await expect(page.getByText('How we sell SEO to law firms.')).toBeVisible();
+  await expect(page.getByText('A technical audit in 2 weeks.')).toBeVisible();
+});

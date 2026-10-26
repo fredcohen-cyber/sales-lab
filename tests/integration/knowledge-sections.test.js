@@ -3,10 +3,10 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { addUser, drillBySlug, ownerClient, startTestApp, submit, waitForCoaching } from '../helpers.js';
+import { addUser, drillBySlug, ownerClient, sectionBy, startTestApp, submit, waitForCoaching } from '../helpers.js';
 import { parseSections } from '../../server/lib/text.js';
 import { SEED_DRILLS } from '../../server/seed/drills.js';
-import { seed } from '../../server/seed/index.js';
+import { createSeedCollections, seed } from '../../server/seed/index.js';
 import { loadSourceText } from '../../server/knowledge/service.js';
 import { buildCoachingRequest } from '../../server/ai/prompt.js';
 
@@ -27,6 +27,22 @@ const titlesOf = (ids) =>
     .many(`SELECT s.id, v.title FROM knowledge_sources s JOIN knowledge_versions v ON v.id = s.latest_version_id WHERE s.id = ANY($1::uuid[])`, [ids])
     .then((rows) => ids.map((id) => rows.find((r) => r.id === id)?.title));
 const collectionBySlug = async (slug) => (await owner.get('/api/knowledge')).data.collections.find((c) => c.slug === slug);
+const drillBody = (fields) => ({
+  title: 'Omnizant drill',
+  brand: 'omnizant',
+  subject: 'product',
+  stage: 'pricing',
+  roles: ['ae'],
+  personas: ['managing_partner'],
+  situation: 'A managing partner asks what Omnizant offers.',
+  buyerLine: 'What exactly do you do for law firms?',
+  objective: 'Answer accurately and move to discovery.',
+  goodLooksLike: 'Uses the approved material.',
+  assessedDimensions: ['product_accuracy'],
+  defaults: { difficulty: 3, skepticism: 3, depth: 3 },
+  ...fields,
+});
+const docVersion = (title, content) => ({ title, brand: 'omnizant', subjects: ['product'], content });
 
 test('the playbook and the Ravenly guide become collections of approved sections; Omnizant starts as drafts', async () => {
   const lib = await owner.get('/api/knowledge');
@@ -114,6 +130,19 @@ test('coaching stays available for every seeded drill, and grounds itself in the
   const request = buildCoachingRequest({ scenario: done.attempt.scenario, answer: 'An answer.', sources });
   assert.match(request.user, /\[S1\] Ravenly product knowledge › 10 · Integrations and deployment \(version 1, as of 2026-10-11\)/);
   assert.match(request.user, /--- S2 section: 18 · Objection handling and suggested language/);
+});
+
+test('every section a seeded drill uses supports its coaching', async () => {
+  const seeded = new Set(SEED_DRILLS.map((d) => d.slug));
+  const drills = (await owner.get('/api/drills')).data.drills.filter((d) => seeded.has(d.slug));
+  assert.equal(drills.length, SEED_DRILLS.length);
+  for (const d of drills) {
+    assert.deepEqual(
+      d.sources.filter((x) => !x.available).map((x) => `${x.title}: ${x.reason}`),
+      [],
+      `${d.title} keeps all of its material`,
+    );
+  }
 });
 
 test('reps read approved collections only; managers also see drafts', async () => {
@@ -297,4 +326,164 @@ test('a drill can use any number of sections up to the limit', async () => {
   };
   const r = await owner.post('/api/drills', body);
   assert.equal(r.status, 201, JSON.stringify(r.data));
+});
+
+test('a document with an unapproved draft is split only after the draft is approved', async () => {
+  const doc = await owner.post('/api/knowledge', { ...docVersion('Omnizant web guide', '## Builds\n\nSites in six weeks.\n\n## Care\n\nMonthly care plans.'), approve: true });
+  assert.equal(doc.status, 201);
+  assert.equal((await rep.get(`/api/knowledge/${doc.data.id}`)).data.source.splitPreview, undefined, 'reps are not offered a split');
+  const draft = await owner.post(`/api/knowledge/${doc.data.id}/versions`, docVersion('Omnizant web guide', '## Builds\n\nSites in four weeks.\n\n## Care\n\nMonthly care plans.'));
+  assert.equal(draft.status, 201);
+  const preview = async () => (await owner.get(`/api/knowledge/${doc.data.id}`)).data.source.splitPreview;
+  assert.deepEqual(await preview(), { version: 1, sections: 2, hasIntro: false, pendingDraftVersion: 2 });
+
+  const refused = await owner.post(`/api/knowledge/${doc.data.id}/split`, { newCollection: { name: 'Omnizant web', kind: 'product', brand: 'omnizant' } });
+  assert.equal(refused.status, 409);
+  assert.equal(refused.data.error.code, 'pending_draft');
+  assert.equal(await h.db.one(`SELECT id FROM knowledge_collections WHERE name = 'Omnizant web'`), null, 'the new collection is not left behind');
+
+  assert.equal((await owner.post(`/api/knowledge/${doc.data.id}/approve`, { versionId: draft.data.versionId })).status, 200);
+  assert.deepEqual(await preview(), { version: 2, sections: 2, hasIntro: false, pendingDraftVersion: null });
+  const split = await owner.post(`/api/knowledge/${doc.data.id}/split`, { newCollection: { name: 'Omnizant web', kind: 'product', brand: 'omnizant' } });
+  assert.equal(split.status, 200, JSON.stringify(split.data));
+  const col = (await owner.get(`/api/knowledge/collections/${split.data.collectionId}`)).data;
+  assert.equal(col.sections[0].content, 'Sites in four weeks.', 'the approved edit is the text that was split');
+});
+
+test('a split follows drill sections by title, keeps the ones it cannot match, and can make the introduction a section', async () => {
+  const imports = await owner.post('/api/knowledge/collections', { name: 'Imported guides', kind: 'product', brand: 'omnizant', description: 'Guides imported from documents.' });
+  const v1 = '# GEO guide\n\nHow we talk about GEO.\n\n## Audits\n\nWe audit AI answers.\n\n## Content\n\nWe write answer-ready pages.\n\n## Reporting\n\nMonthly visibility reports.';
+  const doc = await owner.post('/api/knowledge', { ...docVersion('GEO guide', v1), approve: true });
+  const keys = Object.fromEntries((await owner.get(`/api/knowledge/${doc.data.id}`)).data.version.sections.map((x) => [x.title, x.key]));
+  const drill = await owner.post(
+    '/api/drills',
+    drillBody({ title: 'GEO reporting', sourceRefs: [{ sourceId: doc.data.id, sections: [keys['GEO guide'], keys.Reporting, keys.Audits], wholeSource: false }] }),
+  );
+  assert.equal(drill.status, 201, JSON.stringify(drill.data));
+  // The next version retitles "Reporting", so the drill's choice of it can no longer be followed.
+  const v2 = await owner.post(`/api/knowledge/${doc.data.id}/versions`, { ...docVersion('GEO guide', v1.replace('## Reporting', '## Monthly reporting')), approve: true });
+  assert.equal(v2.status, 201);
+  assert.deepEqual((await owner.get(`/api/knowledge/${doc.data.id}`)).data.source.splitPreview, { version: 2, sections: 3, hasIntro: true, pendingDraftVersion: null });
+
+  const split = await owner.post(`/api/knowledge/${doc.data.id}/split`, { collectionId: imports.data.id });
+  assert.equal(split.status, 200, JSON.stringify(split.data));
+  assert.deepEqual([split.data.sections, split.data.drillVersionsUpdated, split.data.unmatched], [4, 1, 1]);
+  const col = (await owner.get(`/api/knowledge/collections/${imports.data.id}`)).data;
+  assert.equal(col.collection.description, 'Guides imported from documents.', 'an existing description is kept');
+  assert.deepEqual(col.sections.map((x) => x.title), ['Introduction', 'Audits', 'Content', 'Monthly reporting']);
+  assert.equal(col.sections[0].content, 'How we talk about GEO.');
+
+  const view = (await owner.get(`/api/drills/${drill.data.id}`)).data.drill;
+  assert.deepEqual(
+    view.sourceRefs.map((r) => [r.sourceId, r.sections]),
+    [
+      [col.sections[0].id, []],
+      [col.sections[1].id, []],
+      [doc.data.id, [keys.Reporting]],
+    ],
+    'the introduction and Audits follow; the retitled section stays listed against the archived document',
+  );
+  assert.deepEqual(view.sources.map((x) => [x.available, x.reason]), [[true, null], [true, null], [false, 'archived']]);
+  assert.equal(view.coaching.available, true);
+  const event = await h.db.one(`SELECT details FROM audit_events WHERE action = 'knowledge.split' AND entity_id = $1`, [doc.data.id]);
+  const { current_version_id: drillVersionId } = await h.db.one(`SELECT current_version_id FROM drills WHERE id = $1`, [drill.data.id]);
+  assert.deepEqual(event.details.unmatched, [{ drillVersionId, sections: [keys.Reporting] }]);
+  // Saving the drill again keeps the unmatched choice on record until a manager removes it.
+  const resaved = await owner.put(`/api/drills/${drill.data.id}`, drillBody({ title: 'GEO reporting', sourceRefs: view.sourceRefs.map(({ sourceId, sections, wholeSource }) => ({ sourceId, sections, wholeSource })) }));
+  assert.equal(resaved.status, 200, JSON.stringify(resaved.data));
+});
+
+test('a split document can no longer be edited, approved, moved, or restored', async () => {
+  const doc = await h.db.one(`SELECT id, approved_version_id, latest_version_id FROM knowledge_sources WHERE slug = 'sales-playbook'`);
+  const playbook = await collectionBySlug('sales-playbook');
+  const tries = [
+    await owner.post(`/api/knowledge/${doc.id}/versions`, { title: 'Sales Playbook', brand: 'both', subjects: ['sales_technique'], content: '## New\n\nText.' }),
+    await owner.post(`/api/knowledge/${doc.id}/approve`, { versionId: doc.approved_version_id }),
+    await owner.post(`/api/knowledge/${doc.id}/restore`, {}),
+    await owner.patch(`/api/knowledge/${doc.id}/placement`, { collectionId: playbook.id, group: '' }),
+  ];
+  assert.deepEqual(
+    tries.map((r) => [r.status, r.data.error?.code]),
+    Array(4).fill([409, 'document_split']),
+  );
+  const after = await h.db.one(`SELECT status, latest_version_id, collection_id FROM knowledge_sources WHERE id = $1`, [doc.id]);
+  assert.deepEqual(after, { status: 'archived', latest_version_id: doc.latest_version_id, collection_id: null });
+});
+
+test('a restored section returns to the end of its group, never sharing a place', async () => {
+  const made = await owner.post('/api/knowledge/collections', { name: 'Restore order', kind: 'playbook', brand: 'both' });
+  const add = (title, group) =>
+    owner.post('/api/knowledge', { title, brand: 'both', subjects: ['sales_technique'], content: `About ${title}.`, approve: true, collectionId: made.data.id, group });
+  const a = await add('Alpha', 'First');
+  const b = await add('Bravo', 'First');
+  const c = await add('Charlie', 'Second');
+  await owner.post(`/api/knowledge/${a.data.id}/archive`, {});
+  // Arranging the remaining sections reuses the archived section's old place.
+  const arranged = await owner.post(`/api/knowledge/collections/${made.data.id}/arrange`, {
+    sections: [
+      { id: b.data.id, group: 'First' },
+      { id: c.data.id, group: 'Second' },
+    ],
+  });
+  assert.equal(arranged.status, 200);
+  assert.equal((await owner.post(`/api/knowledge/${a.data.id}/restore`, {})).status, 200);
+  const rows = await h.db.many(
+    `SELECT v.title, s.position FROM knowledge_sources s JOIN knowledge_versions v ON v.id = s.latest_version_id WHERE s.collection_id = $1 ORDER BY s.position`,
+    [made.data.id],
+  );
+  assert.deepEqual(rows.map((r) => r.title), ['Bravo', 'Alpha', 'Charlie']);
+  assert.equal(new Set(rows.map((r) => r.position)).size, rows.length, 'no two sections share a place');
+});
+
+test('learners never learn the name of a collection they cannot read', async () => {
+  const omnizant = await collectionBySlug('omnizant-product');
+  const seo = (await owner.get(`/api/knowledge/collections/${omnizant.id}`)).data.sections.find((x) => x.title.startsWith('SEO'));
+  const objections = await sectionBy(h, 'sales-playbook', '6. Objections');
+  const made = await owner.post(
+    '/api/drills',
+    drillBody({
+      title: 'Omnizant SEO first call',
+      sourceRefs: [
+        { sourceId: seo.id, sections: [], wholeSource: true },
+        { sourceId: objections.id, sections: [], wholeSource: true },
+      ],
+    }),
+  );
+  assert.equal(made.status, 201, JSON.stringify(made.data));
+  const names = (drill) => drill.sources.map((x) => [x.title === null, x.collectionName]);
+  assert.deepEqual(names((await owner.get(`/api/drills/${made.data.id}`)).data.drill), [
+    [false, 'Omnizant product knowledge'],
+    [false, 'Sales Playbook'],
+  ]);
+  const forRep = (await rep.get(`/api/drills/${made.data.id}`)).data.drill;
+  assert.deepEqual(names(forRep), [
+    [true, null],
+    [false, 'Sales Playbook'],
+  ]);
+  assert.equal(forRep.coaching.available, false, 'draft outlines never support coaching');
+
+  const row = await h.db.one(`SELECT current_version_id FROM drills WHERE id = $1`, [made.data.id]);
+  const created = await submit(rep, { id: made.data.id, version_id: row.current_version_id, personas: ['managing_partner'] }, 'We start with an audit.', { mode: 'unscored' });
+  assert.equal(created.status, 201, JSON.stringify(created.data));
+  const attempt = (await rep.get(`/api/practice/attempts/${created.data.attempt.id}`)).data.attempt;
+  assert.deepEqual(attempt.scenario.sources.map((x) => [x.title === null, x.collectionName]), [
+    [true, null],
+    [false, 'Sales Playbook'],
+  ]);
+});
+
+test('the seed leaves a document it cannot split as it is, and still starts', async () => {
+  const doc = await owner.post('/api/knowledge', docVersion('Single-part guide', '## Only part\n\nOne section.'));
+  await h.db.query(`UPDATE knowledge_sources SET slug = 'single-part-guide' WHERE id = $1`, [doc.data.id]);
+  const ownerRow = await h.db.one(`SELECT * FROM users WHERE is_owner`);
+  const lines = [];
+  await h.db.tx((q) =>
+    createSeedCollections(q, ownerRow, (l) => lines.push(l), [
+      { slug: 'single-part', name: 'Single part', kind: 'product', brand: 'omnizant', description: '', position: 50, from: 'single-part-guide' },
+    ]),
+  );
+  assert.ok(lines.some((l) => l.includes('left “single-part-guide” as one document')), lines.join('\n'));
+  const after = await h.db.one(`SELECT status, collection_id, split_into_collection_id FROM knowledge_sources WHERE id = $1`, [doc.data.id]);
+  assert.deepEqual(after, { status: 'draft', collection_id: null, split_into_collection_id: null });
+  assert.ok(await h.db.one(`SELECT id FROM knowledge_collections WHERE slug = 'single-part'`), 'the rest of the step still applies');
 });

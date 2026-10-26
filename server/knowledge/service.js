@@ -18,7 +18,7 @@ export const SOURCE_LIST_SQL = `
     LEFT JOIN knowledge_collections c ON c.id = s.collection_id`;
 
 // Library order: collections in their order, sections in theirs; other documents last, newest first.
-export const SOURCE_LIST_ORDER = `ORDER BY c.position NULLS LAST, s.position, s.updated_at DESC`;
+export const SOURCE_LIST_ORDER = `ORDER BY c.position NULLS LAST, s.position, CASE WHEN s.collection_id IS NULL THEN s.updated_at END DESC, s.created_at, s.id`;
 
 export function shapeSourceRow(r, { forManager }) {
   const approved = r.approved_version_id
@@ -133,23 +133,28 @@ export async function coverage(q) {
   return { counts: out, missing };
 }
 
+// Product facts and competitive facts about the same brand support each other's drills: a competitor
+// comparison needs the product's own facts, and a product drill may need the competitive context.
+const SUPPORTING_SUBJECTS = { product: ['competitive'], competitive: ['product'], sales_technique: [] };
+
 // Whether an approved source version may support coaching for a drill. A source fits when its brand
-// matches (or either side covers both brands), it covers the drill's subject or sales technique, and it
-// is not limited to other buyer personas. Only a source that covers the drill's own subject can make
-// coaching available; technique-only material can support it but not stand in for missing product facts.
+// matches (or either side covers both brands), it covers the drill's subject, a related subject, or
+// sales technique, and it is not limited to other buyer personas. Only a source that covers the drill's
+// own subject can make coaching available; supporting material never stands in for missing facts.
 export function sourceFit(source, { brand, subject, persona = null }) {
   const reasons = [];
   if (!(source.brand === 'both' || brand === 'both' || source.brand === brand)) reasons.push('brand');
   const subjects = source.subjects || [];
   const coversSubject = subjects.includes(subject);
-  if (!coversSubject && !subjects.includes('sales_technique')) reasons.push('subject');
+  const supports = subjects.includes('sales_technique') || (SUPPORTING_SUBJECTS[subject] || []).some((s) => subjects.includes(s));
+  if (!coversSubject && !supports) reasons.push('subject');
   if (persona && (source.personas || []).length && !source.personas.includes(persona)) reasons.push('persona');
   return { usable: reasons.length === 0, primary: reasons.length === 0 && coversSubject, reasons };
 }
 
 export const FIT_TEXT = {
   brand: 'covers a different brand',
-  subject: 'does not cover this subject or sales technique',
+  subject: 'does not cover this subject, a related one, or sales technique',
   persona: 'is limited to other buyer personas',
   not_approved: 'is not approved yet',
   archived: 'is archived',
@@ -157,20 +162,28 @@ export const FIT_TEXT = {
   sections_missing: 'no longer has the sections this drill uses',
 };
 
-// Parsed sections of immutable versions, kept in memory: a version's text never changes.
+// Parsed sections of immutable versions, kept in memory: a version's text never changes. The result is
+// built from what this call fetched, so evicting older cache entries can never drop a version it needs.
 const sectionCache = new Map();
-const SECTION_CACHE_MAX = 60;
+export const SECTION_CACHE_MAX = 500;
 export async function loadVersionSections(q, versionIds) {
   const ids = [...new Set(versionIds.filter(Boolean))];
-  const needed = ids.filter((id) => !sectionCache.has(id));
+  const out = new Map();
+  const needed = [];
+  for (const id of ids) {
+    if (sectionCache.has(id)) out.set(id, sectionCache.get(id));
+    else needed.push(id);
+  }
   if (needed.length) {
     const rows = await q.many(`SELECT id, content FROM knowledge_versions WHERE id = ANY($1::uuid[])`, [needed]);
     for (const r of rows) {
+      const parsed = parseSections(r.content);
+      out.set(r.id, parsed);
       if (sectionCache.size >= SECTION_CACHE_MAX) sectionCache.delete(sectionCache.keys().next().value);
-      sectionCache.set(r.id, parseSections(r.content));
+      sectionCache.set(r.id, parsed);
     }
   }
-  return new Map(ids.filter((id) => sectionCache.has(id)).map((id) => [id, sectionCache.get(id)]));
+  return out;
 }
 
 // "05 · Pricing" and "6. Pricing" are the same section title once the number is set aside.
@@ -306,8 +319,8 @@ export async function loadSourceText(q, sourceVersions) {
       if (budget <= 0) break;
       const text = sec.text.length > budget ? sec.text.slice(0, budget) + '\n[…section truncated for length]' : sec.text;
       budget -= text.length;
-      // A collection section has no "## " headings of its own: its one part is named after the section.
-      const title = sec.key === 'intro' && all.length === 1 ? s.title : sec.title;
+      // The text before any "## " heading (all of a typical collection section) is named after the source.
+      const title = sec.key === 'intro' ? s.title : sec.title;
       parts.push({ key: sec.key, title, text });
     }
     out.push({

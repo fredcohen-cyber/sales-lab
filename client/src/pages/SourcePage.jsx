@@ -105,7 +105,7 @@ function MoveModal({ open, onClose, source, onDone }) {
 }
 
 // Split a long document at its "## " headings into sections of a collection.
-function SplitModal({ open, onClose, source, version, onDone }) {
+function SplitModal({ open, onClose, source, version, preview, onDone }) {
   const { meta } = useMeta();
   const [collections, setCollections] = useState(null);
   const [mode, setMode] = useState('new');
@@ -122,7 +122,11 @@ function SplitModal({ open, onClose, source, version, onDone }) {
       })
       .catch(setError);
   }, [open]);
-  const count = version.sections.filter((s) => s.key !== 'intro').length;
+  // The introduction becomes the collection's description, unless the collection already has one.
+  const chosen = mode === 'existing' ? collections?.find((c) => c.id === target) : null;
+  const introAsSection = preview.hasIntro && mode === 'existing' && Boolean(chosen?.description?.trim());
+  const count = preview.sections + (introAsSection ? 1 : 0);
+  const blocked = Boolean(preview.pendingDraftVersion);
   const save = async () => {
     setBusy(true);
     setError(null);
@@ -145,16 +149,24 @@ function SplitModal({ open, onClose, source, version, onDone }) {
           <button className="btn btn-secondary" onClick={onClose}>
             Cancel
           </button>
-          <button className="btn" onClick={save} disabled={busy || (mode === 'new' ? fresh.name.trim().length < 2 : !target)}>
+          <button className="btn" onClick={save} disabled={blocked || busy || (mode === 'new' ? fresh.name.trim().length < 2 : !target)}>
             {busy ? 'Splitting…' : `Split into ${count} sections`}
           </button>
         </>
       }
     >
+      {blocked && (
+        <Notice kind="warn" title={`Version ${preview.pendingDraftVersion} is not approved yet`}>
+          <p className="small">Approve it, or save the approved text again as the newest version, before splitting, so no edit is left behind.</p>
+        </Notice>
+      )}
       <p className="small">
-        Each “## ” heading becomes its own section, with the same text, dates, caveats, and evidence basis, so each can be edited and approved on its own.
-        {source.status === 'approved' ? ' The sections start approved, since their text is already approved.' : ' The sections start as drafts.'} Drills that use this
-        document move to the matching sections, and the document is archived.
+        This splits version {preview.version}. Each “## ” heading becomes its own section, with the same text, dates, caveats, and evidence basis, so each can be edited and
+        approved on its own.
+        {source.status === 'approved' ? ' The sections start approved, since their text is already approved.' : ' The sections start as drafts.'}
+        {preview.hasIntro &&
+          (introAsSection ? ' The text before the first heading becomes a section named Introduction.' : ' The text before the first heading becomes the collection’s description.')}{' '}
+        Drills that use this document move to the matching sections, and the document is archived.
       </p>
       <div className="row">
         <label className="checkbox small">
@@ -229,7 +241,7 @@ export function SourcePage() {
   const isSection = Boolean(src.collection);
   const noun = isSection ? 'section' : 'source';
   const parts = v.sections.filter((s) => s.key !== 'intro');
-  const canSplit = user.isManager && !isSection && src.status !== 'archived' && !src.splitInto && parts.length >= 2;
+  const canSplit = user.isManager && Boolean(src.splitPreview);
 
   const act = async (fn, msg) => {
     try {
@@ -480,8 +492,13 @@ export function SourcePage() {
           onClose={() => setConfirm(null)}
           source={src}
           version={v}
+          preview={src.splitPreview}
           onDone={(r) => {
-            toast(`Split into ${r.sections} sections`);
+            toast(
+              r.unmatched
+                ? `Split into ${r.sections} sections. ${r.unmatched} drill ${r.unmatched === 1 ? 'version still uses' : 'versions still use'} sections that could not be matched; edit those drills to choose new ones.`
+                : `Split into ${r.sections} sections`,
+            );
             navigate(`/knowledge/collections/${r.collectionId}`);
           }}
         />

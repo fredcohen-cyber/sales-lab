@@ -58,7 +58,9 @@ export function editorRefs(refs, index) {
   return (refs || []).map((ref) => {
     const src = index.byId.get(ref.sourceId);
     const wholeSource = !ref.sections?.length;
-    if (!src || wholeSource || ref.versionId === src.latest_version_id) {
+    // Archived material is never used for coaching; its references are kept as they are, so the editor
+    // can list them as no longer available until a manager removes them.
+    if (!src || wholeSource || ref.versionId === src.latest_version_id || src.status === 'archived') {
       return { sourceId: ref.sourceId, sections: ref.sections || [], versionId: src?.latest_version_id || ref.versionId, wholeSource, unmatched: [] };
     }
     const authored = index.sections.get(ref.versionId) || null;
@@ -99,7 +101,8 @@ export function shapeDrill(row, availability, { forManager, index = null }) {
     sources: availability.sources.map((s) => ({
       sourceId: s.sourceId,
       title: forManager ? s.title || s.latestTitle : s.title,
-      collectionName: s.collectionName || null,
+      // Learners learn a collection's name only from material they may read.
+      collectionName: forManager || s.title ? s.collectionName || null : null,
       available: s.available,
       reason: s.reason,
       reasonText: s.reason ? FIT_TEXT[s.reason] : null,

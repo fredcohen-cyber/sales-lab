@@ -81,6 +81,26 @@ export async function createSection(q, { collection, title, content, brand, subj
   return { sourceId: src.id, versionId: v.id, slug };
 }
 
+// Which version a split uses: the approved version, or the only draft when nothing is approved yet. An
+// unapproved draft on top of an approved version blocks the split, so no edit is left behind.
+async function splitBasis(q, src) {
+  const approved = src.status === 'approved' && Boolean(src.approved_version_id);
+  const version = await q.one(`SELECT * FROM knowledge_versions WHERE id = $1`, [approved ? src.approved_version_id : src.latest_version_id]);
+  const draft =
+    approved && src.latest_version_id !== src.approved_version_id
+      ? await q.one(`SELECT version FROM knowledge_versions WHERE id = $1`, [src.latest_version_id])
+      : null;
+  return { approved, version, draft, doc: splitDocument(version.content) };
+}
+
+// What splitting a document would do, for the split dialog. Null when the document cannot be split at all.
+export async function previewSplit(q, src) {
+  if (src.collection_id || src.split_into_collection_id || src.status === 'archived' || !src.latest_version_id) return null;
+  const { version, draft, doc } = await splitBasis(q, src);
+  if (doc.sections.length < 2) return null;
+  return { version: version.version, sections: doc.sections.length, hasIntro: Boolean(doc.intro), pendingDraftVersion: draft ? draft.version : null };
+}
+
 // Turn one long document into sections of a collection. The document's approved version (or its only
 // draft) is split at its "## " headings; each section keeps the document's metadata unless `meta` gives
 // it its own subjects or group. Sections of an approved document start approved, since their text is
@@ -96,9 +116,14 @@ export async function splitSourceIntoCollection(q, { sourceId, collectionId, act
   const collection = await q.one(`SELECT * FROM knowledge_collections WHERE id = $1 FOR UPDATE`, [collectionId]);
   if (!collection) throw notFound('That collection was not found.');
 
-  const approved = src.status === 'approved' && Boolean(src.approved_version_id);
-  const version = await q.one(`SELECT * FROM knowledge_versions WHERE id = $1`, [approved ? src.approved_version_id : src.latest_version_id]);
-  const doc = splitDocument(version.content);
+  const { approved, version, draft, doc } = await splitBasis(q, src);
+  if (draft) {
+    throw new HttpError(
+      409,
+      'pending_draft',
+      `This document has an unapproved draft (version ${draft.version}). Approve it, or save the approved text again as the newest version, before splitting, so no edit is left behind.`,
+    );
+  }
   if (doc.sections.length < 2) {
     throw new HttpError(400, 'nothing_to_split', 'This document has fewer than two sections that start with “## ”, so there is nothing to split.');
   }
@@ -117,15 +142,14 @@ export async function splitSourceIntoCollection(q, { sourceId, collectionId, act
   };
 
   // The introduction becomes the collection's description when it has none, otherwise its own section.
+  const byKey = new Map();
   if (doc.intro && intro !== 'skip') {
     if (intro === 'auto' && !collection.description.trim()) {
       await q.query(`UPDATE knowledge_collections SET description = $2, updated_at = now(), updated_by = $3 WHERE id = $1`, [collection.id, doc.intro, actorId]);
     } else {
-      await createSection(q, { ...base, title: 'Introduction', content: doc.intro, subjects: version.subjects });
+      byKey.set('intro', await createSection(q, { ...base, title: 'Introduction', content: doc.intro, subjects: version.subjects }));
     }
   }
-
-  const byKey = new Map();
   for (const sec of doc.sections) {
     const m = meta(sec) || {};
     const made = await createSection(q, { ...base, title: sec.title, content: sec.content, subjects: m.subjects || version.subjects, group: m.group || '' });
@@ -133,13 +157,16 @@ export async function splitSourceIntoCollection(q, { sourceId, collectionId, act
   }
 
   // Re-point drills. A reference to chosen sections is followed by title from the version it was written
-  // against (as coaching does); a reference to the whole document becomes every section.
+  // against (as coaching does); a reference to the whole document becomes every section. Chosen sections
+  // that cannot be found stay pointed at the archived document, so the drill editor lists them as no
+  // longer available instead of dropping them without a trace.
   const splitSections = parseSections(version.content);
   const affected = await q.many(`SELECT id, source_refs FROM drill_versions WHERE source_refs @> $1::jsonb`, [JSON.stringify([{ sourceId }])]);
   const authoredIds = [...new Set(affected.flatMap((d) => d.source_refs.filter((r) => r.sourceId === sourceId && r.versionId).map((r) => r.versionId)))];
   const authored = new Map(
     (await q.many(`SELECT id, content FROM knowledge_versions WHERE id = ANY($1::uuid[])`, [authoredIds])).map((r) => [r.id, parseSections(r.content)]),
   );
+  const unmatched = [];
   for (const d of affected) {
     const refs = [];
     const add = (ref) => {
@@ -150,12 +177,24 @@ export async function splitSourceIntoCollection(q, { sourceId, collectionId, act
         add(ref);
         continue;
       }
-      const keys = ref.sections?.length
-        ? mapSections(ref.sections, authored.get(ref.versionId) || null, splitSections).matched.map((s) => s.key)
-        : doc.sections.map((s) => s.key);
+      let keys = [];
+      const lost = [];
+      if (ref.sections?.length) {
+        for (const k of ref.sections) {
+          const hit = mapSections([k], authored.get(ref.versionId) || null, splitSections).matched[0];
+          if (hit && byKey.has(hit.key)) keys.push(hit.key);
+          else lost.push(k);
+        }
+      } else {
+        keys = [...byKey.keys()];
+      }
       for (const key of keys) {
         const made = byKey.get(key);
-        if (made) add({ sourceId: made.sourceId, sections: [], versionId: made.versionId });
+        add({ sourceId: made.sourceId, sections: [], versionId: made.versionId });
+      }
+      if (lost.length) {
+        add({ sourceId, sections: lost, versionId: ref.versionId });
+        unmatched.push({ drillVersionId: d.id, sections: lost });
       }
     }
     await q.query(`UPDATE drill_versions SET source_refs = $2 WHERE id = $1`, [d.id, JSON.stringify(refs)]);
@@ -170,8 +209,15 @@ export async function splitSourceIntoCollection(q, { sourceId, collectionId, act
     action: 'knowledge.split',
     entityType: 'knowledge_source',
     entityId: sourceId,
-    details: { collectionId: collection.id, versionId: version.id, sections: byKey.size, drillVersionsUpdated: affected.length },
+    details: {
+      collectionId: collection.id,
+      versionId: version.id,
+      sections: byKey.size,
+      drillVersionsUpdated: affected.length,
+      // References that could not follow their section; they still point at the archived document.
+      unmatched: unmatched.slice(0, 100),
+    },
     ip,
   });
-  return { sections: [...byKey.values()], drillVersionsUpdated: affected.length };
+  return { sections: [...byKey.values()], drillVersionsUpdated: affected.length, unmatched };
 }

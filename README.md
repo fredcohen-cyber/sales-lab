@@ -85,6 +85,8 @@ Knowledge is kept in **collections** made of **sections**:
 - Reps can **read a whole collection** end to end; managers also see drafts. A long document added with
   **Import a document** can be **split into sections** from its page: each "## " heading becomes a
   section, drills that used the document move to the matching sections, and the document is archived.
+  A document with an unapproved draft must be approved first, and a drill section that cannot be matched
+  stays listed in the drill editor as no longer available instead of disappearing.
 
 On the first deploy of this version, the supplied Sales Playbook and Ravenly guide are split this way with
 their text unchanged, every drill is moved to the same material in its new sections, and the two original
@@ -95,8 +97,10 @@ documents stay archived so past answers still show exactly what they were scored
 - Approved sections are the only product facts coaching may rely on. Each drill names the sections it
   is graded against, and each answer keeps the exact versions it was scored with.
 - Coaching runs only when the drill has an approved section that matches its brand, subject, and buyer
-  persona. Sales-technique material can support a product drill but never stands in for missing product
-  facts, so drills on topics without approved material run as clearly labeled unscored practice.
+  persona. Supporting material is also used: sales technique for any drill, and a brand's product and
+  competitive sections for each other's drills (a competitor comparison needs the product's own facts).
+  Supporting material never stands in for missing facts on the drill's own subject, so drills on topics
+  without approved material run as clearly labeled unscored practice.
 - Each section records its evidence basis: documented facts, vendors' public claims, untested
   observations, or a mix labeled passage by passage. Coaching flags a claim the rep states as fact when
   the material only reports it as a claim or observation.
@@ -141,7 +145,7 @@ Automated tests use a test-only stand-in for the AI service that cannot be enabl
 
 ## Status
 
-Implemented and covered by automated tests (117 server tests and 19 browser tests): company email and
+Implemented and covered by automated tests (126 server tests and 20 browser tests): company email and
 password sign-in with manager-created accounts only, private single-use setup and reset links, sign-in
 throttling, deactivation and session revocation, server-side roles and learner privacy, the knowledge
 library as collections of sections with versions, approval, evidence basis, ordering, and document
