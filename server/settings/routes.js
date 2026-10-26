@@ -5,6 +5,7 @@ import { audit } from '../lib/audit.js';
 import { clientIp, requireManager } from '../auth/middleware.js';
 import { aiConfigured } from '../config.js';
 import { ProviderError } from '../ai/provider.js';
+import { COLLECTION_KINDS } from '../knowledge/sections.js';
 import { ALLOWED_EMAIL_DOMAINS, BRANDS, CRITICAL_FAILURE_TYPES, DEPTH_TEXT, DIFFICULTY_TEXT, DIMENSION_KEYS, EVIDENCE_BASIS, EXPERIENCE, REVIEW_STATUS, ROLES, SKEPTICISM_TEXT, STAGES, SUBJECTS } from '../domain.js';
 
 export async function currentRubric(q) {
@@ -30,6 +31,7 @@ export function settingsRoutes({ db, config, provider }) {
         brands: BRANDS,
         subjects: SUBJECTS,
         evidenceBasis: EVIDENCE_BASIS,
+        collectionKinds: COLLECTION_KINDS,
         stages: STAGES,
         personas,
         dimensions: rubric.dimensions,

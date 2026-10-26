@@ -13,6 +13,8 @@ import { Progress } from './pages/Progress.jsx';
 import { Knowledge } from './pages/Knowledge.jsx';
 import { SourcePage } from './pages/SourcePage.jsx';
 import { SourceEditor } from './pages/SourceEditor.jsx';
+import { CollectionPage } from './pages/CollectionPage.jsx';
+import { CollectionEditor } from './pages/CollectionEditor.jsx';
 import { ManagerDashboard } from './pages/ManagerDashboard.jsx';
 import { RepReport } from './pages/RepReport.jsx';
 import { TeamCoaching } from './pages/TeamCoaching.jsx';
@@ -92,6 +94,9 @@ export function App() {
         <Route path="progress" element={<Progress />} />
         <Route path="knowledge" element={<Knowledge />} />
         <Route path="knowledge/new" element={<ManagerOnly><SourceEditor /></ManagerOnly>} />
+        <Route path="knowledge/collections/new" element={<ManagerOnly><CollectionEditor /></ManagerOnly>} />
+        <Route path="knowledge/collections/:cid" element={<CollectionPage />} />
+        <Route path="knowledge/collections/:cid/edit" element={<ManagerOnly><CollectionEditor /></ManagerOnly>} />
         <Route path="knowledge/:id" element={<SourcePage />} />
         <Route path="knowledge/:id/edit" element={<ManagerOnly><SourceEditor /></ManagerOnly>} />
         <Route path="manager" element={<ManagerOnly><ManagerDashboard /></ManagerOnly>} />

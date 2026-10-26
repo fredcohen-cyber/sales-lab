@@ -171,7 +171,13 @@ export function AttemptPage() {
               </p>
               <div className="prewrap small">{s.goodLooksLike}</div>
               <p className="tiny muted" style={{ margin: 0 }}>
-                Drill version {s.drillVersion}. Scored against {attempt.sourceVersions.length ? attempt.sourceVersions.map((v) => `${v.title} (v${v.version})`).join(' and ') : 'no approved source'}.
+                Drill version {s.drillVersion}. Scored against{' '}
+                {attempt.sourceVersions.length
+                  ? new Intl.ListFormat('en', { type: 'conjunction' }).format(
+                      attempt.sourceVersions.map((v) => `${v.collectionName ? `${v.collectionName}: ` : ''}${v.title} (v${v.version})`),
+                    )
+                  : 'no approved source'}
+                .
               </p>
             </div>
           </details>

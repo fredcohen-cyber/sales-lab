@@ -1,39 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { get, post } from '../api.js';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { get, patch, post } from '../api.js';
 import { useAuth, useMeta } from '../state.jsx';
-import { BrandChip, ErrorNotice, fmtDate, fmtDateTime, Loading, Modal, Notice, useLoad, useToast } from '../components/ui.jsx';
-
-function slug(text) {
-  return String(text)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-}
-function textOf(children) {
-  if (typeof children === 'string') return children;
-  if (Array.isArray(children)) return children.map(textOf).join('');
-  if (children?.props) return textOf(children.props.children);
-  return '';
-}
-// The page title is the h1, so document headings move down one level (styled by their markdown level).
-const components = {
-  h1: ({ children }) => <h2 className="md-h1">{children}</h2>,
-  h2: ({ children }) => (
-    <h3 className="md-h2" id={`sec-${slug(textOf(children))}`}>
-      {children}
-    </h3>
-  ),
-  h3: ({ children }) => <h4 className="md-h3">{children}</h4>,
-  h4: ({ children }) => <h5 className="md-h4">{children}</h5>,
-  a: ({ href, children }) => (
-    <a href={href} target={href?.startsWith('http') ? '_blank' : undefined} rel="noreferrer noopener">
-      {children}
-    </a>
-  ),
-};
+import { BrandChip, ErrorNotice, Field, fmtDate, fmtDateTime, Loading, Modal, Notice, useLoad, useToast } from '../components/ui.jsx';
+import { Markdown, slugText } from '../components/KnowledgeParts.jsx';
 
 // Before approving: drills that point at sections this version drops or retitles.
 function DrillImpact({ sourceId, versionId, open }) {
@@ -51,7 +21,7 @@ function DrillImpact({ sourceId, versionId, open }) {
   }, [open, sourceId, versionId]);
   if (state.loading) return <Loading label="Checking drills that use this source…" />;
   if (state.error) return <p className="small muted">Could not check which drills use this source: {state.error.message}</p>;
-  if (!state.drills || state.drills.length === 0) return <p className="small muted">Every drill that uses this source still finds its sections in this version.</p>;
+  if (!state.drills || state.drills.length === 0) return null;
   return (
     <Notice kind="warn" title={`${state.drills.length} drill${state.drills.length === 1 ? '' : 's'} would lose or change their source sections`}>
       <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>
@@ -70,14 +40,183 @@ function DrillImpact({ sourceId, versionId, open }) {
   );
 }
 
+// Move a section to another collection or group (structure only; no new version).
+function MoveModal({ open, onClose, source, onDone }) {
+  const toast = useToast();
+  const [collections, setCollections] = useState(null);
+  const [form, setForm] = useState({ collectionId: source.collection?.id || '', group: source.group || '' });
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    if (!open) return;
+    setForm({ collectionId: source.collection?.id || '', group: source.group || '' });
+    get('/knowledge/collections')
+      .then((d) => setCollections(d.collections))
+      .catch(setError);
+  }, [open, source]);
+  const save = async () => {
+    try {
+      await patch(`/knowledge/${source.id}/placement`, { collectionId: form.collectionId || null, group: form.collectionId ? form.group : '' });
+      toast(form.collectionId ? 'Section moved' : 'Moved out of collections');
+      onDone();
+    } catch (e) {
+      setError(e);
+    }
+  };
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Move this section"
+      footer={
+        <>
+          <button className="btn btn-secondary" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn" onClick={save} disabled={!collections}>
+            Move
+          </button>
+        </>
+      }
+    >
+      <p className="small">Moving changes where the section is listed. Its text, versions, approval, and the drills that use it stay the same.</p>
+      {!collections && !error && <Loading />}
+      {collections && (
+        <>
+          <Field label="Collection" id="mv-col">
+            <select id="mv-col" value={form.collectionId} onChange={(e) => setForm({ ...form, collectionId: e.target.value })}>
+              {collections.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+              <option value="">Not in a collection (a standalone document)</option>
+            </select>
+          </Field>
+          {form.collectionId && (
+            <Field label="Group" id="mv-group" hint="Optional. Sections with the same group are listed together.">
+              <input id="mv-group" type="text" maxLength={80} value={form.group} onChange={(e) => setForm({ ...form, group: e.target.value })} />
+            </Field>
+          )}
+        </>
+      )}
+      {error && <ErrorNotice error={{ message: error.message }} />}
+    </Modal>
+  );
+}
+
+// Split a long document at its "## " headings into sections of a collection.
+function SplitModal({ open, onClose, source, version, onDone }) {
+  const { meta } = useMeta();
+  const [collections, setCollections] = useState(null);
+  const [mode, setMode] = useState('new');
+  const [target, setTarget] = useState('');
+  const [fresh, setFresh] = useState({ name: version.title, kind: version.subjects.includes('product') ? 'product' : 'playbook', brand: version.brand });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    if (!open) return;
+    get('/knowledge/collections')
+      .then((d) => {
+        setCollections(d.collections);
+        setTarget(d.collections[0]?.id || '');
+      })
+      .catch(setError);
+  }, [open]);
+  const count = version.sections.filter((s) => s.key !== 'intro').length;
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await post(`/knowledge/${source.id}/split`, mode === 'new' ? { newCollection: { ...fresh, description: '' } } : { collectionId: target });
+      onDone(r);
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Split into sections"
+      footer={
+        <>
+          <button className="btn btn-secondary" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn" onClick={save} disabled={busy || (mode === 'new' ? fresh.name.trim().length < 2 : !target)}>
+            {busy ? 'Splitting…' : `Split into ${count} sections`}
+          </button>
+        </>
+      }
+    >
+      <p className="small">
+        Each “## ” heading becomes its own section, with the same text, dates, caveats, and evidence basis, so each can be edited and approved on its own.
+        {source.status === 'approved' ? ' The sections start approved, since their text is already approved.' : ' The sections start as drafts.'} Drills that use this
+        document move to the matching sections, and the document is archived.
+      </p>
+      <div className="row">
+        <label className="checkbox small">
+          <input type="radio" name="split-mode" checked={mode === 'new'} onChange={() => setMode('new')} />
+          New collection
+        </label>
+        <label className="checkbox small">
+          <input type="radio" name="split-mode" checked={mode === 'existing'} onChange={() => setMode('existing')} disabled={!collections?.length} />
+          Add to an existing collection
+        </label>
+      </div>
+      {mode === 'new' ? (
+        <div className="stack-sm">
+          <Field label="Collection name" id="sp-name">
+            <input id="sp-name" type="text" maxLength={120} value={fresh.name} onChange={(e) => setFresh({ ...fresh, name: e.target.value })} />
+          </Field>
+          <div className="form-row">
+            <Field label="Kind" id="sp-kind">
+              <select id="sp-kind" value={fresh.kind} onChange={(e) => setFresh({ ...fresh, kind: e.target.value })}>
+                {Object.entries(meta.collectionKinds || {}).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Brand" id="sp-brand">
+              <select id="sp-brand" value={fresh.brand} onChange={(e) => setFresh({ ...fresh, brand: e.target.value })}>
+                <option value="ravenly">Ravenly</option>
+                <option value="omnizant">Omnizant</option>
+                <option value="both">Both brands</option>
+              </select>
+            </Field>
+          </div>
+        </div>
+      ) : (
+        collections && (
+          <Field label="Collection" id="sp-col">
+            <select id="sp-col" value={target} onChange={(e) => setTarget(e.target.value)}>
+              {collections.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )
+      )}
+      {error && <ErrorNotice error={{ message: error.message }} />}
+    </Modal>
+  );
+}
+
 export function SourcePage() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const version = params.get('version');
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { meta } = useMeta();
   const toast = useToast();
-  const { data, error, loading, reload } = useLoad(() => get(`/knowledge/${id}${version ? `?version=${version}` : ''}`), [id, version]);
+  const { data, error, reload } = useLoad(() => get(`/knowledge/${id}${version ? `?version=${version}` : ''}`), [id, version]);
   const [confirm, setConfirm] = useState(null);
   useEffect(() => {
     if (data) document.title = `${data.version.title} · Sales Lab`;
@@ -87,6 +226,10 @@ export function SourcePage() {
   if (!data) return <div className="page"><Loading /></div>;
   const v = data.version;
   const src = data.source;
+  const isSection = Boolean(src.collection);
+  const noun = isSection ? 'section' : 'source';
+  const parts = v.sections.filter((s) => s.key !== 'intro');
+  const canSplit = user.isManager && !isSection && src.status !== 'archived' && !src.splitInto && parts.length >= 2;
 
   const act = async (fn, msg) => {
     try {
@@ -101,9 +244,15 @@ export function SourcePage() {
 
   return (
     <div className="page">
-      <Link className="crumb" to="/knowledge">
-        Back to Knowledge Library
-      </Link>
+      <nav className="crumbs" aria-label="Breadcrumb">
+        <Link to="/knowledge">Knowledge Library</Link>
+        {isSection && (
+          <>
+            <span aria-hidden="true">/</span>
+            <Link to={`/knowledge/collections/${src.collection.id}`}>{src.collection.name}</Link>
+          </>
+        )}
+      </nav>
       <div className="page-head">
         <div>
           <div className="row" style={{ marginBottom: 8 }}>
@@ -119,18 +268,32 @@ export function SourcePage() {
           </div>
           <h1>{v.title}</h1>
           <p className="sub">
+            {isSection && src.neighbors?.index > 0 && `Section ${src.neighbors.index} of ${src.neighbors.count}${src.group ? `, in ${src.group}` : ''}. `}
             Version {v.version}
-            {v.asOfDate ? `, accurate as of ${fmtDate(v.asOfDate)}` : ', no as-of date'}. For {v.personas.length ? v.personas.map((p) => meta.personas.find((x) => x.key === p)?.label || p).join(', ') : 'all buyer personas'}.
+            {v.asOfDate ? `, accurate as of ${fmtDate(v.asOfDate)}` : ', no as-of date'}. For{' '}
+            {v.personas.length ? v.personas.map((p) => meta.personas.find((x) => x.key === p)?.label || p).join(', ') : 'all buyer personas'}.
           </p>
         </div>
         {user.isManager && (
           <div className="row">
-            <Link className="btn btn-secondary" to={`/knowledge/${src.id}/edit`}>
-              Edit as new version
-            </Link>
+            {!src.splitInto && (
+              <Link className="btn btn-secondary" to={`/knowledge/${src.id}/edit`}>
+                Edit as new version
+              </Link>
+            )}
             {!v.isApproved && src.status !== 'archived' && (
               <button className="btn" onClick={() => setConfirm('approve')}>
                 Approve this version
+              </button>
+            )}
+            {canSplit && (
+              <button className="btn btn-secondary" onClick={() => setConfirm('split')}>
+                Split into sections
+              </button>
+            )}
+            {!src.splitInto && (
+              <button className="btn btn-quiet" onClick={() => setConfirm('move')}>
+                Move
               </button>
             )}
             {src.status !== 'archived' ? (
@@ -138,14 +301,26 @@ export function SourcePage() {
                 Archive
               </button>
             ) : (
-              <button className="btn btn-quiet" onClick={() => act(() => post(`/knowledge/${src.id}/restore`, {}), 'Source restored')}>
-                Restore
-              </button>
+              !src.splitInto && (
+                <button className="btn btn-quiet" onClick={() => act(() => post(`/knowledge/${src.id}/restore`, {}), isSection ? 'Section restored' : 'Source restored')}>
+                  Restore
+                </button>
+              )
             )}
           </div>
         )}
       </div>
 
+      {src.splitInto && (
+        <div style={{ marginBottom: 20 }}>
+          <Notice kind="info" title="This document is now edited as sections">
+            <p>
+              It was split into sections of <Link to={`/knowledge/collections/${src.splitInto.id}`}>{src.splitInto.name}</Link>. Edit and approve the sections there. This copy is kept
+              so past answers can show exactly what they were scored against.
+            </p>
+          </Notice>
+        </div>
+      )}
       {v.caveats && (
         <div style={{ marginBottom: 20 }}>
           <Notice kind="warn" title="Caveats">
@@ -154,26 +329,66 @@ export function SourcePage() {
         </div>
       )}
 
-      <div className="split" style={{ gridTemplateColumns: 'minmax(0, 1fr) 260px' }}>
-        <article className="panel prose">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={components} skipHtml>
-            {v.content}
-          </ReactMarkdown>
-        </article>
-        <aside className="stack" style={{ position: 'sticky', top: 20 }}>
-          {v.sections.length > 1 && (
+      <div className="doc-grid">
+        <div className="stack">
+          <article className="panel prose">
+            <Markdown>{v.content}</Markdown>
+          </article>
+          {isSection && (src.neighbors?.prev || src.neighbors?.next) && (
+            <nav className="pager" aria-label={`More of ${src.collection.name}`}>
+              {src.neighbors.prev ? (
+                <Link className="pager-link" to={`/knowledge/${src.neighbors.prev.id}`}>
+                  <span className="tiny muted">Previous section</span>
+                  <span>{src.neighbors.prev.title}</span>
+                </Link>
+              ) : (
+                <span />
+              )}
+              {src.neighbors.next && (
+                <Link className="pager-link pager-next" to={`/knowledge/${src.neighbors.next.id}`}>
+                  <span className="tiny muted">Next section</span>
+                  <span>{src.neighbors.next.title}</span>
+                </Link>
+              )}
+            </nav>
+          )}
+        </div>
+        <aside className="stack doc-aside">
+          {parts.length > 1 && (
             <nav className="panel panel-tight" aria-label="Sections">
               <h2 className="section-title">Sections</h2>
               <ul className="toc">
-                {v.sections
-                  .filter((s) => s.key !== 'intro')
-                  .map((s) => (
-                    <li key={s.key}>
-                      <a href={`#sec-${slug(s.title)}`}>{s.title}</a>
-                    </li>
-                  ))}
+                {parts.map((s) => (
+                  <li key={s.key}>
+                    <a href={`#sec-${slugText(s.title)}`}>{s.title}</a>
+                  </li>
+                ))}
               </ul>
             </nav>
+          )}
+          {user.isManager && src.usedBy && (
+            <div className="panel panel-tight small stack-sm">
+              <h2 className="section-title">Drills that use this {noun}</h2>
+              {src.usedBy.length === 0 ? (
+                <p className="muted" style={{ margin: 0 }}>
+                  None yet. Choose it in a drill’s source material to ground coaching in it.
+                </p>
+              ) : (
+                <>
+                  <ul className="toc">
+                    {src.usedBy.map((d) => (
+                      <li key={d.id}>
+                        <Link to={`/practice/drill/${d.id}`}>{d.title}</Link>
+                        {d.status === 'draft' && <span className="muted"> (draft)</span>}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="tiny muted" style={{ margin: 0 }}>
+                    Approving a new version changes their coaching from then on.
+                  </p>
+                </>
+              )}
+            </div>
           )}
           <div className="panel panel-tight small stack-sm">
             <h2 className="section-title">Record</h2>
@@ -221,26 +436,56 @@ export function SourcePage() {
           </>
         }
       >
-        <p>New coaching will check answers against version {v.version}. Answers already scored keep the version they were scored with.</p>
+        <p>
+          New coaching will check answers against version {v.version}
+          {src.usedBy?.length ? ` in the ${src.usedBy.length} drill${src.usedBy.length === 1 ? '' : 's'} that use this ${noun}` : ''}. Answers already scored keep the version they
+          were scored with.
+        </p>
         <DrillImpact sourceId={src.id} versionId={v.id} open={confirm === 'approve'} />
       </Modal>
       <Modal
         open={confirm === 'archive'}
         onClose={() => setConfirm(null)}
-        title="Archive this source?"
+        title={`Archive this ${noun}?`}
         footer={
           <>
             <button className="btn btn-secondary" onClick={() => setConfirm(null)}>
               Cancel
             </button>
-            <button className="btn btn-danger" onClick={() => act(() => post(`/knowledge/${src.id}/archive`, {}), 'Source archived')}>
+            <button className="btn btn-danger" onClick={() => act(() => post(`/knowledge/${src.id}/archive`, {}), isSection ? 'Section archived' : 'Source archived')}>
               Archive
             </button>
           </>
         }
       >
-        <p>Archived sources stop supporting coaching. Drills that rely only on this source become unscored practice until another approved source is attached. Past results are unchanged.</p>
+        <p>
+          Archived {noun}s stop supporting coaching. Drills that rely only on this {noun} become unscored practice until another approved {noun} is attached. Past results are
+          unchanged.
+        </p>
       </Modal>
+      {user.isManager && (
+        <MoveModal
+          open={confirm === 'move'}
+          onClose={() => setConfirm(null)}
+          source={src}
+          onDone={() => {
+            setConfirm(null);
+            reload({ quiet: true });
+          }}
+        />
+      )}
+      {canSplit && (
+        <SplitModal
+          open={confirm === 'split'}
+          onClose={() => setConfirm(null)}
+          source={src}
+          version={v}
+          onDone={(r) => {
+            toast(`Split into ${r.sections} sections`);
+            navigate(`/knowledge/collections/${r.collectionId}`);
+          }}
+        />
+      )}
     </div>
   );
 }

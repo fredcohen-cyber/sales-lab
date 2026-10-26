@@ -3,6 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_DIMENSIONS, DEFAULT_PERSONAS } from '../domain.js';
 import { SEED_DRILLS, SEED_PATHS } from './drills.js';
+import { SEED_COLLECTIONS } from './collections.js';
+import { createCollection, createSection, splitSourceIntoCollection } from '../knowledge/sections.js';
 import { createPasswordLink, linkUrl } from '../users/links.js';
 import { audit } from '../lib/audit.js';
 
@@ -198,6 +200,31 @@ export async function seed(db, config, { log = console.log } = {}) {
           JSON.stringify(items),
           owner.id,
         ]);
+      }
+    },
+    log,
+  );
+
+  // The playbook and the Ravenly guide become collections of sections that are edited one at a time.
+  // Drills move to the matching sections; the two documents stay archived for history.
+  await once(
+    db,
+    'knowledge-sections-v1',
+    async (q) => {
+      for (const c of SEED_COLLECTIONS) {
+        const collection =
+          (await q.one(`SELECT * FROM knowledge_collections WHERE slug = $1`, [c.slug])) ||
+          (await createCollection(q, { slug: c.slug, name: c.name, kind: c.kind, brand: c.brand, description: c.description, position: c.position, actorId: owner.id }));
+        if (c.from) {
+          const doc = await q.one(`SELECT id, status, collection_id, split_into_collection_id FROM knowledge_sources WHERE slug = $1`, [c.from]);
+          if (doc && doc.status !== 'archived' && !doc.collection_id && !doc.split_into_collection_id) {
+            const out = await splitSourceIntoCollection(q, { sourceId: doc.id, collectionId: collection.id, actorId: owner.id, meta: c.meta, intro: 'skip' });
+            log(`[seed] ${c.name}: ${out.sections.length} sections; ${out.drillVersionsUpdated} drill versions now point at them`);
+          }
+        }
+        for (const d of c.drafts || []) {
+          await createSection(q, { collection, title: d.title, content: d.content, brand: c.brand, subjects: d.subjects, group: d.group, changeNote: 'Outline to fill in.', actorId: owner.id });
+        }
       }
     },
     log,

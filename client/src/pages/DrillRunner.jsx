@@ -240,7 +240,10 @@ export function DrillRunner() {
                 {s.sources.map((src) => (
                   <li key={src.sourceId}>
                     {src.available ? (
-                      <Link to={`/knowledge/${src.sourceId}`}>{src.title}</Link>
+                      <>
+                        <Link to={`/knowledge/${src.sourceId}`}>{src.title}</Link>
+                        {src.collectionName && <span className="muted"> in {src.collectionName}</span>}
+                      </>
                     ) : (
                       <span className="muted">
                         {src.title || 'A source awaiting approval'} (not used: {SOURCE_REASON[src.reason] || 'not approved yet'})

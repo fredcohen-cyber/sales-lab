@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { get, post, put } from '../api.js';
 import { useMeta } from '../state.jsx';
 import { ErrorNotice, Field, Loading, Notice, useToast } from '../components/ui.jsx';
+import { groupSections } from '../components/KnowledgeParts.jsx';
 
 const BLANK = {
   title: '',
@@ -43,28 +44,54 @@ function fitNote(source, form, meta) {
   return null;
 }
 
+// One section of a collection: chosen whole, with a note on whether it can support this drill.
+function SectionChoice({ s, checked, onToggle, form, meta }) {
+  const note = checked ? fitNote(s, form, meta) : null;
+  return (
+    <li>
+      <label className="checkbox small">
+        <input type="checkbox" checked={checked} onChange={onToggle} />
+        <span>{s.title}</span>
+        {s.status !== 'approved' && <span className="badge badge-warn">Draft</span>}
+      </label>
+      {note && (
+        <div className={`tiny ${note.kind === 'warn' ? 'error-text' : 'muted'}`} style={{ paddingLeft: 26 }}>
+          {note.text}
+        </div>
+      )}
+    </li>
+  );
+}
+
 function SourcePicker({ value, onChange, form, meta }) {
-  const [sources, setSources] = useState(null);
+  const [library, setLibrary] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [sections, setSections] = useState({});
+  const [filter, setFilter] = useState('');
   const load = () => {
     setLoadError(null);
     get('/knowledge')
-      .then((d) => setSources(d.sources.filter((s) => s.status !== 'archived')))
+      .then((d) => setLibrary({ collections: d.collections, sources: d.sources.filter((s) => s.status !== 'archived'), all: d.sources }))
       .catch(setLoadError);
   };
   useEffect(load, []);
+  const documentIds = new Set((library?.sources || []).filter((s) => !s.collectionId).map((s) => s.id));
   useEffect(() => {
+    // Only long documents need their "## " sections listed; a collection section is always used whole.
     for (const ref of value) {
-      if (sections[ref.sourceId]) continue;
+      if (sections[ref.sourceId] || !documentIds.has(ref.sourceId)) continue;
       get(`/knowledge/${ref.sourceId}`)
         .then((d) => setSections((m) => ({ ...m, [ref.sourceId]: d.version.sections.filter((s) => s.key !== 'intro') })))
         .catch(() => setSections((m) => ({ ...m, [ref.sourceId]: [] })));
     }
-  }, [value, sections]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, sections, library]);
   if (loadError) return <ErrorNotice error={loadError} retry={load} />;
-  if (!sources) return <Loading />;
+  if (!library) return <Loading />;
+  const sources = library.sources;
   const selected = new Map(value.map((r) => [r.sourceId, r]));
+  const toggleWhole = (id) =>
+    onChange(selected.has(id) ? value.filter((r) => r.sourceId !== id) : [...value, { sourceId: id, sections: [], wholeSource: true, unmatched: [] }]);
   const toggleSource = (id) =>
     onChange(selected.has(id) ? value.filter((r) => r.sourceId !== id) : [...value, { sourceId: id, sections: [], wholeSource: false, unmatched: [] }]);
   const toggleSection = (id, key) =>
@@ -74,12 +101,67 @@ function SourcePicker({ value, onChange, form, meta }) {
     const s = sources.find((x) => x.id === ref.sourceId);
     return s && s.status === 'approved' && (s.subjects || []).includes(form.subject) && !fitNote(s, form, meta)?.text.startsWith('Not used for coaching');
   });
+  const t = filter.trim().toLowerCase();
+  const matches = (s) => !t || s.title.toLowerCase().includes(t) || selected.has(s.id);
+  const documents = sources.filter((s) => !s.collectionId && matches(s));
+  const relevant = (c) => c.brand === 'both' || form.brand === 'both' || c.brand === form.brand;
+  // Chosen material that was archived or removed since: listed so it can be taken out.
+  const gone = value.filter((r) => !sources.some((s) => s.id === r.sourceId));
   return (
     <div className="stack-sm">
       {value.length > 0 && !usable && (
-        <Notice kind="warn">None of the chosen sources is approved and covers this drill’s brand and subject, so the drill runs as unscored practice.</Notice>
+        <Notice kind="warn">None of the chosen sections is approved and covers this drill’s brand and subject, so the drill runs as unscored practice.</Notice>
       )}
-      {sources.map((s) => {
+      {gone.length > 0 && (
+        <Notice kind="warn" title="Chosen material that is no longer available">
+          <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>
+            {gone.map((r) => (
+              <li key={r.sourceId}>
+                {library.all.find((s) => s.id === r.sourceId)?.title || 'A removed source'} (archived; not used for coaching){' '}
+                <button type="button" className="btn btn-quiet btn-small" onClick={() => onChange(value.filter((x) => x.sourceId !== r.sourceId))}>
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Notice>
+      )}
+      <div className="row-between">
+        <span className="small">
+          {value.length === 0 ? 'Nothing chosen yet.' : `${value.length} chosen. Coaching reads them in the order you chose them.`}
+        </span>
+        <div className="field" style={{ minWidth: 220 }}>
+          <label htmlFor="src-filter" className="visually-hidden">
+            Filter sections by title
+          </label>
+          <input id="src-filter" type="search" placeholder="Filter by title" value={filter} onChange={(e) => setFilter(e.target.value)} />
+        </div>
+      </div>
+      {library.collections.map((c) => {
+        const mine = sources.filter((s) => s.collectionId === c.id && matches(s));
+        if (mine.length === 0) return null;
+        const chosen = mine.filter((s) => selected.has(s.id)).length;
+        return (
+          <details key={c.id} className="picker-collection" open={Boolean(t) || chosen > 0 || relevant(c)}>
+            <summary>
+              <strong>{c.name}</strong>
+              <span className="tiny muted">{chosen ? `${chosen} of ${mine.length} chosen` : `${mine.length} sections`}</span>
+            </summary>
+            {groupSections(mine).map((g, i) => (
+              <div key={`${g.group}-${i}`} className="picker-group">
+                {g.group && <div className="toc-group-label">{g.group}</div>}
+                <ul className="picker-list">
+                  {g.items.map((s) => (
+                    <SectionChoice key={s.id} s={s} checked={selected.has(s.id)} onToggle={() => toggleWhole(s.id)} form={form} meta={meta} />
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </details>
+        );
+      })}
+      {documents.length > 0 && <h3 className="section-title" style={{ marginTop: 14 }}>Other documents</h3>}
+      {documents.map((s) => {
         const note = selected.has(s.id) ? fitNote(s, form, meta) : null;
         return (
           <div key={s.id} className="panel panel-tight stack-sm">
@@ -188,7 +270,7 @@ export function DrillEditor() {
   const sectionsMissing = form.sourceRefs.some((r) => r.wholeSource === false && r.sections.length === 0);
   const save = async () => {
     if (sectionsMissing) {
-      setError({ message: 'Choose at least one section for each source, or use the whole source.' });
+      setError({ message: 'Choose at least one section for each document, or use the whole document.' });
       return;
     }
     setBusy(true);
@@ -354,7 +436,11 @@ export function DrillEditor() {
 
         <section className="panel stack">
           <h2 className="section-title">Source material for coaching</h2>
-          {form.sourceRefs.length === 0 && <Notice kind="warn">Without an approved source, this drill runs as unscored practice only.</Notice>}
+          <p className="small muted" style={{ margin: 0 }}>
+            Choose the playbook and product sections this moment depends on. Coaching checks facts only against approved sections, so pick the ones that hold the facts a good answer
+            needs.
+          </p>
+          {form.sourceRefs.length === 0 && <Notice kind="warn">Without an approved section, this drill runs as unscored practice only.</Notice>}
           <SourcePicker value={form.sourceRefs} onChange={(v) => set('sourceRefs', v)} form={form} meta={meta} />
         </section>
 

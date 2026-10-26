@@ -1485,3 +1485,297 @@ dialog.modal::backdrop {
 #review-title {
   scroll-margin-top: 80px;
 }
+
+/* ------------------------------------------------------------------ knowledge library: collections as contents pages */
+.shelf {
+  margin-top: 30px;
+}
+.shelf > h2 {
+  font-size: 22px;
+  margin-bottom: 12px;
+}
+.shelf > p {
+  margin: -6px 0 12px;
+}
+.collection {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  padding: 20px 24px 18px;
+}
+.collection + .collection {
+  margin-top: 16px;
+}
+.collection-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.collection-head h3 {
+  font-size: 22px;
+}
+.collection-head h3 a {
+  color: var(--ink);
+  text-decoration: none;
+}
+.collection-head h3 a:hover {
+  color: var(--green);
+  text-decoration: underline;
+}
+.collection-desc {
+  color: var(--ink-2);
+  font-size: 15px;
+  max-width: 76ch;
+  margin-bottom: 6px;
+}
+.collection-desc p {
+  margin: 0;
+}
+.contents-group + .contents-group {
+  margin-top: 6px;
+}
+.contents-group-label,
+.toc-group-label {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--ink-3);
+  margin: 14px 0 2px;
+}
+.contents {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+/* A book's table of contents: title, a dotted leader, then what a reader needs to judge the section. */
+.contents-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+.contents-title {
+  font: 500 17px/1.35 var(--serif);
+  min-width: 0;
+}
+.contents-row:hover .contents-title {
+  color: var(--green);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.contents-leader {
+  flex: 1 1 24px;
+  min-width: 24px;
+  border-bottom: 1px dotted #b9c1b7;
+  transform: translateY(-4px);
+}
+.contents-meta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: none;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+@media (max-width: 640px) {
+  .collection {
+    padding: 16px;
+  }
+  .contents-row {
+    flex-wrap: wrap;
+    gap: 2px 10px;
+  }
+  .contents-leader {
+    display: none;
+  }
+}
+
+/* breadcrumb, and previous / next section */
+.crumbs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  margin-bottom: 10px;
+  color: var(--ink-3);
+}
+.pager {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.pager-link {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 16.5px;
+}
+.pager-link:hover {
+  border-color: #b8c3bb;
+  color: var(--green);
+}
+.pager-link .tiny {
+  font-family: var(--sans);
+}
+.pager-next {
+  text-align: right;
+  grid-column: 2;
+}
+@media (max-width: 640px) {
+  .pager {
+    grid-template-columns: 1fr;
+  }
+  .pager-next {
+    grid-column: auto;
+  }
+}
+
+/* reading a whole collection */
+.collection-intro {
+  margin-bottom: 20px;
+  color: var(--ink-2);
+}
+.reader-section {
+  scroll-margin-top: 20px;
+}
+.reader-title {
+  font-size: 25px;
+}
+.reader-title a {
+  color: var(--ink);
+  text-decoration: none;
+}
+.reader-title a:hover {
+  color: var(--green);
+  text-decoration: underline;
+}
+.reader-section .notice {
+  margin-bottom: 14px;
+}
+.reader-toc {
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+.toc-group-label:first-child {
+  margin-top: 4px;
+}
+@media (max-width: 960px) {
+  .reader-toc {
+    position: static;
+    max-height: none;
+    order: -1;
+  }
+}
+
+/* arranging sections */
+.arrange {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line-2);
+}
+.arrange-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) minmax(160px, 220px) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.arrange-num {
+  color: var(--ink-3);
+  font-size: 14px;
+  text-align: right;
+}
+.arrange-title {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  min-width: 0;
+  font-size: 15px;
+}
+.arrange-moves {
+  display: flex;
+  gap: 4px;
+}
+@media (max-width: 760px) {
+  .arrange-row {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+  .arrange-row > input,
+  .arrange-moves {
+    grid-column: 2;
+  }
+}
+
+/* choosing sections for a drill */
+.picker-collection {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  padding: 10px 14px;
+}
+.picker-collection > summary {
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.picker-collection[open] > summary {
+  margin-bottom: 4px;
+}
+.picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 20px;
+}
+.picker-list li {
+  min-width: 0;
+}
+@media (max-width: 760px) {
+  .picker-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* a document with a side column: contents, record, versions */
+.doc-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 24px;
+  align-items: start;
+}
+.doc-grid-wide {
+  grid-template-columns: minmax(0, 1fr) 280px;
+}
+.doc-aside {
+  position: sticky;
+  top: 20px;
+}
+@media (max-width: 960px) {
+  .doc-grid,
+  .doc-grid-wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .doc-aside {
+    position: static;
+  }
+}

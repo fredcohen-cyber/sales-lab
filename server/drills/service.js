@@ -99,6 +99,7 @@ export function shapeDrill(row, availability, { forManager, index = null }) {
     sources: availability.sources.map((s) => ({
       sourceId: s.sourceId,
       title: forManager ? s.title || s.latestTitle : s.title,
+      collectionName: s.collectionName || null,
       available: s.available,
       reason: s.reason,
       reasonText: s.reason ? FIT_TEXT[s.reason] : null,

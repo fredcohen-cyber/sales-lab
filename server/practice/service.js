@@ -142,6 +142,7 @@ export async function createAttempt(db, config, user, body, { provider }) {
       versionId: s.versionId,
       version: s.version,
       title: s.title,
+      collectionName: s.collectionName || null,
       asOfDate: s.asOfDate,
       caveats: s.caveats,
       evidenceBasis: s.evidenceBasis,

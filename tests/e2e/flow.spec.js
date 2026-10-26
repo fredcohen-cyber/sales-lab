@@ -372,11 +372,15 @@ test('remaining screens render for review', async ({ browser }) => {
   }
   await owner.goto(`${state.drillUrl.replace('/practice/drill/', '/drills/')}/edit`);
   await expect(owner.getByRole('heading', { name: /^Edit/, level: 1 })).toBeVisible();
-  await expect(owner.getByText('Chosen sections').first()).toBeVisible();
+  // The drill's sources are sections of the playbook and the Ravenly collection, chosen whole.
+  await expect(owner.getByText(/\d+ chosen\. Coaching reads them/)).toBeVisible();
+  await expect(owner.locator('.picker-collection input[type="checkbox"]:checked').first()).toBeVisible();
   await shot(owner, '27-drill-editor');
   await owner.goto('/knowledge');
-  await owner.locator('main a[href^="/knowledge/"]').filter({ hasText: 'Ravenly' }).first().click();
-  await expect(owner.getByRole('heading', { level: 1 })).toBeVisible();
+  await owner.getByRole('link', { name: 'Ravenly product knowledge' }).click();
+  await expect(owner.getByRole('heading', { name: 'Ravenly product knowledge', level: 1 })).toBeVisible();
+  await owner.getByRole('link', { name: '14 · Intaker battlecard' }).first().click();
+  await expect(owner.getByRole('heading', { name: '14 · Intaker battlecard', level: 1 })).toBeVisible();
   await owner.screenshot({ path: `${SHOTS}/23-source.png` });
 
   const phone = await newPage(browser, { width: 390, height: 844 });

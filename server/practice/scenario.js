@@ -34,6 +34,7 @@ export function buildScenario({ drill, persona, settings, rubricDimensions, sour
     sources: sources.map((s) => ({
       sourceId: s.sourceId,
       title: s.title,
+      collectionName: s.collectionName || null,
       available: s.available,
       reason: s.reason || null,
       version: s.version,

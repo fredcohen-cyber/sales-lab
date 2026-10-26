@@ -313,9 +313,10 @@ test('unscored practice is offered only when coaching is unavailable, and is lab
   const d = await drillBySlug(h, 'just-looking');
   const refused = await rep.post('/api/practice/attempts', { clientRequestId: randomUUID(), drillId: d.id, persona: d.personas[0], mode: 'unscored', answer: 'Practice answer here.' });
   assert.equal(refused.status, 409);
-  // Archive the playbook: technique drills lose their only approved source.
-  const src = await h.db.one(`SELECT id FROM knowledge_sources WHERE slug = 'sales-playbook'`);
-  await owner.post(`/api/knowledge/${src.id}/archive`, {});
+  // Archive the playbook sections this drill uses: it loses its only approved sources.
+  const { source_refs: refs } = await h.db.one(`SELECT v.source_refs FROM drills d JOIN drill_versions v ON v.id = d.current_version_id WHERE d.id = $1`, [d.id]);
+  assert.ok(refs.length >= 1);
+  for (const ref of refs) assert.equal((await owner.post(`/api/knowledge/${ref.sourceId}/archive`, {})).status, 200);
   const preview = await rep.post('/api/practice/preview', { drillId: d.id });
   assert.equal(preview.data.coaching.available, false);
   assert.equal(preview.data.coaching.reason, 'no_approved_sources');
@@ -327,7 +328,7 @@ test('unscored practice is offered only when coaching is unavailable, and is lab
   assert.equal(unscored.data.attempt.mode, 'unscored');
   assert.equal(unscored.data.coaching.run, null);
   assert.equal(unscored.data.evaluation, null);
-  await owner.post(`/api/knowledge/${src.id}/restore`, {});
+  for (const ref of refs) await owner.post(`/api/knowledge/${ref.sourceId}/restore`, {});
   const back = await rep.post('/api/practice/preview', { drillId: d.id });
   assert.equal(back.data.coaching.available, true);
 });

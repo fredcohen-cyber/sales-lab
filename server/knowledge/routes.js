@@ -5,7 +5,8 @@ import { audit } from '../lib/audit.js';
 import { clientIp, requireManager } from '../auth/middleware.js';
 import { parseSections } from '../lib/text.js';
 import { isValidDateString } from '../lib/time.js';
-import { coverage, loadVersionSections, mapSections, shapeSourceRow, SOURCE_LIST_SQL } from './service.js';
+import { coverage, listCollections, loadVersionSections, mapSections, shapeCollection, shapeSourceRow, SOURCE_LIST_ORDER, SOURCE_LIST_SQL } from './service.js';
+import { COLLECTION_KINDS, createCollection, positionFor, splitSourceIntoCollection } from './sections.js';
 import { BRANDS, EVIDENCE_BASIS, SUBJECTS } from '../domain.js';
 
 const MAX_CONTENT = 1_000_000;
@@ -31,6 +32,26 @@ const versionFields = {
   importedFrom: z.string().max(200).optional(),
 };
 const versionSchema = z.object({ ...versionFields, approve: z.boolean().default(false) });
+const groupField = z.string().trim().max(80, 'Keep the group name under 80 characters.').default('');
+const createSchema = versionSchema.extend({ collectionId: z.string().uuid().nullable().optional(), group: groupField });
+
+const collectionSchema = z.object({
+  name: z.string().trim().min(2, 'Add a name.').max(120),
+  kind: z.enum(Object.keys(COLLECTION_KINDS)),
+  brand: z.enum(Object.keys(BRANDS)),
+  description: z.string().max(4000).default(''),
+});
+const arrangeSchema = z.object({
+  sections: z.array(z.object({ id: z.string().uuid(), group: groupField })).min(1).max(500),
+});
+const placementSchema = z.object({ collectionId: z.string().uuid().nullable(), group: groupField });
+const splitSchema = z
+  .object({ collectionId: z.string().uuid().optional(), newCollection: collectionSchema.optional() })
+  .refine((b) => Boolean(b.collectionId) !== Boolean(b.newCollection), { message: 'Choose a collection for the sections, or name a new one.' });
+
+// The version a reader sees: managers see the approved version, or the draft when nothing is approved yet.
+const shownVersion = (forManager) => (forManager ? 'COALESCE(s.approved_version_id, s.latest_version_id)' : 's.approved_version_id');
+const visible = (forManager) => (forManager ? `s.status <> 'archived'` : `s.status = 'approved'`);
 
 async function personaKeys(q) {
   return new Set((await q.many(`SELECT key FROM personas`)).map((p) => p.key));
@@ -94,9 +115,9 @@ export function knowledgeRoutes({ db }) {
     '/',
     route(async (req, res) => {
       const forManager = req.user.isManager;
-      const rows = await db.many(`${SOURCE_LIST_SQL} ${forManager ? '' : `WHERE s.status = 'approved'`} ORDER BY s.updated_at DESC`);
+      const rows = await db.many(`${SOURCE_LIST_SQL} ${forManager ? '' : `WHERE s.status = 'approved'`} ${SOURCE_LIST_ORDER}`);
       let sources = rows.map((row) => shapeSourceRow(row, { forManager }));
-      const { brand, subject, persona, status, evidence } = req.query;
+      const { brand, subject, persona, status, evidence, collection } = req.query;
       const qtext = String(req.query.q || '').toLowerCase().trim();
       sources = sources.filter(
         (s) =>
@@ -105,9 +126,114 @@ export function knowledgeRoutes({ db }) {
           (!persona || s.personas.length === 0 || s.personas.includes(persona)) &&
           (!status || s.status === status) &&
           (!evidence || s.evidenceBasis === evidence) &&
+          (!collection || s.collectionId === collection) &&
           (!qtext || s.title.toLowerCase().includes(qtext)),
       );
-      res.json({ sources, coverage: await coverage(db) });
+      res.json({ collections: await listCollections(db, { forManager }), sources, coverage: await coverage(db) });
+    }),
+  );
+
+  // ------------------------------------------------------------ collections
+  r.get(
+    '/collections',
+    route(async (req, res) => {
+      res.json({ collections: await listCollections(db, { forManager: req.user.isManager }) });
+    }),
+  );
+
+  // A whole collection, section by section, for reading end to end.
+  r.get(
+    '/collections/:cid',
+    route(async (req, res) => {
+      const forManager = req.user.isManager;
+      const c = await db.one(`SELECT * FROM knowledge_collections WHERE id = $1`, [req.params.cid]).catch(() => null);
+      if (!c) throw notFound('That collection was not found.');
+      const rows = await db.many(
+        `SELECT s.id, s.status, s.position, s.group_label, s.approved_version_id, s.latest_version_id,
+                v.id AS version_id, v.version, v.title, v.brand, v.subjects, v.personas, v.as_of_date, v.caveats, v.evidence_basis, v.content
+           FROM knowledge_sources s JOIN knowledge_versions v ON v.id = ${shownVersion(forManager)}
+          WHERE s.collection_id = $1 AND ${visible(forManager)}
+          ORDER BY s.position`,
+        [c.id],
+      );
+      if (!forManager && rows.length === 0) throw notFound('That collection was not found.');
+      res.json({
+        collection: shapeCollection(c, { forManager }),
+        sections: rows.map((r) => ({
+          id: r.id,
+          status: r.status,
+          group: r.group_label,
+          position: r.position,
+          versionId: r.version_id,
+          version: r.version,
+          title: r.title,
+          brand: r.brand,
+          subjects: r.subjects,
+          personas: r.personas,
+          asOfDate: r.as_of_date,
+          caveats: r.caveats,
+          evidenceBasis: r.evidence_basis,
+          content: r.content,
+          isApproved: r.version_id === r.approved_version_id,
+          hasPendingDraft: forManager ? Boolean(r.approved_version_id && r.latest_version_id !== r.approved_version_id) : undefined,
+        })),
+      });
+    }),
+  );
+
+  r.post(
+    '/collections',
+    requireManager,
+    route(async (req, res) => {
+      const body = parseBody(collectionSchema, req.body);
+      const c = await db.tx(async (q) => {
+        const made = await createCollection(q, { ...body, actorId: req.user.id });
+        await audit(q, { actorId: req.user.id, action: 'knowledge.collection_created', entityType: 'knowledge_collection', entityId: made.id, details: { name: made.name }, ip: clientIp(req) });
+        return made;
+      });
+      res.status(201).json({ id: c.id });
+    }),
+  );
+
+  r.put(
+    '/collections/:cid',
+    requireManager,
+    route(async (req, res) => {
+      const body = parseBody(collectionSchema, req.body);
+      await db.tx(async (q) => {
+        const c = await q.one(`SELECT id FROM knowledge_collections WHERE id = $1 FOR UPDATE`, [req.params.cid]).catch(() => null);
+        if (!c) throw notFound('That collection was not found.');
+        await q.query(
+          `UPDATE knowledge_collections SET name = $2, kind = $3, brand = $4, description = $5, updated_at = now(), updated_by = $6 WHERE id = $1`,
+          [c.id, body.name, body.kind, body.brand, body.description, req.user.id],
+        );
+        await audit(q, { actorId: req.user.id, action: 'knowledge.collection_updated', entityType: 'knowledge_collection', entityId: c.id, details: { name: body.name }, ip: clientIp(req) });
+      });
+      res.json({ ok: true });
+    }),
+  );
+
+  // Order and group a collection's sections. Structure only: no section gets a new version.
+  r.post(
+    '/collections/:cid/arrange',
+    requireManager,
+    route(async (req, res) => {
+      const { sections } = parseBody(arrangeSchema, req.body);
+      await db.tx(async (q) => {
+        const c = await q.one(`SELECT id FROM knowledge_collections WHERE id = $1 FOR UPDATE`, [req.params.cid]).catch(() => null);
+        if (!c) throw notFound('That collection was not found.');
+        const current = await q.many(`SELECT id FROM knowledge_sources WHERE collection_id = $1 AND status <> 'archived'`, [c.id]);
+        const ids = sections.map((s) => s.id);
+        const known = new Set(current.map((x) => x.id));
+        if (new Set(ids).size !== ids.length || ids.length !== known.size || ids.some((id) => !known.has(id))) {
+          throw new HttpError(409, 'stale_order', 'The sections in this collection changed while you were arranging them. Reload and try again.');
+        }
+        for (const [i, s] of sections.entries()) {
+          await q.query(`UPDATE knowledge_sources SET position = $2, group_label = $3 WHERE id = $1`, [s.id, i + 1, s.group]);
+        }
+        await audit(q, { actorId: req.user.id, action: 'knowledge.arranged', entityType: 'knowledge_collection', entityId: c.id, details: { sections: ids.length }, ip: clientIp(req) });
+      });
+      res.json({ ok: true });
     }),
   );
 
@@ -138,6 +264,36 @@ export function knowledgeRoutes({ db }) {
             [source.id],
           )
         : undefined;
+      // Where a section sits, and the sections before and after it, for reading in order.
+      const collection = source.collection_id
+        ? await db.one(`SELECT id, name, kind, brand FROM knowledge_collections WHERE id = $1`, [source.collection_id])
+        : null;
+      let neighbors = null;
+      if (collection) {
+        const siblings = await db.many(
+          `SELECT s.id, v.title FROM knowledge_sources s JOIN knowledge_versions v ON v.id = ${shownVersion(forManager)}
+            WHERE s.collection_id = $1 AND ${visible(forManager)} ORDER BY s.position`,
+          [collection.id],
+        );
+        const i = siblings.findIndex((x) => x.id === source.id);
+        neighbors = {
+          index: i + 1,
+          count: siblings.length,
+          prev: i > 0 ? siblings[i - 1] : null,
+          next: i >= 0 && i < siblings.length - 1 ? siblings[i + 1] : null,
+        };
+      }
+      const splitInto = source.split_into_collection_id
+        ? await db.one(`SELECT id, name FROM knowledge_collections WHERE id = $1`, [source.split_into_collection_id])
+        : null;
+      // Managers see which drills an edit to this source will change once approved.
+      const usedBy = forManager
+        ? await db.many(
+            `SELECT d.id, d.status, v.title FROM drills d JOIN drill_versions v ON v.id = d.current_version_id
+              WHERE d.status <> 'archived' AND v.source_refs @> $1::jsonb ORDER BY v.title`,
+            [JSON.stringify([{ sourceId: source.id }])],
+          )
+        : undefined;
       res.json({
         source: {
           id: source.id,
@@ -145,6 +301,11 @@ export function knowledgeRoutes({ db }) {
           status: source.status,
           approvedVersionId: source.approved_version_id,
           latestVersionId: source.latest_version_id,
+          collection,
+          group: source.group_label,
+          neighbors,
+          splitInto,
+          usedBy,
         },
         version: {
           id: version.id,
@@ -174,12 +335,21 @@ export function knowledgeRoutes({ db }) {
     '/',
     requireManager,
     route(async (req, res) => {
-      const body = parseBody(versionSchema, req.body);
+      const body = parseBody(createSchema, req.body);
       const known = await personaKeys(db);
       if (body.personas.some((p) => !known.has(p))) throw new HttpError(400, 'validation_failed', 'Choose personas from the list.');
       const ip = clientIp(req);
       const id = await db.tx(async (q) => {
-        const src = await q.one(`INSERT INTO knowledge_sources (created_by) VALUES ($1) RETURNING id`, [req.user.id]);
+        let position = 0;
+        if (body.collectionId) {
+          const c = await q.one(`SELECT id FROM knowledge_collections WHERE id = $1 FOR UPDATE`, [body.collectionId]);
+          if (!c) throw new HttpError(400, 'validation_failed', 'That collection no longer exists.');
+          position = await positionFor(q, c.id, body.group);
+        }
+        const src = await q.one(
+          `INSERT INTO knowledge_sources (created_by, collection_id, position, group_label) VALUES ($1, $2, $3, $4) RETURNING id`,
+          [req.user.id, body.collectionId || null, position, body.collectionId ? body.group : ''],
+        );
         const v = await insertVersion(q, src.id, body, req.user.id);
         await q.query(`UPDATE knowledge_sources SET latest_version_id = $2 WHERE id = $1`, [src.id, v.id]);
         await audit(q, {
@@ -252,6 +422,62 @@ export function knowledgeRoutes({ db }) {
         await approveVersion(q, req.params.id, versionId, req.user.id, clientIp(req));
       });
       res.json({ ok: true });
+    }),
+  );
+
+  // Move a section to another collection or group, or out of collections. No new version is needed.
+  r.patch(
+    '/:id/placement',
+    requireManager,
+    route(async (req, res) => {
+      const body = parseBody(placementSchema, req.body);
+      await db.tx(async (q) => {
+        const src = await q.one(`SELECT * FROM knowledge_sources WHERE id = $1 FOR UPDATE`, [req.params.id]).catch(() => null);
+        if (!src) throw notFound('That source was not found.');
+        let position = src.position;
+        if (body.collectionId && (body.collectionId !== src.collection_id || body.group !== src.group_label)) {
+          const c = await q.one(`SELECT id FROM knowledge_collections WHERE id = $1 FOR UPDATE`, [body.collectionId]);
+          if (!c) throw new HttpError(400, 'validation_failed', 'That collection no longer exists.');
+          position = await positionFor(q, c.id, body.group, { excludeId: src.id });
+        }
+        if (!body.collectionId) position = 0;
+        await q.query(`UPDATE knowledge_sources SET collection_id = $2, group_label = $3, position = $4 WHERE id = $1`, [
+          src.id,
+          body.collectionId,
+          body.collectionId ? body.group : '',
+          position,
+        ]);
+        await audit(q, {
+          actorId: req.user.id,
+          action: 'knowledge.moved',
+          entityType: 'knowledge_source',
+          entityId: src.id,
+          details: { from: src.collection_id, to: body.collectionId, group: body.group },
+          ip: clientIp(req),
+        });
+      });
+      res.json({ ok: true });
+    }),
+  );
+
+  // Split a long document at its "## " headings into sections of a collection (see sections.js).
+  r.post(
+    '/:id/split',
+    requireManager,
+    route(async (req, res) => {
+      const body = parseBody(splitSchema, req.body);
+      if (!z.string().uuid().safeParse(req.params.id).success) throw notFound('That source was not found.');
+      const out = await db.tx(async (q) => {
+        let collectionId = body.collectionId;
+        if (body.newCollection) {
+          const made = await createCollection(q, { ...body.newCollection, actorId: req.user.id });
+          await audit(q, { actorId: req.user.id, action: 'knowledge.collection_created', entityType: 'knowledge_collection', entityId: made.id, details: { name: made.name }, ip: clientIp(req) });
+          collectionId = made.id;
+        }
+        const result = await splitSourceIntoCollection(q, { sourceId: req.params.id, collectionId, actorId: req.user.id, ip: clientIp(req) });
+        return { collectionId, sections: result.sections.length, drillVersionsUpdated: result.drillVersionsUpdated };
+      });
+      res.json(out);
     }),
   );
 

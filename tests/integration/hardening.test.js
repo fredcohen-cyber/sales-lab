@@ -2,7 +2,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { addUser, drillBySlug, ownerClient, PASSWORD, startTestApp, submit, waitFor, waitForCoaching } from '../helpers.js';
+import { addUser, drillBySlug, ownerClient, PASSWORD, sectionBy, startTestApp, submit, waitFor, waitForCoaching } from '../helpers.js';
 
 let h;
 let owner;
@@ -114,8 +114,9 @@ async function createDrill(body) {
 }
 
 test('coaching needs a relevant source: technique material cannot score an Omnizant product drill', async () => {
-  const playbook = await h.db.one(`SELECT id FROM knowledge_sources WHERE slug = 'sales-playbook'`);
-  const id = await createDrill({ sourceRefs: [{ sourceId: playbook.id, sections: [] }] });
+  const objections = await sectionBy(h, 'sales-playbook', '6. Objections');
+  const presenting = await sectionBy(h, 'sales-playbook', '4. Presenting');
+  const id = await createDrill({ sourceRefs: [{ sourceId: objections.id, sections: [] }, { sourceId: presenting.id }] });
   const { client: rep } = await addUser(h, owner, { name: 'Omar Omni', email: 'omar@omnizant.com' });
   const preview = await rep.post('/api/practice/preview', { drillId: id });
   assert.equal(preview.status, 200);
@@ -212,20 +213,30 @@ test('learning paths can target new or experienced account managers', async () =
   assert.equal(r.status, 201, JSON.stringify(r.data));
 });
 
+// A long document (not part of a collection) whose drills point at chosen "## " sections.
+const LONG_DOC = '# Field guide\n\n## 01 · Setup\n\nConnect the website widget first.\n\n## 02 · Pricing\n\nPlans start with a trial.\n\n## 03 · Integrations\n\nA Zapier route exists today.';
+async function longDocWithDrill(title, sections) {
+  const doc = await owner.post('/api/knowledge', { title, brand: 'ravenly', subjects: ['product'], content: LONG_DOC, approve: true });
+  assert.equal(doc.status, 201);
+  const drillId = await createDrill({ title: `${title} drill`, brand: 'ravenly', sourceRefs: [{ sourceId: doc.data.id, sections, wholeSource: false }] });
+  return { docId: doc.data.id, drillId };
+}
+
 test('approving a source version warns about drills whose sections would disappear', async () => {
-  const ravenly = await h.db.one(`SELECT id FROM knowledge_sources WHERE slug = 'ravenly-sales-training'`);
-  const v = await owner.post(`/api/knowledge/${ravenly.id}/versions`, {
-    title: 'Ravenly sales training and product reference',
+  const { docId, drillId } = await longDocWithDrill('Impact guide', ['s2', 's3']);
+  const v = await owner.post(`/api/knowledge/${docId}/versions`, {
+    title: 'Impact guide',
     brand: 'ravenly',
-    subjects: ['product', 'competitive', 'sales_technique'],
-    evidenceBasis: 'mixed',
-    content: '# Ravenly\n\n## 01 · How to use this guide\n\nShort replacement text.',
+    subjects: ['product'],
+    content: '# Field guide\n\n## 01 · Setup\n\nShort replacement text.',
   });
   assert.equal(v.status, 201);
-  const impact = await owner.get(`/api/knowledge/${ravenly.id}/drill-impact?versionId=${v.data.versionId}`);
+  const impact = await owner.get(`/api/knowledge/${docId}/drill-impact?versionId=${v.data.versionId}`);
   assert.equal(impact.status, 200);
-  assert.ok(impact.data.drills.length > 0);
-  assert.ok(impact.data.drills.every((d) => d.missing.length > 0 || d.retitled.length > 0));
+  const hit = impact.data.drills.find((d) => d.drillId === drillId);
+  assert.ok(hit, 'the drill that uses the dropped sections is listed');
+  assert.deepEqual(hit.missing.map((m) => m.why), ['removed', 'removed']);
+  assert.equal(hit.allMissing, true);
 });
 
 test('sources record their evidence basis and can be filtered by it', async () => {
@@ -361,37 +372,29 @@ test('a completed exercise shows a target verdict only once its evaluation count
 });
 
 test('a drill about both brands is not scored against one brand’s product material', async () => {
-  const ravenly = await h.db.one(`SELECT id FROM knowledge_sources WHERE slug = 'ravenly-sales-training'`);
-  const id = await createDrill({ title: 'Both-brand pricing', brand: 'both', sourceRefs: [{ sourceId: ravenly.id, sections: [] }] });
+  const pricing = await sectionBy(h, 'ravenly-product', '12 · Packaging, pricing');
+  const id = await createDrill({ title: 'Both-brand pricing', brand: 'both', sourceRefs: [{ sourceId: pricing.id, sections: [] }] });
   const preview = await owner.post('/api/practice/preview', { drillId: id });
   assert.equal(preview.data.coaching.available, false);
   assert.equal(preview.data.coaching.reason, 'no_relevant_sources');
 });
 
 test('approving a renumbered source keeps drills on the same material', async () => {
-  const ravenly = await h.db.one(`SELECT id FROM knowledge_sources WHERE slug = 'ravenly-sales-training'`);
-  const v1 = (await owner.get(`/api/knowledge/${ravenly.id}?version=1`)).data.version;
-  const d = await drillBySlug(h, 'ravenly-clio-sync');
-  const before = (await owner.post('/api/practice/preview', { drillId: d.id })).data.scenario.sources.find((x) => x.sourceId === ravenly.id);
-  assert.ok(before.sections.length > 0);
+  const { docId, drillId } = await longDocWithDrill('Renumbered guide', ['s2', 's3']);
+  const before = (await owner.post('/api/practice/preview', { drillId })).data.scenario.sources.find((x) => x.sourceId === docId);
+  assert.equal(before.sections.length, 2);
   // Insert a new section 02 and push every later section down by one.
-  const renumbered = v1.content
-    .replace(/^## (\d{2}) · /gm, (m, n) => (Number(n) >= 2 ? `## ${String(Number(n) + 1).padStart(2, '0')} · ` : m))
-    .replace(/^## 03 · /m, '## 02 · What changed this quarter\n\nNew material for this test.\n\n## 03 · ');
-  const v = await owner.post(`/api/knowledge/${ravenly.id}/versions`, {
-    title: v1.title,
-    brand: 'ravenly',
-    subjects: v1.subjects,
-    evidenceBasis: 'mixed',
-    caveats: v1.caveats,
-    content: renumbered,
-  });
+  const renumbered = LONG_DOC.replace(/^## (\d{2}) · /gm, (m, n) => (Number(n) >= 2 ? `## ${String(Number(n) + 1).padStart(2, '0')} · ` : m)).replace(
+    /^## 03 · /m,
+    '## 02 · What changed this quarter\n\nNew material for this test.\n\n## 03 · ',
+  );
+  const v = await owner.post(`/api/knowledge/${docId}/versions`, { title: 'Renumbered guide', brand: 'ravenly', subjects: ['product'], content: renumbered });
   assert.equal(v.status, 201);
-  const impact = await owner.get(`/api/knowledge/${ravenly.id}/drill-impact?versionId=${v.data.versionId}`);
-  assert.ok(!impact.data.drills.some((x) => x.drillId === d.id), 'renumbering alone does not affect the drill');
-  assert.equal((await owner.post(`/api/knowledge/${ravenly.id}/approve`, { versionId: v.data.versionId })).status, 200);
-  const after = (await owner.post('/api/practice/preview', { drillId: d.id })).data;
-  const src = after.scenario.sources.find((x) => x.sourceId === ravenly.id);
+  const impact = await owner.get(`/api/knowledge/${docId}/drill-impact?versionId=${v.data.versionId}`);
+  assert.ok(!impact.data.drills.some((x) => x.drillId === drillId), 'renumbering alone does not affect the drill');
+  assert.equal((await owner.post(`/api/knowledge/${docId}/approve`, { versionId: v.data.versionId })).status, 200);
+  const after = (await owner.post('/api/practice/preview', { drillId })).data;
+  const src = after.scenario.sources.find((x) => x.sourceId === docId);
   const strip = (t) => t.replace(/^\d+ · /, '');
   assert.deepEqual(src.sections.map((x) => strip(x.title)), before.sections.map((x) => strip(x.title)), 'same sections, new numbers');
   assert.notDeepEqual(src.sections.map((x) => x.key), before.sections.map((x) => x.key));

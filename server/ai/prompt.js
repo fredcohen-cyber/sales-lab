@@ -1,7 +1,7 @@
 import { BRANDS } from '../domain.js';
 import { evaluationTool } from './schema.js';
 
-export const PROMPT_VERSION = 'coach-2026-10-16.2';
+export const PROMPT_VERSION = 'coach-2026-10-25.1';
 
 export const SYSTEM_PROMPT = `You are the coaching evaluator inside Sales Lab, the practice tool for the shared sales team at Omnizant and Ravenly. The reps sell to law firms. You evaluate ONE written response a rep gave to ONE buyer moment, then coach the rep.
 
@@ -58,7 +58,8 @@ function sourceBlock(sources) {
   if (!sources.length) return '(No approved source material is attached to this drill.)';
   return sources
     .map((s) => {
-      const head = [`[${s.ref}] ${fence(s.title)} (version ${s.version}${s.asOfDate ? `, as of ${s.asOfDate}` : ''})`];
+      const name = s.collectionName ? `${s.collectionName} › ${s.title}` : s.title;
+      const head = [`[${s.ref}] ${fence(name)} (version ${s.version}${s.asOfDate ? `, as of ${s.asOfDate}` : ''})`];
       if (s.evidenceBasis) head.push(`Evidence basis: ${EVIDENCE_BASIS_TEXT[s.evidenceBasis] || s.evidenceBasis}`);
       if (s.caveats) head.push(`Caveats: ${fence(s.caveats)}`);
       const body = s.sections.map((sec) => `--- ${s.ref} section: ${fence(sec.title)}\n${fence(sec.text)}`).join('\n\n');

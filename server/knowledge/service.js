@@ -4,6 +4,8 @@ import { BRANDS, SUBJECTS } from '../domain.js';
 export const SOURCE_LIST_SQL = `
   SELECT s.id, s.slug, s.status, s.created_at, s.updated_at, s.archived_at,
          s.approved_version_id, s.latest_version_id,
+         s.collection_id, s.position, s.group_label, s.split_into_collection_id,
+         c.name AS collection_name, c.kind AS collection_kind, c.position AS collection_position,
          lv.version AS latest_version, lv.title AS latest_title, lv.brand AS latest_brand, lv.subjects AS latest_subjects,
          lv.personas AS latest_personas, lv.as_of_date AS latest_as_of, lv.created_at AS latest_created_at,
          lv.evidence_basis AS latest_evidence_basis, av.evidence_basis AS approved_evidence_basis,
@@ -12,7 +14,11 @@ export const SOURCE_LIST_SQL = `
          av.approved_at, length(COALESCE(av.content, lv.content)) AS content_length
     FROM knowledge_sources s
     JOIN knowledge_versions lv ON lv.id = s.latest_version_id
-    LEFT JOIN knowledge_versions av ON av.id = s.approved_version_id`;
+    LEFT JOIN knowledge_versions av ON av.id = s.approved_version_id
+    LEFT JOIN knowledge_collections c ON c.id = s.collection_id`;
+
+// Library order: collections in their order, sections in theirs; other documents last, newest first.
+export const SOURCE_LIST_ORDER = `ORDER BY c.position NULLS LAST, s.position, s.updated_at DESC`;
 
 export function shapeSourceRow(r, { forManager }) {
   const approved = r.approved_version_id
@@ -54,8 +60,50 @@ export function shapeSourceRow(r, { forManager }) {
     approved: forManager ? approved : approved && { id: approved.id, version: approved.version, approvedAt: approved.approvedAt },
     latest: forManager ? latest : undefined,
     hasPendingDraft: forManager ? Boolean(approved && latest.id !== approved.id) : undefined,
+    collectionId: r.collection_id || null,
+    collectionName: r.collection_name || null,
+    group: r.group_label || '',
+    position: r.position,
+    splitIntoCollectionId: r.split_into_collection_id || null,
     updatedAt: r.updated_at,
     contentLength: r.content_length,
+  };
+}
+
+// Collections with their section counts. Learners see a collection only once it has an approved section.
+export async function listCollections(q, { forManager }) {
+  const rows = await q.many(
+    `SELECT c.*,
+            count(s.id) FILTER (WHERE s.status <> 'archived') AS sections,
+            count(s.id) FILTER (WHERE s.status = 'approved') AS approved,
+            count(s.id) FILTER (WHERE s.status = 'draft') AS drafts,
+            count(s.id) FILTER (WHERE s.status = 'approved' AND s.latest_version_id <> s.approved_version_id) AS pending_edits
+       FROM knowledge_collections c
+       LEFT JOIN knowledge_sources s ON s.collection_id = c.id
+      GROUP BY c.id
+      ORDER BY c.position, c.name`,
+  );
+  return rows
+    .filter((c) => forManager || c.approved > 0)
+    .map((c) => shapeCollection(c, { forManager }));
+}
+
+export function shapeCollection(c, { forManager }) {
+  return {
+    id: c.id,
+    slug: c.slug,
+    name: c.name,
+    kind: c.kind,
+    brand: c.brand,
+    description: c.description,
+    position: c.position,
+    counts:
+      c.sections === undefined
+        ? undefined
+        : forManager
+          ? { sections: c.sections, approved: c.approved, drafts: c.drafts, pendingEdits: c.pending_edits }
+          : { sections: c.approved },
+    updatedAt: c.updated_at,
   };
 }
 
@@ -163,10 +211,12 @@ export function mapSections(wanted, authored, current) {
 
 const SOURCE_ROWS_SQL = `
   SELECT s.id, s.slug, s.status, s.approved_version_id, s.latest_version_id, av.version, av.title, av.as_of_date, av.caveats,
-         av.brand, av.subjects, av.personas, av.evidence_basis, lv.title AS latest_title
+         av.brand, av.subjects, av.personas, av.evidence_basis, lv.title AS latest_title,
+         s.collection_id, c.name AS collection_name
     FROM knowledge_sources s
     JOIN knowledge_versions lv ON lv.id = s.latest_version_id
-    LEFT JOIN knowledge_versions av ON av.id = s.approved_version_id`;
+    LEFT JOIN knowledge_versions av ON av.id = s.approved_version_id
+    LEFT JOIN knowledge_collections c ON c.id = s.collection_id`;
 
 // Everything needed to judge many drills' sources at once: source rows plus parsed sections of the
 // approved versions and of the versions the drills were authored against.
@@ -184,7 +234,7 @@ export function resolveRef(ref, index, drill = null, persona = null) {
   const r = index.byId.get(ref.sourceId);
   const wanted = (ref.sections || []).filter(Boolean);
   if (!r) {
-    return { sourceId: ref.sourceId, available: false, usable: false, primary: false, reason: 'missing', title: null, latestTitle: 'Deleted source', sections: [], requestedSections: wanted, missingSections: [] };
+    return { sourceId: ref.sourceId, available: false, usable: false, primary: false, reason: 'missing', title: null, latestTitle: 'Deleted source', collectionName: null, sections: [], requestedSections: wanted, missingSections: [] };
   }
   const approved = r.status === 'approved' && Boolean(r.approved_version_id);
   let matched = [];
@@ -209,6 +259,9 @@ export function resolveRef(ref, index, drill = null, persona = null) {
     slug: r.slug,
     title: approved ? r.title : null,
     latestTitle: r.latest_title,
+    // The collection a section belongs to, so people and coaching see "Sales Playbook › Objections".
+    collectionId: r.collection_id || null,
+    collectionName: r.collection_name || null,
     available,
     usable: available,
     primary: available && (fit ? fit.primary : true),
@@ -253,7 +306,9 @@ export async function loadSourceText(q, sourceVersions) {
       if (budget <= 0) break;
       const text = sec.text.length > budget ? sec.text.slice(0, budget) + '\n[…section truncated for length]' : sec.text;
       budget -= text.length;
-      parts.push({ key: sec.key, title: sec.title, text });
+      // A collection section has no "## " headings of its own: its one part is named after the section.
+      const title = sec.key === 'intro' && all.length === 1 ? s.title : sec.title;
+      parts.push({ key: sec.key, title, text });
     }
     out.push({
       ref: `S${i + 1}`,
@@ -261,6 +316,7 @@ export async function loadSourceText(q, sourceVersions) {
       versionId: s.versionId,
       version: s.version,
       title: s.title,
+      collectionName: s.collectionName || null,
       asOfDate: s.asOfDate,
       caveats: s.caveats,
       evidenceBasis: s.evidenceBasis || null,

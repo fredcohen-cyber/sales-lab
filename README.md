@@ -63,14 +63,41 @@ Until logo files are added they appear as text. To use the real logos, add `omni
 `ravenly.svg` (or `.png`) to `client/public/brand/` and push. A wide, transparent logo works best; it is
 shown 12 pixels tall.
 
+## Knowledge Library: the playbook and product knowledge
+
+Knowledge is kept in **collections** made of **sections**:
+
+- The **Sales Playbook** (both brands) holds sales technique: mindset, openers, discovery, presenting,
+  closing, objections, follow-up, language, and practice.
+- **Product knowledge** has one collection per brand. Ravenly's is grouped into Start here, Positioning
+  and fit, Product capabilities, Pricing and packaging, Competitive (including the Intaker and Juvo Leads
+  battlecards), Selling Ravenly, and Claims and sources. Omnizant's starts as draft outlines for Web
+  development, SEO, and GEO.
+- A **section** is the unit you edit. It has its own text, brand, subjects, buyer personas, evidence
+  basis, as-of date, caveats, version history, and approval. Editing a section saves a new version; the
+  approved version keeps supporting coaching until the new one is approved. Approving one section never
+  changes another.
+- Sections are ordered and grouped from **Edit or reorder** on the collection. Order and groups are
+  structure, not content, so they change without a new version or approval. A section can be moved to
+  another collection from its page.
+- **Drills point at the sections they need.** Coaching is grounded only in those sections' approved
+  versions, and each section's page lists the drills that use it.
+- Reps can **read a whole collection** end to end; managers also see drafts. A long document added with
+  **Import a document** can be **split into sections** from its page: each "## " heading becomes a
+  section, drills that used the document move to the matching sections, and the document is archived.
+
+On the first deploy of this version, the supplied Sales Playbook and Ravenly guide are split this way with
+their text unchanged, every drill is moved to the same material in its new sections, and the two original
+documents stay archived so past answers still show exactly what they were scored against.
+
 ## How coaching stays honest
 
-- Approved knowledge sources are the only product facts coaching may rely on. Each drill names the
-  sources and sections it is graded against, and each answer keeps the exact versions it was scored with.
-- Coaching runs only when the drill has an approved source that matches its brand, subject, and buyer
+- Approved sections are the only product facts coaching may rely on. Each drill names the sections it
+  is graded against, and each answer keeps the exact versions it was scored with.
+- Coaching runs only when the drill has an approved section that matches its brand, subject, and buyer
   persona. Sales-technique material can support a product drill but never stands in for missing product
   facts, so drills on topics without approved material run as clearly labeled unscored practice.
-- Each source records its evidence basis: documented facts, vendors' public claims, untested
+- Each section records its evidence basis: documented facts, vendors' public claims, untested
   observations, or a mix labeled passage by passage. Coaching flags a claim the rep states as fact when
   the material only reports it as a claim or observation.
 - The model's output is checked on the server. Quoted evidence must appear word for word in the rep's
@@ -79,9 +106,9 @@ shown 12 pixels tall.
   confirms or rejects each one, can turn a flag into a critical failure, or add one the coaching missed.
   A confirmed critical failure sets the score to zero. Scores are computed on the server from the rubric in
   force when the answer was submitted.
-- Drills point at sections of a source. When a new version renumbers sections, drills follow them by title;
-  sections that were removed or retitled are reported before approval and are not used until a manager
-  updates the drill.
+- Drills that point at "## " sections inside a long document follow them by title when a new version
+  renumbers them; sections that were removed or retitled are reported before approval and are not used
+  until a manager updates the drill.
 - Answers are saved before any AI request. If coaching fails, times out, or is interrupted, the answer is
   kept, no score is recorded, and the rep can retry without retyping.
 - Disputed evaluations and unresolved flagged ones are left out of averages. Strengths and weaknesses need
@@ -114,10 +141,11 @@ Automated tests use a test-only stand-in for the AI service that cannot be enabl
 
 ## Status
 
-Implemented and covered by automated tests (100 server tests and 15 browser tests): company email and
+Implemented and covered by automated tests (117 server tests and 19 browser tests): company email and
 password sign-in with manager-created accounts only, private single-use setup and reset links, sign-in
 throttling, deactivation and session revocation, server-side roles and learner privacy, the knowledge
-library with versions, approval, and evidence basis, drills with relevance checks, the Practice Studio
+library as collections of sections with versions, approval, evidence basis, ordering, and document
+splitting, drills with relevance checks, the Practice Studio
 with coaching, retries, and a coaching queue, Team Coaching with per-item review of critical failures and
 flags, Curriculum assignments and learning paths, the Manager Dashboard and rep reports with CSV export,
 and recovery from failed, stuck, or queued coaching. The code was also reviewed independently for security
@@ -127,8 +155,9 @@ Needs verification or material:
 
 - Real coaching has only been exercised with the test stand-in. After adding the API key, run a few drills
   and review the first evaluations in Team Coaching to calibrate the rubric and targets.
-- No Omnizant product or competitive material has been supplied, so there are no Omnizant product drills
-  and the Knowledge Library shows that gap. Sales-technique drills apply to both brands.
+- No Omnizant product or competitive material has been supplied. Omnizant product knowledge holds draft
+  outlines for Web development, SEO, and GEO, so there are no Omnizant product drills yet and the
+  Knowledge Library shows that gap. Sales-technique drills apply to both brands.
 - Company logo files have not been added (see above).
 - Out of scope for this version: voice, full-call or multi-turn simulation, CRM integrations, automated
   emails or reminders, and imports beyond pasted text, `.txt`, and `.md`.

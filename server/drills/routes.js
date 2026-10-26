@@ -31,7 +31,7 @@ const drillSchema = z.object({
         wholeSource: z.boolean().optional(),
       }),
     )
-    .max(10)
+    .max(30, 'Choose at most 30 sections.')
     .default([]),
   changeNote: z.string().max(500).default(''),
   status: z.enum(['draft', 'active', 'archived']).optional(),
@@ -44,15 +44,18 @@ async function validateRefs(q, body) {
     if (!body.personas.includes(key)) delete body.personaLines[key];
     else if (!body.personaLines[key].trim()) delete body.personaLines[key];
   }
-  for (const ref of body.sourceRefs) {
-    if (ref.wholeSource === false && ref.sections.length === 0) {
-      throw new HttpError(400, 'validation_failed', 'Choose at least one section for each source, or use the whole source.');
-    }
-  }
   if (body.sourceRefs.length) {
     const ids = body.sourceRefs.map((s) => s.sourceId);
-    const found = await q.many(`SELECT id, latest_version_id FROM knowledge_sources WHERE id = ANY($1::uuid[])`, [ids]);
+    const found = await q.many(`SELECT id, latest_version_id, collection_id FROM knowledge_sources WHERE id = ANY($1::uuid[])`, [ids]);
     if (found.length !== new Set(ids).size) throw new HttpError(400, 'validation_failed', 'One of the selected sources no longer exists.');
+    // A section of a collection is always used whole. A long document is used whole only when the
+    // editor says so explicitly, so a drill is never widened by accident.
+    const inCollection = new Set(found.filter((f) => f.collection_id).map((f) => f.id));
+    for (const ref of body.sourceRefs) {
+      if (!inCollection.has(ref.sourceId) && ref.wholeSource === false && ref.sections.length === 0) {
+        throw new HttpError(400, 'validation_failed', 'Choose at least one section for each source, or use the whole source.');
+      }
+    }
     // The editor lists the sections of each source's latest version, so the chosen keys come from it.
     const latest = new Map(found.map((f) => [f.id, f.latest_version_id]));
     body.sourceRefs = body.sourceRefs.map((ref) => ({ sourceId: ref.sourceId, sections: ref.sections, versionId: latest.get(ref.sourceId) }));

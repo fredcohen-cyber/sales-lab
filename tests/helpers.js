@@ -126,6 +126,19 @@ export async function drillBySlug(h, slug) {
   return h.db.one(`SELECT d.id, d.current_version_id AS version_id, v.personas FROM drills d JOIN drill_versions v ON v.id = d.current_version_id WHERE d.slug = $1`, [slug]);
 }
 
+// A section of a knowledge collection, found by the start of its title (e.g. "6. Objections").
+export async function sectionBy(h, collectionSlug, titleStart) {
+  const row = await h.db.one(
+    `SELECT s.id, s.approved_version_id, s.latest_version_id FROM knowledge_sources s
+       JOIN knowledge_collections c ON c.id = s.collection_id
+       JOIN knowledge_versions v ON v.id = s.latest_version_id
+      WHERE c.slug = $1 AND v.title LIKE $2`,
+    [collectionSlug, `${titleStart}%`],
+  );
+  if (!row) throw new Error(`No section “${titleStart}” in ${collectionSlug}`);
+  return row;
+}
+
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export async function waitFor(fn, { timeout = 8000, interval = 50 } = {}) {
