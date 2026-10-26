@@ -50,6 +50,11 @@ test('reps see the stages for their role; managers see every stage', async () =>
   assert.ok(forAm.filter((s) => s.track === 'am').length === 3);
   const forOwner = (await owner.get('/api/practice/stages')).data.stages;
   assert.equal(forOwner.length, STAGES.length);
+  // The question bank: at least 12 per stage, every one of which coaching can score.
+  for (const s of forOwner) {
+    assert.ok(s.questions >= 12, `${s.label} has ${s.questions} questions`);
+    assert.equal(s.coachable, s.questions, `${s.label}: every question can be coached`);
+  }
 });
 
 test('a stage serves one question for the rep’s role, at the levels the question sets, until it is answered', async () => {

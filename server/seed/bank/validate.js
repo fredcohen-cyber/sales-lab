@@ -38,10 +38,6 @@ const isBullets = (s) => {
 const quoted = (s) => /^“[\s\S]+”[.!?]?$/.test(String(s || '').trim());
 const len = (s) => String(s || '').trim().length;
 
-export function pushbackCountFor(difficulty) {
-  return difficulty <= 2 ? 1 : difficulty === 3 ? 2 : 3;
-}
-
 function checkQuestion(q, stage, problems) {
   const at = `${stage}/${q.slug || '(no slug)'}`;
   const bad = (msg) => problems.push(`${at}: ${msg}`);
@@ -125,6 +121,14 @@ export function validateBank(files = BANK_FILES, { stages = Object.keys(files), 
       const g = add.roleGuidance || {};
       if (d.roles.length === 2 && (!isBullets(g.ae) || !isBullets(g.am))) problems.push(`${stage}: EXISTING.${slug} is for both roles, so it needs roleGuidance for ae and am`);
       for (const k of Object.keys(g)) if (!d.roles.includes(k)) problems.push(`${stage}: EXISTING.${slug}.roleGuidance.${k} is for a role the drill is not for`);
+      // Sections the new pushbacks rely on, added to the drill's own.
+      for (const ref of add.sources || []) {
+        for (const prefix of ref.sections || []) {
+          const hit = resolveSectionRef(ref.collection, prefix);
+          if (hit.error) problems.push(`${stage}: EXISTING.${slug}.sources: ${hit.error}`);
+          else if (hit.brand !== 'both' && hit.brand !== d.brand) problems.push(`${stage}: EXISTING.${slug}.sources: “${hit.section.title}” is about ${hit.brand}, not ${d.brand}`);
+        }
+      }
     }
     if (complete) {
       for (const d of existing) if (!f.EXISTING?.[d.slug]) problems.push(`${stage}: EXISTING is missing “${d.slug}”`);

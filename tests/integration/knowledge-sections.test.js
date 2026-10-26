@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import { addUser, drillBySlug, ownerClient, sectionBy, startTestApp, submit, waitForCoaching } from '../helpers.js';
 import { parseSections } from '../../server/lib/text.js';
 import { SEED_DRILLS } from '../../server/seed/drills.js';
+import { BANK_QUESTIONS, EXISTING_UPDATES } from '../../server/seed/bank/index.js';
 import { createSeedCollections, seed } from '../../server/seed/index.js';
 import { loadSourceText } from '../../server/knowledge/service.js';
 import { buildCoachingRequest } from '../../server/ai/prompt.js';
@@ -92,6 +93,7 @@ test('every section keeps the exact text, title, and metadata it had in the docu
 });
 
 test('every seeded drill now points at the sections it pointed at before, in the same order', async () => {
+  const COLLECTION_FILE = { 'sales-playbook': 'sales-playbook', 'ravenly-product': 'ravenly-sales-training' };
   for (const d of SEED_DRILLS) {
     const expected = [];
     for (const s of d.sources) {
@@ -101,15 +103,22 @@ test('every seeded drill now points at the sections it pointed at before, in the
         if (title && !expected.includes(title)) expected.push(title);
       }
     }
+    // Sections added with the drill's pushbacks come after its own.
+    for (const ref of EXISTING_UPDATES[d.slug]?.sources || []) {
+      for (const prefix of ref.sections) {
+        const title = seedSections(COLLECTION_FILE[ref.collection]).find((x) => x.key !== 'intro' && x.title.startsWith(prefix))?.title;
+        if (title && !expected.includes(title)) expected.push(title);
+      }
+    }
     const { source_refs: refs } = await h.db.one(`SELECT v.source_refs FROM drills d JOIN drill_versions v ON v.id = d.current_version_id WHERE d.slug = $1`, [d.slug]);
     assert.ok(refs.every((r) => r.sections.length === 0 && r.versionId), `${d.slug}: whole-section references with versions`);
     assert.deepEqual(await titlesOf(refs.map((r) => r.sourceId)), expected, d.slug);
   }
 });
 
-test('coaching stays available for every seeded drill, and grounds itself in the sections', async () => {
+test('coaching stays available for every seeded drill and question, and grounds itself in the sections', async () => {
   const drills = (await owner.get('/api/drills')).data.drills;
-  assert.equal(drills.length, SEED_DRILLS.length);
+  assert.equal(drills.length, SEED_DRILLS.length + BANK_QUESTIONS.length);
   for (const d of drills) assert.equal(d.coaching.available, true, `${d.title}: ${d.coaching.reason}`);
 
   const d = await drillBySlug(h, 'ravenly-clio-sync');
@@ -185,7 +194,9 @@ test('a section page shows where it sits and, for managers, which drills use it'
   assert.equal(forRep.usedBy, undefined);
   const forOwner = (await owner.get(`/api/knowledge/${objections.id}`)).data.source;
   assert.ok(forOwner.usedBy.some((d) => d.title.length > 0));
-  assert.equal(forOwner.usedBy.length, SEED_DRILLS.filter((d) => d.sources.some((s) => s.source === 'sales-playbook' && s.sections.includes('s6'))).length);
+  const cites = (sources) => (sources || []).some((s) => s.collection === 'sales-playbook' && s.sections.some((x) => '6. Objections'.startsWith(x)));
+  const seeded = SEED_DRILLS.filter((d) => d.sources.some((s) => s.source === 'sales-playbook' && s.sections.includes('s6')) || cites(EXISTING_UPDATES[d.slug]?.sources));
+  assert.equal(forOwner.usedBy.length, seeded.length + BANK_QUESTIONS.filter((q) => cites(q.sources)).length);
   const doc = await h.db.one(`SELECT id FROM knowledge_sources WHERE slug = 'sales-playbook'`);
   const archived = (await owner.get(`/api/knowledge/${doc.id}`)).data.source;
   assert.equal(archived.splitInto.name, 'Sales Playbook');

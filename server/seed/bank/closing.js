@@ -1,5 +1,370 @@
-// Questions for the "closing" stage of the Practice Studio feed (see README and validate.js for the format).
-export const QUESTIONS = [];
+// Closing: questions for the Practice Studio feed.
+export const QUESTIONS = [
+  {
+    slug: 'close-trial-day-ten-decision',
+    title: 'Day 10: “Can we just keep going and see?”',
+    brand: 'ravenly',
+    subject: 'product',
+    stage: 'closing',
+    roles: ['ae'],
+    personas: ['managing_partner'],
+    personaLines: {},
+    situation:
+      'You are on day 10 of a Ravenly free trial with a four-attorney personal injury firm. In the first two days you agreed on a baseline, one priority workflow, and the measures, and the intake team has worked the agreed scenarios since; now you meet the managing partner for the decision.',
+    buyerLine: '“The trial’s been fine, and my team likes it. Can we just keep going for a while and see how it does?”',
+    objective: 'Turn a vague yes into a decision: recap the evidence against the agreed measures, ask directly, and set the next step.',
+    goodLooksLike: [
+      '- Recaps what the trial showed against the measures agreed at the start, in the partner’s words, without inventing results.',
+      '- Treats day 10 as the decision point of the trial plan: a scope-based decision with documented fit, open dependencies, the current quote, and owners.',
+      '- Asks a direct decision question, such as “Have you seen enough to make a decision?”, and then stops talking.',
+      '- Is honest that a 10-day trial validates setup and workflow usability but may be too short to show retained revenue, and proposes a dated review of outcomes after launch.',
+      '- Does not invent a trial extension, discount, or contract terms; confirms paid terms from the current quote.',
+      '- If the answer is yes, moves straight to paperwork, start date, and kickoff.',
+    ].join('\n'),
+    roleGuidance: {},
+    pushbacks: [
+      '“What’s the rush? Nothing changes if we wait a month.”',
+      '“My partners will ask what this did for us in ten days. What do I tell them?”',
+      '“Ten days didn’t show me a single extra signed case. Why would I pay for it?”',
+    ],
+    assessed: ['advancing', 'persuasion', 'objection_handling', 'product_accuracy'],
+    defaults: [3, 3, 3],
+    sources: [
+      { collection: 'ravenly-product', sections: ['20 · ', '19 · ', '12 · '] },
+      { collection: 'sales-playbook', sections: ['5. ', '6. '] },
+    ],
+  },
+  {
+    slug: 'close-trial-texting-not-live',
+    title: 'Texting never went live during the trial',
+    brand: 'ravenly',
+    subject: 'product',
+    stage: 'closing',
+    roles: ['ae'],
+    personas: ['solo_attorney'],
+    personaLines: {},
+    situation:
+      'You are on day 9 of a Ravenly free trial with a solo immigration attorney. Text acknowledgements were part of the agreed workflow, but messaging registration was not completed during the trial, so only email acknowledgements and tasks were tested.',
+    buyerLine: '“Texting was the whole reason I tried this, and it never got turned on. Why would I pay for something I haven’t seen work?”',
+    objective: 'Own the gap honestly, isolate whether texting is the deciding issue, and agree on a decision path with a date.',
+    goodLooksLike: [
+      '- Acknowledges the frustration directly, without blaming the attorney or making excuses.',
+      '- Explains that texting depends on completing messaging registration and that a registration delay can keep messaging out of a trial evaluation, without promising a date that has not been confirmed.',
+      '- Isolates the issue: asks whether texting is the deciding factor, and recaps what the trial did show with email acknowledgements and tasks.',
+      '- Offers a concrete path, such as a decision on the validated scope with texting named as an open dependency, or a dated review once registration status is confirmed.',
+      '- Does not invent trial extensions, credits, or terms.',
+      '- Ends with a decision or a dated next step.',
+    ].join('\n'),
+    roleGuidance: {},
+    pushbacks: [
+      '“So when will texting actually work? Give me a date.”',
+      '“Then can you give me another ten days free?”',
+      '“Honestly, maybe I need a person answering my texts, not software.”',
+    ],
+    assessed: ['objection_handling', 'product_accuracy', 'empathy_clarity', 'advancing'],
+    defaults: [4, 4, 3],
+    sources: [
+      { collection: 'ravenly-product', sections: ['20 · ', '07 · ', '10 · ', '18 · '] },
+      { collection: 'sales-playbook', sections: ['6. '] },
+    ],
+  },
+  {
+    slug: 'close-yearly-plan-cancel-anytime',
+    title: '“So we can cancel the yearly plan anytime?”',
+    brand: 'ravenly',
+    subject: 'product',
+    stage: 'closing',
+    roles: ['ae'],
+    personas: ['marketing_manager'],
+    personaLines: {},
+    situation:
+      'The partners of a 15-attorney firm have approved Ravenly Ascend, and you are on a call with the marketing manager, who is preparing the paperwork. She is choosing between the yearly selection ($199 a month) and monthly billing ($229 a month).',
+    buyerLine:
+      '“One thing before this goes to the partners for signature. Your trial page says cancel anytime and no long-term contracts. So if we take the yearly rate, we can still cancel whenever we want, right?”',
+    objective:
+      'Answer accurately about commitment and cancellation without losing the close, and get the terms confirmed in writing by a set date.',
+    goodLooksLike: [
+      '- Thanks her for checking before signature and answers directly instead of reassuring.',
+      '- Does not say a paid plan can be canceled anytime: the cancel-anytime and no-long-term-contract language comes from the trial offer, and the published terms include renewal and nonrenewal notice provisions.',
+      '- Commits to confirming the commitment, renewal, notice, cancellation, and refund terms from the actual order form, in writing, by a specific day.',
+      '- States the published Ascend rates accurately ($199 a month on the yearly selection or $229 monthly, as of October 11, 2026) and that invoicing, commitments, and taxes are confirmed in the quote.',
+      '- Keeps the close: asks whether, with the terms confirmed in writing, the firm is ready to sign, and agrees on a signing date.',
+    ].join('\n'),
+    roleGuidance: {},
+    pushbacks: [
+      '“Then why does your website say no long-term contracts?”',
+      '“Fine. If yearly locks us in, we’ll just go monthly.”',
+      '“The partners won’t sign anything with an auto-renewal clause. Can you take it out?”',
+    ],
+    assessed: ['product_accuracy', 'objection_handling', 'empathy_clarity', 'advancing'],
+    defaults: [4, 4, 4],
+    sources: [
+      { collection: 'ravenly-product', sections: ['12 · ', '21 · '] },
+      { collection: 'sales-playbook', sections: ['5. ', '6. '] },
+    ],
+  },
+  {
+    slug: 'close-who-does-the-setup',
+    title: 'Ready to sign but worried about setup time',
+    brand: 'ravenly',
+    subject: 'product',
+    stage: 'closing',
+    roles: ['ae'],
+    personas: ['solo_attorney'],
+    personaLines: {},
+    situation:
+      'You are on a closing call with a solo estate planning attorney who saw a demo last week and agreed that Ravenly Launch fits her practice. The published plan lists 25 monthly leads, 2 users, 3 practice areas for custom flows, and 1 website, at $99 a month on the yearly selection or $119 monthly.',
+    buyerLine:
+      '“I’m ready to do this, but I’m not spending my nights building chat flows and messing with my website. Who actually sets all of this up?”',
+    objective: 'Treat setup as the last obstacle: isolate it, answer it accurately, and ask for the business with a dated kickoff.',
+    goodLooksLike: [
+      '- Isolates the concern: if setup is handled, is she ready to start?',
+      '- Mentions the full-service onboarding option, listed at a one-time $3,000 and including configuration, website work, and individual training, and says how it applies to her plan will be confirmed.',
+      '- Is honest that she still supplies approvals and access, such as her intake questions, website access, consent wording, and details for messaging registration.',
+      '- Does not promise “live in minutes” or a launch date before website access and approvals are known.',
+      '- Asks for the business and proposes a specific kickoff date.',
+    ].join('\n'),
+    roleGuidance: {},
+    pushbacks: [
+      '“Three thousand dollars just for setup? That’s more than a year of the plan.”',
+      '“Honestly, how many hours of my time will this take?”',
+      '“Can we start next month instead, once things calm down?”',
+    ],
+    assessed: ['objection_handling', 'product_accuracy', 'advancing'],
+    defaults: [3, 3, 3],
+    sources: [
+      { collection: 'ravenly-product', sections: ['12 · ', '18 · ', '20 · ', '04 · '] },
+      { collection: 'sales-playbook', sections: ['6. ', '5. '] },
+    ],
+  },
+  {
+    slug: 'close-champion-presents-alone',
+    title: 'The champion will present to the partners alone',
+    brand: 'ravenly',
+    subject: 'product',
+    stage: 'closing',
+    roles: ['ae'],
+    personas: ['marketing_manager'],
+    personaLines: {},
+    situation:
+      'A 25-attorney firm has finished its Ravenly evaluation, and you are on a call with the marketing manager who championed it. She will present it at Thursday’s partner meeting, which vendors do not attend.',
+    buyerLine: '“The partners meet Thursday, and I’ll present Ravenly myself. Just send me something I can put in front of them.”',
+    objective:
+      'Equip the champion to win the decision without you in the room, keep every claim defensible, and secure a dated next step right after the meeting.',
+    goodLooksLike: [
+      '- Agrees, then asks what the partners will want to know and what would make them say no.',
+      '- Offers a one-page summary built from the evaluation: the problem in the firm’s words, documented fit, open dependencies, the current quote, and owners.',
+      '- Keeps the business case transparent: the firm’s own baseline, assumptions labeled as assumptions, and a flat-result scenario; promises no outcomes.',
+      '- Does not present the website calculator’s figures as proven results.',
+      '- Offers to prepare her for likely objections beforehand and books a call for right after the meeting, such as Friday morning.',
+    ].join('\n'),
+    roleGuidance: {},
+    pushbacks: [
+      '“Can’t I just show them the 108 times return from your website calculator?”',
+      '“One partner always asks what happens to our data if we leave. What do I tell her?”',
+      '“If they push back on price, can I tell them you’ll knock something off?”',
+    ],
+    assessed: ['advancing', 'persuasion', 'product_accuracy', 'discovery'],
+    defaults: [4, 3, 4],
+    sources: [
+      { collection: 'ravenly-product', sections: ['19 · ', '20 · ', '11 · ', '12 · '] },
+      { collection: 'sales-playbook', sections: ['5. ', '6. '] },
+    ],
+  },
+  {
+    slug: 'close-soc2-and-baa-before-signing',
+    title: 'Signing hinges on a SOC 2 report and a BAA',
+    brand: 'ravenly',
+    subject: 'product',
+    stage: 'closing',
+    roles: ['ae'],
+    personas: ['marketing_manager'],
+    personaLines: {},
+    situation:
+      'The partners of a 60-attorney personal injury firm have approved Ravenly, and the marketing manager driving the paperwork emails you. The firm’s outside IT consultant must approve every new vendor before signature.',
+    buyerLine:
+      '“We’re ready, but our IT consultant won’t approve anything without your SOC 2 report and a signed BAA. Send both today and we sign Friday. Can you do that?”',
+    objective:
+      'Keep the deal moving without bluffing: promise nothing you cannot document, find out exactly what the consultant needs, and reset the path to signature honestly.',
+    goodLooksLike: [
+      '- Does not claim or promise a SOC 2 report or a BAA, and does not say Ravenly fails the requirement either; commits to obtaining current, approved documentation for exactly what the consultant needs.',
+      '- If citing what is published, attributes it as policy statements rather than certifications: the privacy policy describes US hosting on AWS, encryption in transit and at rest, role-based access, available MFA, and security audits and testing.',
+      '- Asks what exactly the consultant must approve (certifications, data handling, retention, AI processing) and who has final authority.',
+      '- Proposes a focused technical session with the consultant and the right Ravenly specialist on a specific date, instead of improvising answers.',
+      '- Keeps the close alive: confirms the firm will sign once the requirement is met, and resets the signing date honestly instead of agreeing to Friday blindly.',
+    ].join('\n'),
+    roleGuidance: {},
+    pushbacks: [
+      '“Just give me a yes or no: are you SOC 2 certified?”',
+      '“He’ll also ask whether our client data trains your AI. What’s the answer?”',
+      '“If you can’t get this done by Friday, the partners will go with a vendor who can.”',
+    ],
+    assessed: ['product_accuracy', 'objection_handling', 'empathy_clarity', 'advancing'],
+    defaults: [5, 4, 5],
+    sources: [
+      { collection: 'ravenly-product', sections: ['11 · ', '21 · ', '16 · ', '17 · '] },
+      { collection: 'sales-playbook', sections: ['5. '] },
+    ],
+  },
+  {
+    slug: 'close-yes-what-do-you-need',
+    title: '“I’m in. What do you need from me?”',
+    brand: 'ravenly',
+    subject: 'product',
+    stage: 'closing',
+    roles: ['ae'],
+    personas: ['solo_attorney'],
+    personaLines: {},
+    situation:
+      'You are at the end of a call with a solo family law attorney who has just agreed to start Ravenly Launch on monthly billing ($119 a month).',
+    buyerLine: '“Okay, I’m in. What do you need from me to get started?”',
+    objective: 'Stop selling, confirm what was agreed, and turn the yes into paperwork and a dated kickoff.',
+    goodLooksLike: [
+      '- Thanks her briefly and stops selling: no new features and no reopening of the decision.',
+      '- Confirms what was agreed (Launch on monthly billing) and that the order form will set out the terms.',
+      '- Names the first things she supplies: the practice areas and case types to start with, website access or the person who manages the site, and approval of the intake questions and consent wording.',
+      '- Proposes a specific kickoff date and time.',
+      '- Does not promise a go-live date before website access and approvals are known.',
+    ].join('\n'),
+    roleGuidance: {},
+    pushbacks: [
+      '“Can we be live by Monday? I have new ads starting.”',
+      '“My web person is hard to reach. Can you just install it yourselves?”',
+      '“Wait, is there a contract for monthly? I thought I could cancel anytime.”',
+    ],
+    assessed: ['advancing', 'product_accuracy', 'empathy_clarity'],
+    defaults: [1, 1, 2],
+    sources: [
+      { collection: 'ravenly-product', sections: ['20 · ', '12 · ', '10 · '] },
+      { collection: 'sales-playbook', sections: ['5. '] },
+    ],
+  },
+  {
+    slug: 'close-omnizant-sleep-on-it',
+    title: '“Let me sleep on it”',
+    brand: 'omnizant',
+    subject: 'sales_technique',
+    stage: 'closing',
+    roles: ['ae'],
+    personas: ['solo_attorney'],
+    personaLines: {},
+    situation:
+      'You have just walked a solo personal injury attorney through Omnizant’s recommendation: a new website and an SEO program built around the case types she wants more of. In discovery, she said her current site brings in almost no cases.',
+    buyerLine: '“This all makes sense. Let me sleep on it, and I’ll call you next week.”',
+    objective: 'Find out what she actually needs to think through, answer it, and ask again, or leave with a specific day and time.',
+    goodLooksLike: [
+      '- Responds with “of course” or similar, never “no problem, take your time.”',
+      '- Isolates the hesitation: asks what specifically she needs to think through, or whether it is the price, the timing, or more information.',
+      '- Answers what surfaces using her own words from discovery, without inventing Omnizant results, prices, or timelines.',
+      '- Recaps her problem, her goal, and the plan, then asks again directly.',
+      '- If she truly needs time, leaves with a set day, time, and who will be on the call, not “I’ll call you.”',
+    ].join('\n'),
+    roleGuidance: {},
+    pushbacks: [
+      '“It’s just a lot of money for me right now.”',
+      '“How do I know this will actually bring in cases?”',
+      '“My last marketing company burned me. I’m not rushing into anything.”',
+    ],
+    assessed: ['objection_handling', 'advancing', 'empathy_clarity'],
+    defaults: [3, 3, 1],
+    sources: [{ collection: 'sales-playbook', sections: ['6. ', '5. ', '8. '] }],
+  },
+  {
+    slug: 'close-omnizant-wait-for-budget',
+    title: '“Let’s pick this up in January”',
+    brand: 'omnizant',
+    subject: 'sales_technique',
+    stage: 'closing',
+    roles: ['ae'],
+    personas: ['managing_partner'],
+    personaLines: {},
+    situation:
+      'You are returning a voicemail from the managing partner of a six-attorney employment law firm, who agreed last week that Omnizant’s website and SEO recommendation fits his growth plan. In discovery, he estimated the firm loses two or three good matters a month to firms that show up higher in search.',
+    buyerLine: '“Thanks for calling back. We’re in, in principle, but let’s pick this up in January when the new marketing budget starts.”',
+    objective:
+      'Isolate whether this is budget, timing, or doubt, make the cost of waiting concrete in his own numbers, and leave with a decision or a dated commitment.',
+    goodLooksLike: [
+      '- Acknowledges the budget cycle without arguing, then isolates whether January is about budget, timing, or something still unresolved.',
+      '- Uses his own estimate to show what waiting costs, such as two or three matters a month between now and January.',
+      '- Asks whether he would be comfortable moving forward if the numbers made sense today, and explores structure rather than price, such as agreeing now with a later start, offering to confirm what Omnizant can do.',
+      '- Does not offer a discount or invent terms, price holds, or timelines.',
+      '- Ends with a decision now or a dated decision meeting, not “let’s talk in January.”',
+    ].join('\n'),
+    roleGuidance: {},
+    pushbacks: [
+      '“The money isn’t there until January. That’s not something I can change.”',
+      '“Can you hold today’s price if we wait?”',
+      '“Honestly, January could easily turn into March. Things get busy here.”',
+    ],
+    assessed: ['objection_handling', 'persuasion', 'advancing'],
+    defaults: [3, 3, 1],
+    sources: [{ collection: 'sales-playbook', sections: ['6. ', '5. ', '3. '] }],
+  },
+  {
+    slug: 'close-omnizant-send-the-paperwork',
+    title: 'Soft yes: “Send over the paperwork”',
+    brand: 'omnizant',
+    subject: 'sales_technique',
+    stage: 'closing',
+    roles: ['ae'],
+    personas: ['marketing_manager'],
+    personaLines: {},
+    situation:
+      'The marketing manager of a 30-attorney firm emails you after a partner meeting: the partners approved Omnizant’s website and SEO recommendation in principle. Write your reply.',
+    buyerLine: '“Good news, the partners are on board. Send over the paperwork, and I’ll try to get it signed sometime this week.”',
+    objective: 'Lock in the yes: confirm who signs and when, and set a dated signing step and kickoff without reopening the decision.',
+    goodLooksLike: [
+      '- Thanks her and does not resell or reopen the decision.',
+      '- Asks who signs and whether anything could hold up signature, such as a contract review.',
+      '- Proposes a specific time to walk through the agreement or confirm signature, offering two options such as “Does Tuesday or Thursday work?”',
+      '- Proposes a dated kickoff and asks who should attend.',
+      '- Avoids passive lines such as “Let me know if you have any questions.”',
+    ].join('\n'),
+    roleGuidance: {},
+    pushbacks: [
+      '“Our managing partner signs everything, and he’s traveling. I’ll get it to him when I can.”',
+      '“One of our partners reviews every vendor contract herself, and that can take a while.”',
+      '“Let’s not schedule a kickoff until it’s signed. There’s no point planning before then.”',
+    ],
+    assessed: ['advancing', 'empathy_clarity', 'discovery'],
+    defaults: [2, 2, 1],
+    sources: [{ collection: 'sales-playbook', sections: ['5. ', '4. ', '8. '] }],
+  },
+];
 
 // Buyer pushbacks and role expectations for the seeded drills already in this stage, by slug.
-export const EXISTING = {};
+export const EXISTING = {
+  'close-ask-for-business': {
+    pushbacks: [
+      '“I think so, but let me sleep on it before I commit.”',
+      '“Even if we say yes today, we can’t start until next quarter.”',
+      '“We’re also talking to one other company, and I’d like to compare before deciding.”',
+    ],
+  },
+  'ravenly-guarantee-ask': {
+    pushbacks: [
+      '“Your pricing page calculator shows a 108 times return. Was that just marketing?”',
+      '“Then give me a money-back guarantee if it doesn’t work.”',
+      '“Ten days isn’t long enough to see more signed cases. Why would I trust a trial?”',
+    ],
+  },
+  'talk-to-partner': {
+    pushbacks: [
+      '“They’re in court most of next week, so I’ll catch them when I can.”',
+      '“Honestly, they hate vendor calls. Can you just send me something I can forward?”',
+      '“To be fair, they’re more skeptical than I am. They’ll probably say now isn’t the time.”',
+    ],
+    roleGuidance: {
+      ae: [
+        '- Treats the partner as a decision-maker who has not heard the case yet: asks what they will want to know and what would make them say no.',
+        '- Proposes a short meeting with both decision-makers on a specific day so the partner hears it firsthand, rather than relying on the buyer to relay the pitch.',
+        '- Asks who else should be part of the decision, so no new approver appears at the end.',
+      ].join('\n'),
+      am: [
+        '- Builds on the existing relationship: offers to bring what the client has already seen from the current work, in the client’s own measures, to the partner conversation.',
+        '- Clarifies what the partner is being asked to approve (a renewal, an added service, or a change in scope) and any date by which it must be decided.',
+        '- Proposes a short meeting with both decision-makers on a specific day, ahead of that date.',
+      ].join('\n'),
+    },
+  },
+};

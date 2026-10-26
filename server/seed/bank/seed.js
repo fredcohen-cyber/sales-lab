@@ -54,16 +54,24 @@ export async function seedQuestionBank(q, owner, log = () => {}, { questions = B
       continue;
     }
     const roleGuidance = Object.fromEntries(Object.entries(add.roleGuidance || {}).filter(([role]) => cur.roles.includes(role)));
+    // Sections the new pushbacks rely on join the drill's own, chosen whole.
+    const refs = [...(cur.source_refs || [])];
+    for (const ref of add.sources || []) {
+      for (const prefix of ref.sections) {
+        const hit = find(ref.collection, prefix);
+        if (hit && !refs.some((r) => r.sourceId === hit.id)) refs.push({ sourceId: hit.id, sections: [], versionId: hit.latest_version_id });
+      }
+    }
     const v = await q.one(
       `INSERT INTO drill_versions (drill_id, version, title, brand, subject, stage, roles, personas, situation, buyer_line, persona_lines,
          objective, good_looks_like, assessed_dimensions, default_difficulty, default_skepticism, default_depth, source_refs, change_note,
          created_by, role_guidance, pushbacks)
        SELECT drill_id, 2, title, brand, subject, stage, roles, personas, situation, buyer_line, persona_lines,
-              objective, good_looks_like, assessed_dimensions, default_difficulty, default_skepticism, default_depth, source_refs, $2,
+              objective, good_looks_like, assessed_dimensions, default_difficulty, default_skepticism, default_depth, $6, $2,
               $3, $4, $5
          FROM drill_versions WHERE id = $1
        RETURNING id`,
-      [cur.id, UPGRADE_NOTE, owner.id, JSON.stringify(roleGuidance), JSON.stringify(add.pushbacks || [])],
+      [cur.id, UPGRADE_NOTE, owner.id, JSON.stringify(roleGuidance), JSON.stringify(add.pushbacks || []), JSON.stringify(refs)],
     );
     await q.query(`UPDATE drills SET current_version_id = $2, updated_at = now() WHERE id = $1`, [cur.drill_id, v.id]);
     upgraded += 1;
