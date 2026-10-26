@@ -133,10 +133,10 @@ export const QUESTIONS = [
       'You are the account manager for a nine-attorney personal injury firm five weeks into Max AI. The intake director, who runs the front desk, tells you that inquiries captured through Omnizant Growth Studio often wait a day or more for a call back because her team works the phones first.',
     buyerLine: '“Honestly, the Growth Studio inquiries pile up. My team is on the phones all day. Can’t the system just handle those people for us?”',
     objective:
-      'Help the intake director see why timely follow-up drives the plan’s results, without promising that Growth Studio replaces her team, and agree on a practical change she can run.',
+      'Help the intake director see why timely follow-up matters to the plan’s results, without promising that Growth Studio replaces her team, and agree on a practical change she can run.',
     goodLooksLike: [
       '- Acknowledges her team’s workload and does not blame them.',
-      '- Explains why the wait matters in her terms: timely follow-up is what helps the firm secure a consultation, and a captured inquiry is not yet a client.',
+      '- Explains why the wait matters in her terms: timely follow-up can help the firm secure a consultation, and a captured inquiry is not yet a client.',
       '- Does not promise that Growth Studio contacts, qualifies, or follows up with people on its own; describes it as giving the firm tools to capture and manage inquiries, and offers to confirm which follow-up tools are set up for the firm.',
       '- Asks how these inquiries reach her team today: who sees them first, who owns the call back, and how the team decides which ones are a good fit.',
       '- Proposes one practical change with an owner, such as a set time each day to work Growth Studio inquiries, and a dated check-in to review what happened to them.',
@@ -172,9 +172,9 @@ export const QUESTIONS = [
       'Take the complaint seriously, raise follow-up speed as a likely factor tactfully and with the firm’s own facts, and agree on a joint plan without blaming the firm or overpromising.',
     goodLooksLike: [
       '- Stays calm, does not argue, and asks what he has seen in the inquiries before defending the plan.',
-      '- Raises follow-up tactfully, using what the firm itself reported and without blaming his staff: timely follow-up is what helps turn an inquiry into a consultation, and the team’s intake practices and the fit of each opportunity still matter.',
+      '- Raises follow-up tactfully, using what the firm itself reported and without blaming his staff: timely follow-up can help the firm secure a consultation, and the team’s intake practices and the fit of each opportunity still matter.',
       '- Does not call the inquiries good or bad without looking at them; offers to review recent inquiries with him for fit and for what happened after each one arrived.',
-      '- Is honest about what six weeks can show: Advantage AI’s job is to establish a baseline and strengthen the foundation, a form submission is not a retained client, and the plan does not guarantee new clients.',
+      '- Is honest about what six weeks can show: Advantage AI’s job is to establish a baseline and strengthen the foundation, a form submission is not a retained client, and does not promise new clients.',
       '- Does not promise a credit or an automatic fix to end the call, such as Growth Studio replying for the firm; offers to confirm what its follow-up tools and the firm’s agreement allow.',
       '- Proposes a joint plan with owners: who calls each new inquiry and by when, how outcomes are recorded, and a dated review together.',
     ].join('\n'),
@@ -209,7 +209,7 @@ export const QUESTIONS = [
       'Help the attorney see how response timing affects results, explore realistic ways for her to respond sooner, and keep expectations honest.',
     goodLooksLike: [
       '- Thanks her for the detail and treats it as useful information, not a failing.',
-      '- Explains that timely follow-up helps a firm secure a consultation, and that the plan’s value depends on what happens after someone reaches out, not only on the inquiry arriving.',
+      '- Explains that timely follow-up can help a firm secure a consultation, and that an inquiry’s value depends on what happens next, not only on its arriving.',
       '- Asks a few questions before suggesting anything: how many inquiries arrive in a typical week, when they tend to come in, and whether anyone else could make a first contact.',
       '- Suggests one realistic change she can try, such as a short window between court sessions to return inquiries, and does not promise that Growth Studio replies for her; offers to confirm which follow-up tools are available to her.',
       '- Agrees on a dated check-in to see whether faster responses change what happens next.',
@@ -679,13 +679,13 @@ export const QUESTIONS = [
     personas: ['office_manager'],
     personaLines: {},
     situation:
-      'You are meeting the intake director of a 10-attorney personal injury firm that runs its intake on Intaker. The managing partner asked her to see whether Ravenly would help her team decide whom to call first, and she is not convinced.',
+      'You are meeting the intake director of a 10-attorney personal injury firm that runs its intake on Intaker. The managing partner asked her to see whether Ravenly would help her team decide who to call first, and she is not convinced.',
     buyerLine: '“Intaker already qualifies our leads with AI. I don’t see what Ravenly would add.”',
     objective:
-      'Credit what Intaker advertises, find out how her team actually decides whom to call first, and show how Ravenly’s scoring and context support that decision, without claiming better accuracy.',
+      'Credit what Intaker advertises, find out how her team actually decides who to call first, and show how Ravenly’s scoring and context support that decision, without claiming better accuracy.',
     goodLooksLike: [
       '- Credits Intaker fairly: it promotes AI qualification in its texting and Local Services Ads agents, and its workflows can act on qualification status; does not claim it lacks lead scoring.',
-      '- Asks how her team decides whom to call first today, and how they review a qualification decision that turns out to be wrong.',
+      '- Asks how her team decides who to call first today, and how they review a qualification decision that turns out to be wrong.',
       '- Describes Ravenly accurately: each inquiry is scored using case-type priority and the firm’s own criteria, and staff see an intelligence breakdown (intent, legitimacy, potential value, and case-type value) beside the original answers and an AI summary.',
       '- Notes that the firm’s criteria adjust the score but do not automatically reject a lead, and that Ravenly helps intake start with the right lead rather than replacing intake.',
       '- Does not claim Ravenly is more accurate, faster, or uniquely AI-powered, or that Ravenly has an equivalent AI texting agent.',
@@ -761,7 +761,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“So if a lead scores 85, is it qualified or not?”',
+      '“If a lead scores 85 in Ravenly, does that make it qualified?”',
       '“Can you bring over my Intaker history so the trend just continues?”',
       '“The partners will ask which system qualifies more accurately. What’s your answer?”',
     ],
@@ -789,7 +789,7 @@ export const QUESTIONS = [
     goodLooksLike: [
       '- Acknowledges Intaker’s breadth accurately, as Intaker markets it: website chat with video, two-way texting, AI agents, workflows, and reporting; never calls it merely a chatbot.',
       '- Does not claim Ravenly matches every item or that Intaker lacks automation, qualification, or reporting, and does not claim Ravenly has an autonomous AI texting agent.',
-      '- Describes Ravenly’s focus in a sentence: conversion-first, capturing the lead cleanly, qualifying it quickly, and helping the team see whom to follow up with first.',
+      '- Describes Ravenly’s focus in a sentence: conversion-first, capturing the lead cleanly, qualifying it quickly, and helping the team see who to follow up with first.',
       '- Names one or two demonstrable strengths that fit her goals, such as three intake formats (chat, webform, and case evaluation), LLM referral reporting, or question-level abandonment analysis, presented as strengths to show rather than exclusive features.',
       '- Asks which capabilities the firm would use every week and which intake problem is unresolved today, so the comparison rests on the firm’s workflows rather than feature counts.',
       '- Proposes running the firm’s real scenarios through both products, with a dated review.',
@@ -1059,7 +1059,7 @@ export const QUESTIONS = [
     objective:
       'Be straight about the renewal terms without using them as leverage, compare the offers fairly, and give the partner a reason to review before switching.',
     goodLooksLike: [
-      '- Answers his question honestly: the agreement has its own renewal and notice terms, so you will confirm them from the firm’s actual agreement rather than guess, and you do not use them to pressure him.',
+      '- Answers his question honestly: says the agreement has its own renewal and notice terms, confirms them from the firm’s actual agreement rather than guessing, and does not use them to pressure him.',
       '- Names what to settle before any switch: the data-export procedure and how long data is kept after the agreement ends, confirmed in writing because the published policies differ, and the phone-number porting window if the firm uses a number through Ravenly.',
       '- Compares the Intaker offer like for like, including users, how it counts traffic or leads, implementation, usage, and term, without claiming Ravenly is cheaper or that Intaker lacks features.',
       '- Asks what prompted the review and which unmet requirement Intaker would solve for the firm.',
