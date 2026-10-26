@@ -13,7 +13,7 @@ export const QUESTIONS = [
     personas: ['office_manager'],
     personaLines: {},
     situation:
-      'You recommended Ravenly Ascend on yearly billing to the intake director of a five-attorney employment law firm. In discovery she said her two intake staff spend about six hours every Monday sorting weekend web inquiries out of three inboxes, and the managing partner signs off on every new tool.',
+      'You recommended Ravenly Ascend on yearly billing to the intake director of a five-attorney employment law firm. In discovery she said her two intake staff spend about six hours between them every Monday sorting weekend web inquiries out of three inboxes, and the managing partner signs off on every new tool.',
     buyerLine: '“I like it, I really do. But $199 a month is going to sound expensive to our managing partner for one more tool. What do I tell him?”',
     objective: 'Help her find out whether the partner’s worry will be budget or value, tie the price to the cost she described, and get the partner into the decision without discounting.',
     goodLooksLike: [
@@ -32,8 +32,8 @@ export const QUESTIONS = [
     assessed: ['objection_handling', 'persuasion', 'product_accuracy', 'advancing'],
     defaults: [2, 2, 3],
     sources: [
-      { collection: 'ravenly-product', sections: ['12 · ', '18 · ', '19 · '] },
-      { collection: 'sales-playbook', sections: ['6. ', '3. ', '5. '] },
+      { collection: 'ravenly-product', sections: ['12 · ', '18 · ', '19 · ', '06 · '] },
+      { collection: 'sales-playbook', sections: ['6. ', '3. '] },
     ],
   },
   {
@@ -56,7 +56,7 @@ export const QUESTIONS = [
       '- Isolates the objection: is $229 a month outside her budget, or does she not see enough value beyond the form she already has?',
       '- Moves the comparison from the form to what happens after an inquiry arrives, using the problems she named: weekend inquiries that sit until Monday and no line from campaigns to signed cases.',
       '- Explains in plain terms what Ravenly adds around capture: qualification questions, ownership and follow-up for the team, and reporting that ties channels and campaigns to qualified and retained leads, which depends on the team keeping stages up to date.',
-      '- Uses her economics rather than invented results, such as what one signed case is worth against about $2,750 a year, and does not promise more signed cases.',
+      '- Uses her economics rather than invented results, such as what one signed case is worth against about $2,750 a year in subscription fees, with any usage or onboarding confirmed separately, and does not promise more signed cases.',
       '- Asks directly for a dated review with the partners, with the rep on the call.',
     ].join('\n'),
     roleGuidance: {},
@@ -68,7 +68,7 @@ export const QUESTIONS = [
     assessed: ['objection_handling', 'persuasion', 'product_accuracy', 'advancing'],
     defaults: [5, 5, 3],
     sources: [
-      { collection: 'ravenly-product', sections: ['12 · ', '18 · ', '09 · ', '19 · '] },
+      { collection: 'ravenly-product', sections: ['12 · ', '18 · ', '09 · ', '19 · ', '07 · '] },
       { collection: 'sales-playbook', sections: ['6. '] },
     ],
   },
@@ -169,7 +169,7 @@ export const QUESTIONS = [
     pushbacks: [
       '“Does yearly mean I pay the whole year up front?”',
       '“Fine, monthly at $119, but throw in the first month free.”',
-      '“Another intake tool quoted me less than that. Why should I pay more for yours?”',
+      '“Bankruptcy filings rise and fall. If I go yearly and business slows down, can I pause it or switch back to monthly?”',
     ],
     assessed: ['objection_handling', 'persuasion', 'product_accuracy', 'advancing'],
     defaults: [3, 3, 3],
@@ -443,12 +443,12 @@ export const QUESTIONS = [
       '- Asks who needs to work leads day to day, so the user count reflects real use.',
       '- Gives the options accurately: confirm whether a third user can be added to Launch and at what price, or Ascend, which lists 5 users at $199 a month on yearly billing or $229 monthly; recommends one once the user question is answered.',
       '- Confirms her price basis: $99 a month is Launch’s yearly-billing rate (monthly is $119), with invoicing and commitment confirmed in the quote.',
-      '- Asks for the decision once the user question is settled.',
+      '- Once the user question is settled, asks for the decision, or, if one of the attorneys signs off, for a short call with them at a set time.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
       '“The attorneys only need to look at the leads, not work them. Do they still count as users?”',
-      '“What if we have a busy month and go over 25?”',
+      '“We’d want to text leads from it too. Is that included on Launch, or is it extra?”',
       '“I’m not paying Ascend prices for one extra login. Can’t you just add a third user for free?”',
     ],
     assessed: ['product_accuracy', 'persuasion', 'advancing'],
@@ -475,7 +475,7 @@ export const QUESTIONS = [
     objective: 'Confirm the plan fit honestly without upselling, get the price basis right, and speak precisely about the Clio handoff and what the pricing card cannot settle.',
     goodLooksLike: [
       '- Agrees that Launch’s published scope fits the pilot (25 monthly leads, 2 users, 3 practice areas, 1 website) instead of upselling without a reason.',
-      '- Gets the price basis right: $99 a month is the yearly-billing rate and monthly billing is $119; asks whether a yearly commitment suits a pilot, with invoicing and commitment confirmed in the quote.',
+      '- Gets the price basis right: $99 a month is the yearly-billing rate and monthly billing is $119; asks whether yearly billing suits a pilot, with invoicing and the commitment for each option confirmed in the quote.',
       '- Speaks precisely about Clio: it appears on Ravenly’s integration page in a Zapier context, a native two-way connector was not established, and the Zapier route may need its own subscription.',
       '- Does not promise or rule out integrations on Launch from the pricing card, where third-party integrations are listed for Ascend; confirms the entitlement.',
       '- Asks which event should send which fields to Clio, and whether anything needs to come back.',
@@ -546,8 +546,8 @@ export const QUESTIONS = [
     objective: 'Give her something real to bring without inventing a price: why Summit fits, what the quote depends on, and a confirmed quote before her meeting.',
     goodLooksLike: [
       '- Does not give a Summit price, range, or multiple of another plan; explains that Summit is published as a custom quote.',
-      '- Explains briefly why Summit fits: Ascend lists 1 website and 5 users, while Summit lists multiple sites, flexible volume, users, and practice areas, integrations, multilingual support, and customized onboarding.',
-      '- Gathers what the quote depends on: sites, monthly inquiry volume, users, practice areas, languages, and required integrations.',
+      '- Explains briefly why Summit fits her firm: Ascend lists 1 website and 5 users, fewer than her main site, Spanish-language site, and nine intake staff, while Summit lists multiple sites, flexible volume, users, and practice areas, integrations, multilingual support, and customized onboarding.',
+      '- Gathers the inputs her firm raises: monthly inquiries on each site, how many of the nine staff and the attorneys need logins, the practice areas each site serves, how the Spanish-language site should be handled, and required integrations.',
       '- Commits to a confirmed quote on a specific day before next Thursday, so she does not walk in empty-handed.',
       '- Asks who approves the budget and offers to join the partners’ meeting or a short call with them before it.',
     ].join('\n'),
@@ -555,7 +555,7 @@ export const QUESTIONS = [
     pushbacks: [
       '“Could I just put Ascend’s price in the budget for now and fix it later?”',
       '“All nine of my intake staff need logins. Does that push the price way up?”',
-      '“If I don’t have a number Thursday, the partners will push this to next year.”',
+      '“If the quote comes back far above what the partners expect, I’m the one who brought you in. What do I tell them then?”',
     ],
     assessed: ['product_accuracy', 'discovery', 'advancing'],
     defaults: [3, 3, 4],
@@ -608,14 +608,14 @@ export const QUESTIONS = [
     personas: ['marketing_manager'],
     personaLines: {},
     situation:
-      'The marketing manager of a 22-attorney personal injury and mass tort firm is building a first-year cost for the partners before approving Ravenly Ascend with full-service onboarding. The firm texts new leads, wants to call from the platform, already pays for CallRail, and expects a Zapier connection to its case management system.',
+      'The marketing manager of a 22-attorney personal injury and mass tort firm is building a first-year cost for the partners, who will decide on Ravenly Ascend with full-service onboarding. The firm texts new leads, wants to call from the platform, already pays for CallRail, and expects a Zapier connection to its case management system.',
     buyerLine: '“I need the true first-year cost, not the sticker price. Subscription, onboarding, texts, calls, CallRail, Zapier, all of it. What’s the real number?”',
     objective: 'Give every published number accurately, separate what is confirmed from what is not, and commit to a complete written first-year figure she can defend.',
     goodLooksLike: [
       '- States the published parts accurately: Ascend at $199 a month on yearly billing or $229 monthly, and full-service onboarding listed at $3,000 one-time, confirming how onboarding applies to her package.',
-      '- Does not claim texting, calling, or integrations are included or free; separates the subscription from usage and third-party costs.',
+      '- Does not claim texting or calling usage is included or free; says Ascend’s published plan lists third-party integrations, while which ones apply and the third-party subscriptions behind them are confirmed; separates the subscription from usage and third-party costs.',
       '- Lists what the quote must still settle: SMS segments, voice minutes, numbers, messaging registration, VoIP availability and usage pricing, and third-party subscriptions the setup relies on, such as Zapier and the CallRail account the firm already pays for.',
-      '- Builds the first-year figure with her: twelve months of subscription, onboarding if it applies, usage estimated from her expected text and call volume, and third-party fees, with each line marked confirmed or estimated.',
+      '- Builds the first-year figure with her: twelve months of subscription, onboarding if it applies, usage estimated from her expected text and call volume once per-unit rates are quoted, and third-party fees, with each line marked confirmed or estimated.',
       '- Commits to a complete written quote by a date that fits her partner meeting, and asks to walk the partners through it.',
     ].join('\n'),
     roleGuidance: {},
@@ -678,7 +678,7 @@ export const QUESTIONS = [
     objective: 'Give her an honest comparison: the full cost stated accurately, what Ravenly does and does not do while she is in court, and a recommendation built from her own numbers.',
     goodLooksLike: [
       '- States her first-year cost accurately: Launch at $119 a month on monthly billing ($99 on yearly), plus full-service onboarding listed at $3,000 one-time if it applies to her, with usage and third-party fees to confirm.',
-      '- Says plainly that Ravenly is not a staffed answering service: if she needs a person to talk with callers, that is a separate need, and the two can work together.',
+      '- Says plainly that Ravenly’s offering does not establish a staffed answering service: if she needs a person to talk with callers, that is a separate requirement, and the two can work together.',
       '- Asks what she loses today and how often, such as web inquiries that wait until she is out of court, so the comparison rests on her numbers.',
       '- Explains what Ravenly does with web inquiries while she is unavailable: visitors can give their details through chat, a form, or a case evaluation outside office hours, and she gets their original answers and a summary to review, without claiming anyone responds around the clock.',
       '- Does not promise more signed cases; recommends one option for her situation and asks for a decision or a dated next step.',
@@ -787,7 +787,7 @@ export const QUESTIONS = [
     pushbacks: [
       '“Is there a charge for this review?”',
       '“What do you get out of giving it away?”',
-      '“I really don’t want to pull the attorneys into a sales call. Can’t you just send the prices?”',
+      '“The attorneys won’t give a vendor fifteen minutes. If I do the review without them, what will I actually have to show them?”',
     ],
     assessed: ['advancing', 'objection_handling', 'discovery'],
     defaults: [3, 3, 1],
@@ -813,7 +813,7 @@ export const QUESTIONS = [
     objective: 'Keep control of the frame without dodging or inventing a number, and turn his thirty seconds into a booked, dated conversation.',
     goodLooksLike: [
       '- Respects his time with a brief, confident answer, and does not ramble or dodge.',
-      '- Explains in a sentence why there is no single number, since it depends on the firm’s site and goals, and asks permission for two or three quick questions.',
+      '- Offers to get him a number and, so it is the right one, asks permission for two or three quick questions first.',
       '- Asks a budget question back, such as what the firm spends on its website and SEO now and what that buys.',
       '- Does not quote or invent Omnizant prices, packages, timelines, or results, and does not promise rankings or leads.',
       '- Proposes a specific 15-minute slot that works around court, and confirms the time zone and his email before hanging up.',
@@ -897,7 +897,7 @@ export const QUESTIONS = [
   {
     slug: 'price-omnizant-budget-cap-v2',
     concept: 'price-omnizant-budget-cap',
-    title: 'Partner offers to sign today at 30 percent off',
+    title: 'Partner will sign today if it fits his budget',
     brand: 'omnizant',
     product: 'omnizant_web',
     subject: 'sales_technique',
@@ -906,8 +906,8 @@ export const QUESTIONS = [
     personas: ['managing_partner'],
     personaLines: {},
     situation:
-      'You presented an Omnizant website and SEO proposal to the managing partner of an eight-attorney workers’ compensation firm. He likes the plan and makes the decision himself, but he wants a better price before he commits.',
-    buyerLine: '“I like the plan, but I’m not paying that. Take thirty percent off and you have a deal today.”',
+      'You presented an Omnizant website and SEO proposal to the managing partner of an eight-attorney workers’ compensation firm. He likes the plan and makes the decision himself, but he has set aside about 70 percent of the proposed amount for this year and will not go over it.',
+    buyerLine: '“I like the plan, but I set aside about seventy percent of that for this year, and I’m not going over it. Make it fit that number and you have a deal today.”',
     objective: 'Protect the value of the recommendation: learn what he values most, trade scope rather than cut price, and close on one adjusted plan.',
     goodLooksLike: [
       '- Acknowledges his interest and his number without agreeing to a cut.',
@@ -943,11 +943,11 @@ export const QUESTIONS = [
     buyerLine: '“I love the plan, but I can only do about half of that right now. Is there a version that works for me?”',
     objective: 'Treat the budget as real, keep what matters most to her, and trade scope or timing rather than cut the price.',
     goodLooksLike: [
-      '- Thanks her and treats the budget as a real constraint, not an opening bid.',
-      '- Asks what matters most to her in the proposal and what is driving the limit, such as cash flow this quarter.',
-      '- Does not cut the price for the same plan; if anything changes, trades scope, phasing, or start date for the lower number.',
-      '- Presents one adjusted recommendation and says what it leaves out for now.',
-      '- Does not invent Omnizant prices, packages, or timelines; offers to confirm the revised scope, and asks for a decision or a dated review.',
+      '- Takes her cash-flow limit at face value and does not press her to stretch past it.',
+      '- Asks what she needs first from the proposal and when her cash flow is likely to ease, so the plan starts with what matters most to her practice.',
+      '- Does not offer the same plan for less; proposes phasing it, starting this quarter with what matters most and adding the rest later, or starting later.',
+      '- Recommends one starting scope and says plainly what waits until later.',
+      '- Does not invent Omnizant prices, packages, timelines, or payment terms such as installments; offers to confirm the phased scope and any payment options in writing, and asks for a decision or a dated review.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
