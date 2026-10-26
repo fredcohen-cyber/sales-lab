@@ -415,10 +415,10 @@ export const QUESTIONS = [
     objective:
       'Explain kindly and accurately what pipeline value represents and what it does not, so the attorney does not plan around it, and agree on whether to adjust the estimates.',
     goodLooksLike: [
-      '- Explains that pipeline value is a recorded estimate, which can be seeded from the estimated value set for each case type, and not a prediction of settlements, collected fees, or profit.',
-      '- Notes that no probability weighting was established, so the figure should not be read as expected income; offers to confirm whether any weighting applies.',
+      '- Answers kindly and plainly: no, pipeline value is a recorded estimate, which can be built from the estimated value set for each case type, and it does not predict settlements, collected fees, or profit.',
+      '- Adds that no probability weighting was established, so the figure is not a forecast of income, and offers to confirm whether any weighting applies.',
       '- For a contingency practice, separates what an estimate may stand for, such as a settlement amount or an expected fee, from cash timing, collection, and case costs.',
-      '- Asks what the estimates were meant to represent and whether leads that went nowhere are being moved out of active stages.',
+      '- Asks what he had in mind when the estimates were set, such as a typical settlement or his likely fee, and whether matters that went nowhere are still sitting in active stages.',
       '- Offers a short session on a set date to review the estimates and stages so the figure means something he can use.',
     ].join('\n'),
     roleGuidance: {},
@@ -454,7 +454,7 @@ export const QUESTIONS = [
       '- Explains that the report shows where visitors stop, with individual events by step and progress, not why they stop.',
       '- Does not promise that names, phone numbers, or partial entries from abandoned sessions are available or saved as leads; offers to confirm what each abandonment event records.',
       '- Raises consent before any outreach: contact depends on the consent a visitor gave, the firm approves its own consent language and channel settings, and calling and texting are regulated, so the firm’s counsel should decide.',
-      '- Does not suggest that Ravenly calls or texts people who abandon; abandonment reporting does not establish recovery messages.',
+      '- Does not offer Ravenly texts or calls to these visitors as a workaround; abandonment reporting does not establish recovery messages.',
       '- Suggests investigating the question itself, such as its wording, whether it is required, and how much it asks, then comparing drop-off after an approved change.',
       '- Agrees on a dated working session to review the question with her.',
     ].join('\n'),
@@ -491,7 +491,7 @@ export const QUESTIONS = [
     goodLooksLike: [
       '- Explains that the report shows where visitors stop, by step and question, with capture method and chatflow filters, not why they stop.',
       '- Does not promise recovery emails: abandonment reporting does not establish them, and the automation triggers seen in Ravenly are events such as a new lead being created or a stage being set, not an abandoned session; offers to confirm with the product team.',
-      '- Notes that any message depends on the contact consent a visitor gave, and that the firm approves its own consent language and settings.',
+      '- Notes that any email would depend on the consent each visitor gave, that consent behavior differs across the chat, webform, and case evaluation, and that the firm approves its own consent language and settings.',
       '- Suggests investigating the steps with the most drop-off, such as their wording, required fields, and the evaluation’s length, then comparing drop-off after an approved change.',
       '- Agrees on a dated next step, such as a short review of the case evaluation’s questions.',
     ].join('\n'),
