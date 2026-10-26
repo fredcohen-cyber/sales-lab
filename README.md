@@ -184,7 +184,7 @@ Automated tests use a test-only stand-in for the AI service that cannot be enabl
 
 ## Status
 
-Implemented and covered by automated tests (148 server tests and 24 browser tests): company email and
+Implemented and covered by automated tests (149 server tests and 24 browser tests): company email and
 password sign-in with manager-created accounts only, private single-use setup and reset links, sign-in
 throttling, deactivation and session revocation, server-side roles and learner privacy, the knowledge
 library as collections of sections with versions, approval, evidence basis, ordering, and document
