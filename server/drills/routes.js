@@ -20,6 +20,12 @@ const drillSchema = z.object({
   objective: z.string().trim().min(5, 'Add the objective.').max(1000),
   goodLooksLike: z.string().trim().min(5, 'Describe what a good answer does.').max(3000),
   assessedDimensions: z.array(z.enum(DIMENSION_KEYS)).min(1, 'Choose at least one scored dimension.'),
+  // Added to goodLooksLike for reps in that role.
+  roleGuidance: z
+    .object({ ae: z.string().trim().max(2000).optional(), am: z.string().trim().max(2000).optional() })
+    .default({}),
+  // The buyer's likely follow-up objections, in order (used word for word when coaching is off).
+  pushbacks: z.array(z.string().trim().min(3, 'Write each pushback as the buyer would say it.').max(600)).max(5, 'List at most 5 pushbacks.').default([]),
   defaults: z.object({ difficulty: level, skepticism: level, depth: level }),
   sourceRefs: z
     .array(
@@ -37,7 +43,15 @@ const drillSchema = z.object({
   status: z.enum(['draft', 'active', 'archived']).optional(),
 });
 
+// Role expectations only for the roles this drill is for, and no empty ones.
+function tidyRoleGuidance(body) {
+  const out = {};
+  for (const role of body.roles) if (body.roleGuidance?.[role]?.trim()) out[role] = body.roleGuidance[role].trim();
+  body.roleGuidance = out;
+}
+
 async function validateRefs(q, body) {
+  tidyRoleGuidance(body);
   const personas = new Set((await q.many(`SELECT key FROM personas`)).map((p) => p.key));
   if (body.personas.some((p) => !personas.has(p))) throw new HttpError(400, 'validation_failed', 'Choose personas from the list.');
   for (const key of Object.keys(body.personaLines)) {
@@ -66,8 +80,9 @@ async function insertDrillVersion(q, drillId, body, userId) {
   const next = await q.one(`SELECT COALESCE(max(version), 0) + 1 AS v FROM drill_versions WHERE drill_id = $1`, [drillId]);
   return q.one(
     `INSERT INTO drill_versions (drill_id, version, title, brand, subject, stage, roles, personas, situation, buyer_line, persona_lines,
-       objective, good_looks_like, assessed_dimensions, default_difficulty, default_skepticism, default_depth, source_refs, change_note, created_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) RETURNING id, version`,
+       objective, good_looks_like, assessed_dimensions, default_difficulty, default_skepticism, default_depth, source_refs, change_note, created_by,
+       role_guidance, pushbacks)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING id, version`,
     [
       drillId,
       next.v,
@@ -89,6 +104,8 @@ async function insertDrillVersion(q, drillId, body, userId) {
       JSON.stringify(body.sourceRefs || []),
       body.changeNote || '',
       userId,
+      JSON.stringify(body.roleGuidance || {}),
+      JSON.stringify(body.pushbacks || []),
     ],
   );
 }
@@ -96,8 +113,10 @@ async function insertDrillVersion(q, drillId, body, userId) {
 export function drillRoutes({ db, config }) {
   const r = Router();
 
+  // The question bank is for managers: reps are served questions by stage and never choose one.
   r.get(
     '/',
+    requireManager,
     route(async (req, res) => {
       const forManager = req.user.isManager;
       const status = forManager ? String(req.query.status || '') : 'active';
@@ -119,6 +138,7 @@ export function drillRoutes({ db, config }) {
 
   r.get(
     '/:id',
+    requireManager,
     route(async (req, res) => {
       const row = await db.one(`${DRILL_SQL} WHERE d.id = $1`, [req.params.id]).catch(() => null);
       if (!row || (!req.user.isManager && row.status !== 'active')) throw notFound('That drill was not found.');

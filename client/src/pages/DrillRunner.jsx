@@ -48,17 +48,22 @@ function levelsFromQuery(params) {
   return d && s && p ? { difficulty: d, skepticism: s, depth: p } : null;
 }
 
-export function DrillRunner() {
-  const { drillId, itemId } = useParams();
+// A stage serves one question at a time (see StageRunner); a manager can also open any question from
+// the question bank. Reps never choose the buyer or the levels: each question sets them.
+export function DrillRunner({ stage = null, initialPreview = null }) {
+  const { drillId: routeDrillId, itemId } = useParams();
   const [params] = useSearchParams();
   const { user } = useAuth();
   const { meta } = useMeta();
   const navigate = useNavigate();
   const assigned = Boolean(itemId);
+  const fed = Boolean(stage && initialPreview);
+  const drillId = fed ? initialPreview.drill.id : routeDrillId;
+  const locked = assigned || fed || !user.isManager;
 
-  const [persona, setPersona] = useState(() => (assigned ? null : params.get('persona')));
-  const [levels, setLevels] = useState(() => (assigned ? null : levelsFromQuery(params)));
-  const [preview, setPreview] = useState(null);
+  const [persona, setPersona] = useState(() => (assigned ? null : fed ? initialPreview.scenario.persona.key : params.get('persona')));
+  const [levels, setLevels] = useState(() => (locked ? null : levelsFromQuery(params)));
+  const [preview, setPreview] = useState(fed ? initialPreview : null);
   const [loadError, setLoadError] = useState(null);
   const [answer, setAnswer] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -68,8 +73,9 @@ export function DrillRunner() {
 
   const scope = `${user.id}:${assigned ? `item:${itemId}` : `drill:${drillId}:${persona || ''}`}`;
 
-  // Load the scenario. Free practice reloads when persona or levels change.
+  // Load the scenario. Free practice reloads when persona or levels change; a served question is loaded.
   useEffect(() => {
+    if (fed) return undefined;
     const mine = ++loadSeq.current;
     const body = assigned ? { assignmentItemId: itemId } : { drillId, ...(persona ? { persona } : {}), ...(levels || {}) };
     post('/practice/preview', body)
@@ -78,9 +84,10 @@ export function DrillRunner() {
         setPreview(d);
         setLoadError(null);
         if (!persona) setPersona(d.scenario.persona.key);
-        if (!levels) setLevels(d.scenario.settings);
+        if (!levels && !locked) setLevels(d.scenario.settings);
       })
       .catch((e) => mine === loadSeq.current && setLoadError(e));
+    return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drillId, itemId, persona, levels?.difficulty, levels?.skepticism, levels?.depth]);
 
@@ -125,7 +132,7 @@ export function DrillRunner() {
         answer,
         ...(assigned
           ? { assignmentItemId: itemId }
-          : { drillId: preview.drill.id, drillVersionId: preview.drill.versionId, persona, ...levels }),
+          : { drillId: preview.drill.id, drillVersionId: preview.drill.versionId, persona, ...(locked ? {} : levels) }),
       };
       const r = await post('/practice/attempts', body, { timeoutMs: 25000 });
       writeDraft(scope, '');
@@ -142,11 +149,13 @@ export function DrillRunner() {
     }
   };
 
+  const backTo = assigned ? '/curriculum' : user.isManager && !fed ? '/practice?view=bank' : '/practice';
+  const backLabel = assigned ? 'Curriculum' : user.isManager && !fed ? 'the question bank' : 'Practice Studio';
   if (loadError) {
     return (
       <div className="page">
-        <Link className="crumb" to={assigned ? '/curriculum' : '/practice'}>
-          Back to {assigned ? 'Curriculum' : 'Practice Studio'}
+        <Link className="crumb" to={backTo}>
+          Back to {backLabel}
         </Link>
         <ErrorNotice error={loadError} />
       </div>
@@ -155,10 +164,11 @@ export function DrillRunner() {
   if (!s) return <div className="page"><Loading /></div>;
 
   const personaOptions = preview.drill.personas;
+  const pushbacks = Math.max(0, (s.conversation?.replies || 1) - 1);
   return (
     <div className="page">
-      <Link className="crumb" to={assigned ? '/curriculum' : '/practice'}>
-        Back to {assigned ? 'Curriculum' : 'Practice Studio'}
+      <Link className="crumb" to={backTo}>
+        Back to {backLabel}
       </Link>
       <div className="split">
         <section className="stack" aria-labelledby="drill-title">
@@ -181,6 +191,12 @@ export function DrillRunner() {
           <div className="panel panel-tight stack-sm">
             <h2 className="section-title">Your goal</h2>
             <p style={{ marginBottom: 0 }}>{s.objective}</p>
+            {pushbacks > 0 && (
+              <p className="small muted" style={{ marginBottom: 0 }}>
+                This is a conversation: after each reply you get coaching, then the buyer pushes back{' '}
+                {pushbacks === 1 ? 'once more' : `${pushbacks} more times`}. You answer as {s.repRoleLabel ? `an ${s.repRoleLabel.toLowerCase()}` : 'yourself'}.
+              </p>
+            )}
           </div>
 
           <details className="panel panel-tight">
@@ -198,14 +214,14 @@ export function DrillRunner() {
               <h2 className="section-title" style={{ margin: 0 }}>
                 Challenge
               </h2>
-              {assigned && (
+              {locked && (
                 <span className="badge badge-neutral">
                   <LockIcon />
-                  Set by your manager
+                  {assigned ? 'Set by your manager' : 'Set for this question'}
                 </span>
               )}
             </div>
-            {!assigned && personaOptions.length > 1 && (
+            {!locked && personaOptions.length > 1 && (
               <div className="field">
                 <label htmlFor="persona">Buyer persona</label>
                 <select id="persona" value={persona || ''} onChange={(e) => setPersona(e.target.value)}>
@@ -217,13 +233,13 @@ export function DrillRunner() {
                 </select>
               </div>
             )}
-            <LevelPicker label="Overall difficulty" value={s.settings.difficulty} locked={assigned} texts={meta.levels.difficulty} onChange={(v) => setLevels((l) => ({ ...l, difficulty: v }))} />
-            <LevelPicker label="Buyer skepticism" value={s.settings.skepticism} locked={assigned} texts={meta.levels.skepticism} onChange={(v) => setLevels((l) => ({ ...l, skepticism: v }))} />
-            <LevelPicker label="Product depth" value={s.settings.depth} locked={assigned} texts={meta.levels.depth} onChange={(v) => setLevels((l) => ({ ...l, depth: v }))} />
+            <LevelPicker label="Overall difficulty" value={s.settings.difficulty} locked={locked} texts={meta.levels.difficulty} onChange={(v) => setLevels((l) => ({ ...l, difficulty: v }))} />
+            <LevelPicker label="Buyer skepticism" value={s.settings.skepticism} locked={locked} texts={meta.levels.skepticism} onChange={(v) => setLevels((l) => ({ ...l, skepticism: v }))} />
+            <LevelPicker label="Product depth" value={s.settings.depth} locked={locked} texts={meta.levels.depth} onChange={(v) => setLevels((l) => ({ ...l, depth: v }))} />
           </div>
 
           <div className="stack-sm">
-            <h2 className="section-title">What this drill scores</h2>
+            <h2 className="section-title">What this question scores</h2>
             <div className="row">
               {s.assessedDimensions.map((d) => (
                 <span key={d.key} className="chip" title={d.description}>
@@ -231,7 +247,7 @@ export function DrillRunner() {
                 </span>
               ))}
             </div>
-            <p className="tiny muted">Other dimensions are not assessed in this drill, so they do not count toward your score.</p>
+            <p className="tiny muted">Other dimensions are not assessed in this question, so they do not count toward your score.</p>
           </div>
           {s.sources.length > 0 && (
             <div className="stack-sm">
@@ -273,7 +289,7 @@ export function DrillRunner() {
           )}
           {user.isManager && (
             <Link className="small" to={`/drills/${preview.drill.id}/edit`}>
-              Edit this drill
+              Edit this question
             </Link>
           )}
         </section>
@@ -301,7 +317,7 @@ export function DrillRunner() {
             </button>
           ) : (
             <div className="stack-sm">
-              <Notice kind="warn" title="Coaching is not available for this drill">
+              <Notice kind="warn" title="Coaching is not available for this question">
                 <p>{coaching.message}</p>
                 {assigned ? (
                   <p>Unscored practice cannot complete an assigned exercise, so this one stays open until coaching is available.</p>

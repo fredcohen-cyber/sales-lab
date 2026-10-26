@@ -1,10 +1,203 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
-import { get, post } from '../api.js';
-import { useAuth } from '../state.jsx';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { get, newRequestId, post } from '../api.js';
+import { DRAFT_PREFIX, useAuth } from '../state.jsx';
 import { BrandChip, ErrorNotice, fmtDateTime, Loading, Modal, Notice, ReviewBadge, useToast, attemptLabel, scoreText } from '../components/ui.jsx';
 import { CheckIcon, RefreshIcon } from '../components/Icons.jsx';
 import { CF_LABEL, CoachingResult, FLAG_LABEL } from '../components/Coaching.jsx';
+
+const MAX_REPLY = 6000;
+
+function readDraft(key) {
+  try {
+    return window.localStorage.getItem(`${DRAFT_PREFIX}${key}`) || '';
+  } catch {
+    return '';
+  }
+}
+function writeDraft(key, text) {
+  try {
+    if (text) window.localStorage.setItem(`${DRAFT_PREFIX}${key}`, text);
+    else window.localStorage.removeItem(`${DRAFT_PREFIX}${key}`);
+  } catch {
+    /* storage unavailable: the draft simply is not remembered */
+  }
+}
+
+// A reply's score for the transcript: the number, or why there is none.
+function turnScore(t) {
+  if (t.mode === 'unscored') return null;
+  if (t.reviewStatus === 'disputed') return 'Disputed';
+  if (typeof t.score === 'number') return String(t.score);
+  if (t.reviewStatus === 'provisional') return 'Pending review';
+  if (t.runStatus === 'running') return 'Coaching…';
+  return t.runStatus ? 'No score yet' : null;
+}
+
+// The buyer's lines and the rep's replies so far, with each reply's score.
+function Transcript({ conversation, currentId, persona, who }) {
+  return (
+    <ol className="transcript">
+      {conversation.turns.map((t) => {
+        const current = t.attemptId === currentId;
+        const score = turnScore(t);
+        return (
+          <li key={t.attemptId} className={current ? 'turn turn-current' : 'turn'} aria-current={current ? 'true' : undefined}>
+            <div className="buyer">
+              <div className="who-says">
+                {persona} {t.turn === 1 ? 'said' : 'pushed back'}
+              </div>
+              <blockquote>{t.buyerLine}</blockquote>
+            </div>
+            <div className="turn-reply">
+              <div className="row-between">
+                <span className="section-title" style={{ margin: 0 }}>
+                  {who} replied{conversation.repliesPlanned > 1 ? ` (reply ${t.turn} of ${conversation.repliesPlanned})` : ''}
+                </span>
+                {score && <span className={/^\d+$/.test(score) ? 'score-chip' : 'tiny muted'}>{score}</span>}
+              </div>
+              <div className="pad-text">{t.answer}</div>
+              {!current && (
+                <Link className="small" to={`/attempts/${t.attemptId}`}>
+                  Coaching for reply {t.turn}
+                </Link>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+// Once every reply is in: the conversation's score and its replies from strongest to weakest.
+function ConversationSummary({ conversation, scenario, isOwn, againLink, assigned }) {
+  const { scoreState, score, ranked, repliesPlanned } = conversation;
+  const why = {
+    awaiting_coaching: 'The score appears once every reply has been coached.',
+    pending_review: 'A reply is waiting for a manager to review a possible critical failure, so the score is not final yet.',
+    disputed: 'A manager disputed the coaching on a reply, so this conversation has no score that counts.',
+    unscored: 'This was unscored practice, so it has no score.',
+  };
+  return (
+    <section className="panel stack-sm conversation-summary" aria-labelledby="conv-title">
+      <div className="row-between">
+        <h2 id="conv-title" className="section-title" style={{ margin: 0 }}>
+          Conversation complete
+        </h2>
+        {scoreState === 'scored' && (
+          <span className="score-chip score-chip-lg" aria-label={`Conversation score ${score} out of 100`}>
+            {score}
+            <small>/100</small>
+          </span>
+        )}
+      </div>
+      <p className="small muted" style={{ margin: 0 }}>
+        {scoreState === 'scored' ? `The average of your ${repliesPlanned} replies.` : why[scoreState] || ''}
+      </p>
+      {ranked.length > 1 && (
+        <>
+          <h3 className="tiny muted" style={{ margin: '6px 0 0' }}>
+            Replies from strongest to weakest
+          </h3>
+          <ol className="ranked">
+            {ranked.map((r, i) => (
+              <li key={r.attemptId}>
+                <Link to={`/attempts/${r.attemptId}`}>Reply {r.turn}</Link>
+                <span className="score-chip">{r.score}</span>
+                {i === 0 && <span className="tiny muted">strongest</span>}
+                {i === ranked.length - 1 && <span className="tiny muted">weakest</span>}
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
+      {isOwn && (
+        <div className="row">
+          {!assigned && (
+            <Link className="btn btn-small" to={`/practice/stage/${scenario.stage}`}>
+              Next {scenario.stageLabel.toLowerCase()} question
+            </Link>
+          )}
+          <Link className="btn btn-secondary btn-small" to={againLink}>
+            Try this question again
+          </Link>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// The buyer's pushback and the box to answer it, once the last reply has been coached.
+function ReplyBox({ conversation, attempt, persona, userId }) {
+  const navigate = useNavigate();
+  const next = conversation.next;
+  const key = `${userId}:reply:${next.afterAttemptId}`;
+  const [text, setText] = useState(() => readDraft(key));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const requestId = useRef(null);
+  const nextTurn = conversation.turns.length + 1;
+  const send = async () => {
+    setError(null);
+    if (text.trim().length < 15) {
+      setError({ message: 'Write a fuller reply before sending.' });
+      return;
+    }
+    if (!requestId.current) requestId.current = newRequestId();
+    setBusy(true);
+    try {
+      const r = await post('/practice/attempts', { clientRequestId: requestId.current, continueFrom: next.afterAttemptId, mode: attempt.mode, answer: text }, { timeoutMs: 25000 });
+      writeDraft(key, '');
+      navigate(`/attempts/${r.attempt.id}`, { state: { justSubmitted: true } });
+    } catch (e) {
+      if (e.code === 'timeout' || e.code === 'network') {
+        setError({ message: 'Sales Lab could not confirm your reply was saved. Your text is still here; send it again. It will not be saved twice.' });
+      } else {
+        setError(e);
+        requestId.current = null;
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section id="reply" className="panel stack reply-box" aria-labelledby="reply-title">
+      <h2 id="reply-title" className="section-title" style={{ margin: 0 }}>
+        The {persona.toLowerCase()} pushes back: reply {nextTurn} of {conversation.repliesPlanned}
+      </h2>
+      <div className="buyer">
+        <div className="who-says">{persona} says</div>
+        <blockquote>{next.buyerLine}</blockquote>
+      </div>
+      <div className="pad">
+        <div className="pad-top" aria-hidden="true" />
+        <label htmlFor="reply-text" className="visually-hidden">
+          Your reply
+        </label>
+        <textarea
+          id="reply-text"
+          value={text}
+          maxLength={MAX_REPLY}
+          disabled={busy}
+          spellCheck="true"
+          onChange={(e) => {
+            setText(e.target.value);
+            writeDraft(key, e.target.value);
+            requestId.current = null;
+          }}
+        />
+      </div>
+      {error && <ErrorNotice error={{ message: error.message, status: error.status }} />}
+      <div className="row">
+        <button className="btn" onClick={send} disabled={busy || !text.trim()}>
+          {busy ? 'Saving your reply…' : attempt.mode === 'coached' ? 'Send reply for coaching' : 'Send reply'}
+        </button>
+        <span className="tiny muted">Write exactly what you would say. Drafts are kept on this device until you send.</span>
+      </div>
+    </section>
+  );
+}
 
 const POLL_MS = 1500;
 const EXPECTED_SECONDS = 40;
@@ -113,6 +306,11 @@ export function AttemptPage() {
   const againLink = attempt.assignment
     ? `/practice/assigned/${attempt.assignment.itemId}`
     : `/practice/drill/${attempt.drillId}?persona=${attempt.persona}&difficulty=${attempt.settings.difficulty}&skepticism=${attempt.settings.skepticism}&depth=${attempt.settings.depth}`;
+  const conv = data.conversation;
+  const multi = conv.repliesPlanned > 1;
+  const finished = conv.next.state === 'finished';
+  const canReply = isOwn && conv.isLatest && conv.next.state === 'reply' && Boolean(conv.next.buyerLine);
+  const who = isOwn ? 'You' : attempt.learner.name;
 
   return (
     <div className="page">
@@ -128,16 +326,34 @@ export function AttemptPage() {
           </div>
           <h1>{s.title}</h1>
           <p className="sub">
-            {isOwn ? 'Your answer' : `${attempt.learner.name}’s answer`}, submitted {fmtDateTime(attempt.submittedAt)}. Buyer: {s.persona.label}. Difficulty {s.settings.difficulty}, skepticism{' '}
+            {multi ? `Reply ${attempt.turn} of ${conv.repliesPlanned}` : isOwn ? 'Your answer' : `${attempt.learner.name}’s answer`}
+            {multi && !isOwn ? ` by ${attempt.learner.name}` : ''}, submitted {fmtDateTime(attempt.submittedAt)}. Buyer: {s.persona.label}. Difficulty {s.settings.difficulty}, skepticism{' '}
             {s.settings.skepticism}, product depth {s.settings.depth}.
           </p>
         </div>
-        {isOwn && (
+        {isOwn && finished && !multi && (
           <Link className="btn btn-secondary" to={againLink}>
-            Try this drill again
+            Try this question again
           </Link>
         )}
       </div>
+
+      {location.state?.resumed && !finished && (
+        <div style={{ marginBottom: 18 }}>
+          <Notice kind="info" title="Finish this conversation first">
+            <p>You started this {s.stageLabel.toLowerCase()} conversation earlier. Finish it, and the stage serves your next question.</p>
+          </Notice>
+        </div>
+      )}
+      {!conv.isLatest && (
+        <div style={{ marginBottom: 18 }}>
+          <Notice kind="info" title="This conversation continued">
+            <p>
+              You are looking at reply {attempt.turn}. <Link to={`/attempts/${conv.latestAttemptId}`}>Go to the latest reply</Link>.
+            </p>
+          </Notice>
+        </div>
+      )}
 
       {location.state?.justSubmitted && attempt.mode === 'unscored' && (
         <div style={{ marginBottom: 18 }}>
@@ -149,17 +365,28 @@ export function AttemptPage() {
 
       <div className="attempt-grid">
         <section className="stack attempt-answer" aria-labelledby="yours">
-          <div className="buyer">
-            <div className="who-says">{s.persona.label} said</div>
-            <blockquote>{s.buyerLine}</blockquote>
-          </div>
-          <h2 id="yours" className="section-title">
-            {isOwn ? 'You wrote' : `${attempt.learner.name} wrote`}
-          </h2>
-          <div className="pad">
-            <div className="pad-top" aria-hidden="true" />
-            <div className="pad-text">{attempt.answer}</div>
-          </div>
+          {multi ? (
+            <>
+              <h2 id="yours" className="section-title">
+                The conversation
+              </h2>
+              <Transcript conversation={conv} currentId={attempt.id} persona={s.persona.label} who={who} />
+            </>
+          ) : (
+            <>
+              <div className="buyer">
+                <div className="who-says">{s.persona.label} said</div>
+                <blockquote>{s.buyerLine}</blockquote>
+              </div>
+              <h2 id="yours" className="section-title">
+                {isOwn ? 'You wrote' : `${attempt.learner.name} wrote`}
+              </h2>
+              <div className="pad">
+                <div className="pad-top" aria-hidden="true" />
+                <div className="pad-text">{attempt.answer}</div>
+              </div>
+            </>
+          )}
         </section>
 
         <div className="stack attempt-extras">
@@ -183,12 +410,12 @@ export function AttemptPage() {
           </details>
           {data.siblings.length > 1 && (
             <div className="panel panel-tight">
-              <h2 className="section-title">All attempts at this drill with this buyer</h2>
+              <h2 className="section-title">All attempts at this question with this buyer</h2>
               <ul className="feedback-list small">
                 {data.siblings.map((x) => (
                   <li key={x.id}>
-                    {x.id === attempt.id ? <strong>This answer</strong> : <Link to={`/attempts/${x.id}`}>{attemptLabel(x)}</Link>}
-                    {x.id === attempt.id && ` (${attemptLabel(x).toLowerCase()})`}
+                    {x.id === attempt.conversationId ? <strong>This conversation</strong> : <Link to={`/attempts/${x.latest_turn_id || x.id}`}>{attemptLabel(x)}</Link>}
+                    {x.id === attempt.conversationId && ` (${attemptLabel(x).toLowerCase()})`}
                     <span className="muted">
                       {' '}
                       {fmtDateTime(x.submitted_at)}.{' '}
@@ -202,6 +429,14 @@ export function AttemptPage() {
         </div>
 
         <section className="stack attempt-coaching" aria-label="Coaching">
+          {multi && finished && <ConversationSummary conversation={conv} scenario={s} isOwn={isOwn} againLink={againLink} assigned={Boolean(attempt.assignment)} />}
+          {canReply && attempt.mode === 'coached' && evaluation && (
+            <Notice kind="info" title="The buyer pushes back">
+              <p>
+                Read your coaching, then <a href="#reply">answer the buyer’s next objection</a> below.
+              </p>
+            </Notice>
+          )}
           {attempt.mode === 'unscored' && <UnscoredPanel attempt={attempt} />}
 
           {attempt.mode === 'coached' && !evaluation && (
@@ -225,7 +460,8 @@ export function AttemptPage() {
               <p>Flagged items stay out of reports until you decide them.</p>
             </Notice>
           )}
-          {evaluation && <CoachingResult attempt={attempt} evaluation={evaluation} next={data.next} />}
+          {evaluation && <CoachingResult attempt={attempt} evaluation={evaluation} next={data.next} conversation={conv} replyBelow={canReply} />}
+          {canReply && <ReplyBox key={conv.next.afterAttemptId} conversation={conv} attempt={attempt} persona={s.persona.label} userId={user.id} />}
 
           {data.notes.length > 0 && (
             <section className="panel">
@@ -330,7 +566,7 @@ function UnscoredPanel({ attempt }) {
     <div className="stack">
       <Notice kind="info" title="Unscored practice">
         <p>
-          No AI coaching ran for this answer{attempt.unscoredReason === 'ai_not_configured' ? ' because AI coaching is not set up' : attempt.unscoredReason === 'no_approved_sources' ? ' because this drill has no approved source material' : ''}. It has no score
+          No AI coaching ran for this answer{attempt.unscoredReason === 'ai_not_configured' ? ' because AI coaching is not set up' : attempt.unscoredReason === 'no_approved_sources' ? ' because this question has no approved source material' : ''}. It has no score
           and does not count toward assignments or performance reports.
         </p>
       </Notice>

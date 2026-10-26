@@ -230,8 +230,11 @@ function mockProvider() {
       w.forEach((fn) => fn());
     },
     _seen: new Set(),
+    // The most recent requests, so tests can check what coaching was asked.
+    requests: [],
     async evaluate(request, { timeoutMs, signal }) {
       this.calls += 1;
+      this.requests = [...this.requests.slice(-19), request];
       const answer = /<rep_answer>\n([\s\S]*?)\n<\/rep_answer>/.exec(request.user)?.[1] || '';
       let mode = this.behavior;
       // "once" markers misbehave on the first call for an answer and succeed on the retry (browser tests).
@@ -277,6 +280,10 @@ function mockProvider() {
       if (answer.includes('[[mock:unsupported]]')) {
         claims.push({ claim_quote: quote, status: 'unsupported', note: 'Not covered by approved material.' });
       }
+      // In a conversation the buyer pushes back until the last reply, then closes.
+      const turn = /this is reply (\d+) of (\d+)/.exec(request.user);
+      const pushesBack = /the buyer pushes back again/.test(request.user);
+      const buyerReaction = turn ? (pushesBack ? `Mock pushback after reply ${turn[1]}: what would that cost us?` : `Mock closing response after reply ${turn[1]}.`) : 'Mock buyer reaction.';
       return {
         output: {
           summary: 'Mock evaluation for automated tests.',
@@ -286,7 +293,7 @@ function mockProvider() {
           claims,
           critical_failures: critical,
           stronger_example: 'Mock stronger example response.',
-          buyer_reaction: 'Mock buyer reaction.',
+          buyer_reaction: buyerReaction,
           next_focus: { dimension: keys[0], suggestion: 'Mock next focus.' },
           injection_detected: answer.includes('[[mock:inject]]'),
         },

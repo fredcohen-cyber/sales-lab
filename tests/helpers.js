@@ -173,3 +173,29 @@ export async function waitForCoaching(client, attemptId) {
 
 export const GOOD_ANSWER =
   'I hear you, and that makes sense. Before I suggest anything, what happens today when a website inquiry comes in at 8 p.m.? Who owns the follow-up the next morning?';
+
+export const FOLLOW_UP_ANSWER = 'That is a fair question. What would it be worth to you to know every inquiry gets a reply within minutes? Could we look at it together on Thursday?';
+
+// Replies to each of the buyer's pushbacks until the conversation is over, waiting for coaching after
+// each coached reply. Returns the view of the last reply.
+export async function finishConversation(client, attemptId, { answer = FOLLOW_UP_ANSWER } = {}) {
+  let view = (await client.get(`/api/practice/attempts/${attemptId}`)).data;
+  for (let i = 0; i < 8; i += 1) {
+    if (view.attempt.mode === 'coached') view = await waitForCoaching(client, view.attempt.id);
+    const next = view.conversation.next;
+    if (next.state !== 'reply') return view;
+    const r = await client.post('/api/practice/attempts', { clientRequestId: randomUUID(), continueFrom: next.afterAttemptId, mode: view.attempt.mode, answer });
+    if (r.status !== 201) throw new Error(`reply failed: ${JSON.stringify(r.data)}`);
+    view = r.data;
+  }
+  throw new Error('conversation did not finish');
+}
+
+// Submits a first reply and finishes its conversation. Returns { first, last } attempt views.
+export async function submitConversation(client, drill, answer, extra = {}) {
+  const created = await submit(client, drill, answer, extra);
+  if (created.status !== 201) throw new Error(`submit failed: ${JSON.stringify(created.data)}`);
+  const last = await finishConversation(client, created.data.attempt.id);
+  const first = (await client.get(`/api/practice/attempts/${created.data.attempt.id}`)).data;
+  return { first, last, created };
+}

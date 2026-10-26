@@ -32,7 +32,8 @@ export function reviewRoutes({ db }) {
       const rows = await db.many(
         `SELECT a.id AS attempt_id, a.learner_id, u.name AS learner_name, a.learner_role, a.scenario->>'title' AS drill_title,
                 a.scenario->>'stageLabel' AS stage_label, a.brand, a.scenario->'persona'->>'label' AS persona_label, a.difficulty,
-                a.attempt_number, a.coached_number, a.mode, a.submitted_at, e.id AS evaluation_id, e.overall_score, e.weighted_score, e.review_status,
+                a.attempt_number, a.coached_number, a.mode, a.submitted_at, a.turn_number, a.replies_planned,
+                e.id AS evaluation_id, e.overall_score, e.weighted_score, e.review_status,
                 (SELECT count(*) FROM jsonb_array_elements(e.critical_failures) c WHERE c->>'status' IN ('pending', 'confirmed')) AS critical_count,
                 (SELECT count(*) FROM jsonb_array_elements(e.critical_failures) c WHERE c->>'status' = 'pending') AS pending_critical_count,
                 (SELECT count(*) FROM jsonb_array_elements(e.review_flags) f WHERE f->>'status' = 'open') AS flag_count,

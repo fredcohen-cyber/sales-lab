@@ -15,7 +15,7 @@ export function AttemptTable({ attempts, showRep = false }) {
           <tr>
             <th>Submitted</th>
             {showRep && <th>Rep</th>}
-            <th>Drill</th>
+            <th>Question</th>
             <th>Buyer</th>
             <th className="num">Level</th>
             <th>Attempt</th>
@@ -41,6 +41,8 @@ export function AttemptTable({ attempts, showRep = false }) {
               <td>
                 {a.mode === 'unscored' ? (
                   <span className="badge badge-neutral">Unscored practice</span>
+                ) : a.unfinished ? (
+                  <span className="badge badge-info">In progress</span>
                 ) : a.reviewStatus ? (
                   <ReviewBadge status={a.reviewStatus} />
                 ) : (
@@ -90,7 +92,7 @@ export function Progress() {
           <div className="stats">
             <Stat label="First-attempt average" value={me.performance.firstAttemptAverage ?? '—'} note={`${me.performance.scoredFirstAttempts} scored first attempts`} />
             <Stat label="Met target on first try" value={me.performance.scoredFirstAttempts ? `${me.performance.metTarget} of ${me.performance.scoredFirstAttempts}` : '—'} note={`Target ${data.thresholds.proficiency}`} />
-            <Stat label="Answers submitted" value={me.engagement.submitted} note={`${me.engagement.retries} retries, ${me.engagement.unscored} unscored`} />
+            <Stat label="Questions answered" value={me.engagement.submitted} note={`${me.engagement.replies} replies, ${me.engagement.retries} retries, ${me.engagement.unscored} unscored`} />
             <Stat label="Practice days" value={me.engagement.practiceDays} note={`In the last ${data.period.days} days`} />
           </div>
           <section className="panel stack">

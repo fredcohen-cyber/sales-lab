@@ -1,7 +1,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { addUser, drillBySlug, ownerClient, startTestApp, submit, waitForCoaching } from '../helpers.js';
+import { addUser, drillBySlug, finishConversation, ownerClient, startTestApp, submit, submitConversation, waitForCoaching } from '../helpers.js';
 import { addDays, nyDate } from '../../server/lib/time.js';
 
 let h;
@@ -57,7 +57,7 @@ test('assigned exercises keep prescribed settings and enforce order', async () =
   assert.equal(stranger.status, 404);
 });
 
-test('receiving coaching completes the exercise; failed coaching does not', async () => {
+test('finishing the conversation completes the exercise; failed coaching does not', async () => {
   const mine = await ae.get('/api/curriculum/mine');
   const first = mine.data.active[0].items[0];
   h.provider.behavior = 'fail';
@@ -74,11 +74,21 @@ test('receiving coaching completes the exercise; failed coaching does not', asyn
   assert.equal(state.data.active[0].items[0].state, 'available', 'failed coaching does not complete the item');
   h.provider.behavior = null;
   await ae.post(`/api/practice/attempts/${attempt.data.attempt.id}/evaluate`, {});
-  await waitForCoaching(ae, attempt.data.attempt.id);
+  const coached = await waitForCoaching(ae, attempt.data.attempt.id);
+  // At difficulty 4 the buyer pushes back three times: coaching one reply does not finish the exercise.
+  assert.equal(coached.conversation.repliesPlanned, 4);
+  assert.equal(coached.conversation.next.state, 'reply');
+  state = await ae.get('/api/curriculum/mine');
+  assert.equal(state.data.active[0].items[0].state, 'available', 'the conversation is not finished yet');
+  assert.deepEqual(state.data.active[0].items[0].lastAttempt.replies, { done: 1, planned: 4 });
+  const last = await finishConversation(ae, attempt.data.attempt.id);
+  assert.equal(last.conversation.scoreState, 'scored');
   state = await ae.get('/api/curriculum/mine');
   const items = state.data.active[0].items;
   assert.equal(items[0].state, 'completed');
+  assert.equal(items[0].completedAttemptId, attempt.data.attempt.id, 'the exercise records the conversation');
   assert.ok(items[0].proficiency, 'completion shows proficiency separately');
+  assert.equal(items[0].proficiency.score, last.conversation.score, 'the score is the conversation’s average');
   assert.equal(typeof items[0].proficiency.metTarget, 'boolean');
   assert.equal(items[1].state, 'available');
 });
@@ -99,7 +109,7 @@ test('finishing every item completes the assignment', async () => {
     mode: 'coached',
     answer: 'Totally fair. What prompted you to start looking now? I can point you in the right direction.',
   });
-  await waitForCoaching(ae, a.data.attempt.id);
+  await finishConversation(ae, a.data.attempt.id);
   const after = await ae.get('/api/curriculum/mine');
   assert.equal(after.data.active.length, 0);
   assert.equal(after.data.completed.length, 1);
@@ -148,28 +158,31 @@ test('manager review: confirm and dispute change what counts', async () => {
   assert.equal(view.data.notes[0].author_name, 'Fred Cohen');
 });
 
-test('reports: first-attempt averages exclude retries, unscored, provisional, and disputed work', async () => {
+test('reports: first-attempt averages count finished conversations, excluding retries, unscored, provisional, and disputed work', async () => {
   const fresh = await addUser(h, owner, { name: 'Rae Report', email: 'rae@omnizant.com', role: 'ae' });
   const rae = fresh.client;
   const d1 = await drillBySlug(h, 'just-looking');
   const d2 = await drillBySlug(h, 'send-me-information');
   const d3 = await drillBySlug(h, 'close-ask-for-business');
   const d4 = await drillBySlug(h, 'stalled-follow-up');
-  const a1 = await submit(rae, d1, 'Totally fair, most people are when they first reach out. What prompted you to start looking now?');
-  await waitForCoaching(rae, a1.data.attempt.id);
-  const a2 = await submit(rae, d1, 'Totally fair. What prompted you to start looking now, and what would make this worth your time today? I can save you time.');
-  await waitForCoaching(rae, a2.data.attempt.id);
-  const a3 = await submit(rae, d2, 'Happy to. So I send the right thing, can I ask two quick questions? Does Thursday at 2 work?');
-  await waitForCoaching(rae, a3.data.attempt.id);
-  const a4 = await submit(rae, d3, 'Let me make sure I have this right. Have you heard enough to make a decision? [[mock:unsupported]]');
-  const ev4 = (await waitForCoaching(rae, a4.data.attempt.id)).evaluation;
-  assert.equal(ev4.reviewStatus, 'provisional');
-  const a5 = await submit(rae, d4, 'Quick idea for you: one change fixed after-hours follow-up for two firms like yours. Tuesday or Thursday?');
-  const ev5 = (await waitForCoaching(rae, a5.data.attempt.id)).evaluation;
-  await owner.post(`/api/evaluations/${ev5.id}/dispute`, { note: 'Scored the wrong drill context.' });
+  const a1 = await submitConversation(rae, d1, 'Totally fair, most people are when they first reach out. What prompted you to start looking now?');
+  await submitConversation(rae, d1, 'Totally fair. What prompted you to start looking now, and what would make this worth your time today? I can save you time.');
+  const a3 = await submitConversation(rae, d2, 'Happy to. So I send the right thing, can I ask two quick questions? Does Thursday at 2 work?');
+  const a4 = await submitConversation(rae, d3, 'Let me make sure I have this right. Have you heard enough to make a decision? [[mock:unsupported]]');
+  assert.equal(a4.first.evaluation.reviewStatus, 'provisional');
+  const a5 = await submitConversation(rae, d4, 'Quick idea for you: one change fixed after-hours follow-up for two firms like yours. Tuesday or Thursday?');
+  await owner.post(`/api/evaluations/${a5.last.evaluation.id}/dispute`, { note: 'Scored the wrong drill context.' });
+  // A conversation left after its first reply does not count yet.
+  const unfinished = await submit(rae, await drillBySlug(h, 'cold-permission-opener'), 'Hi, this is Rae from Omnizant. This is a sales call; can I have thirty seconds to tell you why I called?');
+  await waitForCoaching(rae, unfinished.data.attempt.id);
 
-  const scores = [];
-  for (const a of [a1, a3]) scores.push((await rae.get(`/api/practice/attempts/${a.data.attempt.id}`)).data.evaluation.overallScore);
+  // Each conversation scores the average of its replies.
+  const scores = [a1, a3].map((a) => a.last.conversation.score);
+  for (const a of [a1, a3]) {
+    const replies = a.last.conversation.turns.map((t) => t.score);
+    assert.equal(replies.length, 2, 'difficulty 2: one pushback');
+    assert.equal(a.last.conversation.score, Math.round((replies[0] + replies[1]) / 2));
+  }
   const expected = Math.round((scores.reduce((x, y) => x + y, 0) / scores.length) * 10) / 10;
 
   const rep = await owner.get(`/api/reports/rep/${fresh.user.id}?period=7`);
@@ -180,9 +193,11 @@ test('reports: first-attempt averages exclude retries, unscored, provisional, an
   assert.equal(p.excluded.retries, 1);
   assert.equal(p.excluded.pendingReview, 1);
   assert.equal(p.excluded.disputed, 1);
+  assert.equal(p.excluded.unfinished, 1);
   assert.equal(p.pendingReviews, 1);
   const e = rep.data.reps[0].engagement;
-  assert.equal(e.submitted, 5);
+  assert.equal(e.submitted, 6);
+  assert.equal(e.replies, 11, 'five finished conversations of two replies, and one reply in an unfinished one');
   assert.equal(e.retries, 1);
   assert.equal(e.practiceDays, 1);
   assert.equal(rep.data.reps[0].retry.exercises, 1, 'like-for-like retry gains are reported separately');

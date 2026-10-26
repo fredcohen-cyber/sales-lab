@@ -5,7 +5,7 @@ import { isUuid } from '../practice/routes.js';
 import { addDays, daysBetween, nyDate } from '../lib/time.js';
 import { toCsv } from '../lib/csv.js';
 import { BRANDS, ROLES, stageLabel } from '../domain.js';
-import { dimensionStats, engagementFor, followUpReasons, isCounted, isFirstScored, performanceFor, retryImprovement, trendByWeek } from './metrics.js';
+import { dimensionStats, engagementFor, followUpReasons, isCounted, isFirstScored, performanceFor, retryImprovement, toConversationRows, trendByWeek } from './metrics.js';
 
 const PERIODS = [7, 30, 90];
 
@@ -21,14 +21,17 @@ export function parseFilters(query) {
   };
 }
 
+// One row per reply. Filters apply to the conversation's first reply ("c"), so a conversation is in a
+// window when it started there, and toConversationRows rolls the replies up into conversations.
 const ATTEMPT_ROW_SQL = `
-  SELECT a.id, a.learner_id, a.learner_role, a.drill_id, a.persona, a.difficulty, a.skepticism, a.depth, a.brand, a.stage, a.mode,
-         a.scenario->>'subject' AS subject, a.attempt_number, a.coached_number, a.submitted_at,
+  SELECT a.id, a.conversation_id, a.turn_number, a.replies_planned, a.learner_id, c.learner_role, a.drill_id, a.persona, a.difficulty,
+         a.skepticism, a.depth, a.brand, a.stage, a.mode, a.scenario->>'subject' AS subject, a.attempt_number, a.coached_number, a.submitted_at,
          to_char((a.submitted_at AT TIME ZONE 'America/New_York')::date, 'YYYY-MM-DD') AS day,
          a.scenario->>'title' AS drill_title, a.scenario->'persona'->>'label' AS persona_label, a.assignment_item_id,
-         e.id AS evaluation_id, e.overall_score, e.review_status, e.dimension_scores, e.critical_failures, e.meets_target,
+         e.id AS evaluation_id, e.overall_score, e.review_status, e.dimension_scores, e.critical_failures, e.meets_target, e.proficiency_threshold,
          r.status AS run_status
     FROM attempts a
+    JOIN attempts c ON c.id = a.conversation_id
     LEFT JOIN evaluations e ON e.id = a.evaluation_id
     LEFT JOIN evaluation_runs r ON r.id = a.latest_run_id`;
 
@@ -44,27 +47,29 @@ export async function buildReport(db, filters, { selfUser = null } = {}) {
   const startDay = addDays(today, -(filters.period - 1));
 
   const params = [startDay];
-  const where = [`a.submitted_at >= ($1::date)::timestamp AT TIME ZONE 'America/New_York'`];
+  const where = [`c.submitted_at >= ($1::date)::timestamp AT TIME ZONE 'America/New_York'`];
   if (selfUser) {
     params.push(selfUser.id);
-    where.push(`a.learner_id = $${params.length}`);
+    where.push(`c.learner_id = $${params.length}`);
   } else {
     // Practice by people while they were managers is not rep performance.
-    where.push(`a.learner_role IN ('ae', 'am')`);
+    where.push(`c.learner_role IN ('ae', 'am')`);
   }
   if (filters.brand) {
     params.push(filters.brand);
-    where.push(`a.brand = $${params.length}`);
+    where.push(`c.brand = $${params.length}`);
   }
   if (filters.persona) {
     params.push(filters.persona);
-    where.push(`a.persona = $${params.length}`);
+    where.push(`c.persona = $${params.length}`);
   }
   if (filters.difficulty) {
     params.push(filters.difficulty);
-    where.push(`a.difficulty = $${params.length}`);
+    where.push(`c.difficulty = $${params.length}`);
   }
-  const rows = await db.many(`${ATTEMPT_ROW_SQL} WHERE ${where.join(' AND ')} ORDER BY a.submitted_at`, params);
+  const rows = toConversationRows(await db.many(`${ATTEMPT_ROW_SQL} WHERE ${where.join(' AND ')} ORDER BY a.submitted_at`, params)).sort(
+    (x, y) => new Date(x.submitted_at) - new Date(y.submitted_at),
+  );
 
   // People in the report: current AEs and AMs, plus anyone with rep practice in the window (for example
   // someone who has since become a manager or been deactivated).
@@ -78,7 +83,7 @@ export async function buildReport(db, filters, { selfUser = null } = {}) {
 
   // All attempts on the exercises practiced in this window, for like-for-like retry gains.
   const allForReps = repIds.length
-    ? await db.many(`${ATTEMPT_ROW_SQL} WHERE a.learner_id = ANY($1::uuid[])${selfUser ? '' : ` AND a.learner_role IN ('ae', 'am')`}`, [repIds])
+    ? toConversationRows(await db.many(`${ATTEMPT_ROW_SQL} WHERE c.learner_id = ANY($1::uuid[])${selfUser ? '' : ` AND c.learner_role IN ('ae', 'am')`}`, [repIds]))
     : [];
   const retryFor = (subset) => {
     const keys = new Set(subset.map((r) => `${r.learner_id}|${r.drill_id}|${r.persona}`));
@@ -190,7 +195,7 @@ export async function buildReport(db, filters, { selfUser = null } = {}) {
   }
   const perf = performanceFor(scopedRows);
   const ex = perf.excluded;
-  const excludedTotal = ex.retries + ex.unscored + ex.pendingReview + ex.disputed + ex.awaitingCoaching;
+  const excludedTotal = ex.retries + ex.unscored + ex.pendingReview + ex.disputed + ex.awaitingCoaching + ex.unfinished;
   if (excludedTotal > 0) {
     const parts = [];
     if (ex.retries) parts.push(`${ex.retries} retr${ex.retries === 1 ? 'y' : 'ies'}`);
@@ -198,6 +203,7 @@ export async function buildReport(db, filters, { selfUser = null } = {}) {
     if (ex.pendingReview) parts.push(`${ex.pendingReview} pending review`);
     if (ex.disputed) parts.push(`${ex.disputed} disputed`);
     if (ex.awaitingCoaching) parts.push(`${ex.awaitingCoaching} still waiting for coaching`);
+    if (ex.unfinished) parts.push(`${ex.unfinished} unfinished conversation${ex.unfinished === 1 ? '' : 's'}`);
     disclosures.push(`First-attempt averages exclude ${parts.join(', ')}.`);
   }
   if (!selfUser && rows.some((r) => {
@@ -274,6 +280,9 @@ function attemptRowOut(r, repsById) {
     pendingCriticalFailures: (r.critical_failures || []).filter((c) => c.status === 'pending').length,
     dimensionScores: r.dimension_scores,
     assignmentItemId: r.assignment_item_id,
+    replies: r.replies || 1,
+    repliesPlanned: r.replies_planned || 1,
+    unfinished: Boolean(r.unfinished),
   };
 }
 
@@ -327,7 +336,7 @@ export function reportRoutes({ db }) {
       const repsById = new Map(report.reps.map((x) => [x.id, x]));
       // Notes about the data go above the table so they travel with the file.
       const preamble = [
-        ['Sales Lab export', type === 'reps' ? 'Reps' : 'Answers'],
+        ['Sales Lab export', type === 'reps' ? 'Reps' : 'Practice conversations (one row per question answered; scores average the replies)'],
         ['Period (America/New_York)', `${report.period.startDay} to ${report.period.endDay}`],
         ...report.disclosures.map((d) => ['Note', d]),
         ['Note', 'Scores are for coaching and development only, not employment decisions or rankings.'],
@@ -342,7 +351,8 @@ export function reportRoutes({ db }) {
             { label: 'Current role', key: 'roleLabel' },
             { label: 'Practiced as', value: (x) => x.rolesPracticed.map((r) => ROLES[r] || r).join('; ') },
             { label: 'Account status', key: 'status' },
-            { label: 'Submitted answers', value: (x) => x.engagement.submitted },
+            { label: 'Questions answered', value: (x) => x.engagement.submitted },
+            { label: 'Replies, including pushbacks', value: (x) => x.engagement.replies },
             { label: 'Retries', value: (x) => x.engagement.retries },
             { label: 'Unscored practice', value: (x) => x.engagement.unscored },
             { label: 'Practice days', value: (x) => x.engagement.practiceDays },
@@ -382,8 +392,12 @@ export function reportRoutes({ db }) {
             { label: 'Skepticism', key: 'skepticism' },
             { label: 'Product depth', key: 'depth' },
             { label: 'Attempt', key: 'attemptLabel' },
+            { label: 'Replies', value: (x) => `${x.replies} of ${x.repliesPlanned}` },
             { label: 'Mode', key: 'mode' },
-            { label: 'Coaching status', value: (x) => (x.mode === 'unscored' ? 'unscored' : x.overallScore !== null && x.overallScore !== undefined ? 'coached' : x.runStatus || 'pending') },
+            {
+              label: 'Coaching status',
+              value: (x) => (x.mode === 'unscored' ? 'unscored' : x.unfinished ? 'conversation unfinished' : x.overallScore !== null && x.overallScore !== undefined ? 'coached' : x.runStatus || 'pending'),
+            },
             { label: 'Review status', key: 'reviewStatus' },
             { label: 'Counts toward averages', value: (x) => (x.firstAttemptScored ? 'yes' : 'no') },
             { label: 'Overall score', key: 'overallScore' },

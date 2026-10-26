@@ -75,12 +75,14 @@ async function failRun(db, runId, err, log) {
   );
 }
 
-// Complete the assignment item linked to an attempt the first time it receives coaching.
+// Complete the assignment item linked to an attempt when the conversation's last reply is coached for
+// the first time. The item records the conversation (its first reply).
 async function completeAssignmentItem(q, attempt) {
   if (!attempt.assignment_item_id) return;
+  if (attempt.turn_number < attempt.replies_planned) return;
   const item = await q.one(`SELECT * FROM assignment_items WHERE id = $1 FOR UPDATE`, [attempt.assignment_item_id]);
   if (!item || item.completed_at) return;
-  await q.query(`UPDATE assignment_items SET completed_at = now(), completed_attempt_id = $2 WHERE id = $1`, [item.id, attempt.id]);
+  await q.query(`UPDATE assignment_items SET completed_at = now(), completed_attempt_id = $2 WHERE id = $1`, [item.id, attempt.conversation_id]);
   const remaining = await q.one(
     `SELECT count(*) AS n FROM assignment_items WHERE assignment_id = $1 AND completed_at IS NULL`,
     [item.assignment_id],

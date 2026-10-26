@@ -6,13 +6,13 @@ export const DRILL_SQL = `
   SELECT d.id, d.slug, d.status, d.created_at, d.updated_at, v.id AS version_id, v.version, v.title, v.brand, v.subject, v.stage,
          v.roles, v.personas, v.situation, v.buyer_line, v.persona_lines, v.objective, v.good_looks_like,
          v.assessed_dimensions, v.default_difficulty, v.default_skepticism, v.default_depth, v.source_refs,
-         v.change_note, v.created_at AS version_created_at
+         v.role_guidance, v.pushbacks, v.change_note, v.created_at AS version_created_at
     FROM drills d JOIN drill_versions v ON v.id = d.current_version_id`;
 
 export const DRILL_VERSION_SQL = `
   SELECT d.id, d.slug, d.status, v.id AS version_id, v.version, v.title, v.brand, v.subject, v.stage, v.roles, v.personas,
          v.situation, v.buyer_line, v.persona_lines, v.objective, v.good_looks_like, v.assessed_dimensions,
-         v.default_difficulty, v.default_skepticism, v.default_depth, v.source_refs
+         v.default_difficulty, v.default_skepticism, v.default_depth, v.source_refs, v.role_guidance, v.pushbacks
     FROM drill_versions v JOIN drills d ON d.id = v.drill_id`;
 
 // Source lookup for many drills at once (see buildSourceIndex).
@@ -42,12 +42,12 @@ export function coachingAvailability(config, drill, index) {
 }
 
 export const UNAVAILABLE_TEXT = {
-  ai_not_configured: 'AI coaching is not set up yet, so this drill runs as unscored practice.',
-  no_approved_sources: 'This drill has no approved source material yet, so it runs as unscored practice.',
+  ai_not_configured: 'AI coaching is not set up yet, so this question runs as unscored practice.',
+  no_approved_sources: 'This question has no approved source material yet, so it runs as unscored practice.',
   no_relevant_sources:
-    'None of the approved sources for this drill cover its brand and subject (for a drill about both brands, material for each), so it runs as unscored practice rather than being scored against unrelated material.',
+    'None of the approved sources for this question cover its brand and subject (for a question about both brands, material for each), so it runs as unscored practice rather than being scored against unrelated material.',
   sections_missing:
-    'The source sections this drill uses are no longer in the approved material, so it runs as unscored practice until a manager updates the drill.',
+    'The source sections this question uses are no longer in the approved material, so it runs as unscored practice until a manager updates the question.',
 };
 
 // For the editor: each reference's sections expressed as keys of the source's latest version, which is
@@ -89,6 +89,10 @@ export function shapeDrill(row, availability, { forManager, index = null }) {
     personaLines: row.persona_lines,
     objective: row.objective,
     goodLooksLike: forManager ? row.good_looks_like : undefined,
+    // What a good answer adds for each rep role, and the buyer's likely follow-up objections: both are
+    // part of the answer key, so only managers see them before answering.
+    roleGuidance: forManager ? row.role_guidance || {} : undefined,
+    pushbacks: forManager ? row.pushbacks || [] : undefined,
     assessedDimensions: row.assessed_dimensions,
     defaults: { difficulty: row.default_difficulty, skepticism: row.default_skepticism, depth: row.default_depth },
     sourceRefs: forManager ? (index ? editorRefs(row.source_refs, index) : row.source_refs) : undefined,

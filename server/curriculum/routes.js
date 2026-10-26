@@ -6,6 +6,7 @@ import { clientIp, requireManager } from '../auth/middleware.js';
 import { isUuid } from '../practice/routes.js';
 import { isValidDateString, nyDate } from '../lib/time.js';
 import { DIMENSION_KEYS, stageLabel } from '../domain.js';
+import { conversationSummarySql, withConversationScore } from '../practice/conversation.js';
 
 // Who a learning path is meant for: by experience, by role, or both.
 export const PATH_AUDIENCES = ['all', 'new_hire', 'experienced', 'ae', 'am', 'new_hire_ae', 'experienced_ae', 'new_hire_am', 'experienced_am'];
@@ -49,23 +50,26 @@ export async function loadAssignments(q, { learnerId = null, status = null, assi
     params,
   );
   if (assignments.length === 0) return [];
-  const items = await q.many(
-    `SELECT i.*, v.title, v.stage, v.brand, p.label AS persona_label,
-            la.id AS last_attempt_id, la.submitted_at AS last_attempt_at, lr.status AS last_run_status,
-            le.overall_score AS last_score, le.review_status AS last_review_status,
-            ce.overall_score AS completed_score, ce.meets_target AS completed_meets_target, ce.review_status AS completed_review_status
-       FROM assignment_items i
-       JOIN drill_versions v ON v.id = i.drill_version_id
-       LEFT JOIN personas p ON p.key = i.persona
-       LEFT JOIN LATERAL (SELECT * FROM attempts x WHERE x.assignment_item_id = i.id ORDER BY x.submitted_at DESC LIMIT 1) la ON true
-       LEFT JOIN evaluation_runs lr ON lr.id = la.latest_run_id
-       LEFT JOIN evaluations le ON le.id = la.evaluation_id
-       LEFT JOIN attempts ca ON ca.id = i.completed_attempt_id
-       LEFT JOIN evaluations ce ON ce.id = ca.evaluation_id
-      WHERE i.assignment_id = ANY($1::uuid[])
-      ORDER BY i.assignment_id, i.position`,
-    [assignments.map((a) => a.id)],
-  );
+  // Each exercise is a conversation: its latest one shows progress, and the one that completed the
+  // exercise gives the score (the average of its replies).
+  const items = (
+    await q.many(
+      `SELECT i.*, v.title, v.stage, v.brand, p.label AS persona_label,
+              la.id AS last_attempt_id, la.submitted_at AS last_attempt_at, la.replies_planned AS last_replies_planned,
+              lconv.latest_turn_id AS last_turn_id, lconv.latest_run_status AS last_run_status, lconv.replies_done AS last_replies_done,
+              ca.mode, ca.replies_planned, cconv.*
+         FROM assignment_items i
+         JOIN drill_versions v ON v.id = i.drill_version_id
+         LEFT JOIN personas p ON p.key = i.persona
+         LEFT JOIN LATERAL (SELECT * FROM attempts x WHERE x.assignment_item_id = i.id AND x.turn_number = 1 ORDER BY x.submitted_at DESC LIMIT 1) la ON true
+         ${conversationSummarySql('la', 'lconv')}
+         LEFT JOIN attempts ca ON ca.id = i.completed_attempt_id
+         ${conversationSummarySql('ca', 'cconv')}
+        WHERE i.assignment_id = ANY($1::uuid[])
+        ORDER BY i.assignment_id, i.position`,
+      [assignments.map((a) => a.id)],
+    )
+  ).map((i) => (i.completed_attempt_id ? withConversationScore(i) : i));
   const today = nyDate();
   return assignments.map((a) => {
     const own = items.filter((i) => i.assignment_id === a.id);
@@ -96,13 +100,20 @@ export async function loadAssignments(q, { learnerId = null, status = null, assi
         // its evaluation counts (final or confirmed).
         proficiency: i.completed_at
           ? {
-              score: i.completed_score,
-              metTarget: ['final', 'confirmed'].includes(i.completed_review_status) ? i.completed_meets_target : null,
-              reviewStatus: i.completed_review_status,
+              score: i.conversation_average ?? null,
+              metTarget: ['final', 'confirmed'].includes(i.conversation_review_status) ? i.conversation_meets_target : null,
+              reviewStatus: i.conversation_review_status,
             }
           : null,
+        // The latest conversation on this exercise: its latest reply, and how far it got.
         lastAttempt: i.last_attempt_id
-          ? { id: i.last_attempt_id, at: i.last_attempt_at, runStatus: i.last_run_status, score: i.last_score, reviewStatus: i.last_review_status }
+          ? {
+              id: i.last_turn_id || i.last_attempt_id,
+              conversationId: i.last_attempt_id,
+              at: i.last_attempt_at,
+              runStatus: i.last_run_status,
+              replies: { done: i.last_replies_done, planned: i.last_replies_planned },
+            }
           : null,
       };
     });

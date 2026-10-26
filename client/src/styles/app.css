@@ -1779,3 +1779,95 @@ dialog.modal::backdrop {
     position: static;
   }
 }
+
+/* ------------------------------------------------------------------ practice stages and conversations */
+.stage-tile h3 {
+  font-size: 19px;
+}
+.stage-tile-empty {
+  background: var(--surface-2);
+  color: var(--ink-3);
+}
+.stage-tile-empty h3 {
+  color: var(--ink-2);
+}
+
+/* The conversation so far: each buyer line, then the rep's reply and its score. */
+.transcript {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.turn {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.turn .buyer blockquote {
+  font-size: 18px;
+}
+.turn-reply {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  padding: 12px 14px;
+}
+.turn-reply .pad-text {
+  white-space: pre-wrap;
+  font: 400 16.5px/1.5 var(--serif);
+  color: #1f2a33;
+}
+.turn-current .turn-reply {
+  border-color: var(--green);
+  box-shadow: inset 3px 0 0 var(--green);
+}
+.score-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  min-width: 34px;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--green-tint);
+  color: var(--green-strong);
+  font: 650 14px/1.3 var(--sans);
+  font-variant-numeric: tabular-nums;
+}
+.score-chip-lg {
+  font-size: 26px;
+  padding: 4px 14px;
+}
+.score-chip small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+.ranked {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ranked li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.conversation-summary {
+  border-color: #c4dccf;
+  background: var(--green-wash);
+}
+.reply-box {
+  border-color: var(--ink-3);
+}
+.reply-box textarea {
+  min-height: 160px;
+}

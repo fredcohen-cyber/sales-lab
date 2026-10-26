@@ -6,6 +6,9 @@ import { Empty, ErrorNotice, fmtDate, fmtRelative, Loading, Notice, ReviewBadge,
 
 export function NextUpCard({ next }) {
   if (!next) return null;
+  // An exercise already under way is continued from its latest reply.
+  const replies = next.lastAttempt?.replies;
+  const underWay = replies && replies.done < replies.planned;
   return (
     <section className="next-up stack-sm" aria-labelledby="next-up-title">
       <div className="row-between">
@@ -20,9 +23,15 @@ export function NextUpCard({ next }) {
         {next.stageLabel}. Buyer: {next.personaLabel}. Difficulty {next.settings.difficulty}, skepticism {next.settings.skepticism}, product depth {next.settings.depth}.
       </p>
       <div>
-        <Link className="btn" to={`/practice/assigned/${next.id}`}>
-          Start exercise
-        </Link>
+        {underWay ? (
+          <Link className="btn" to={`/attempts/${next.lastAttempt.id}`}>
+            Continue the conversation ({replies.done} of {replies.planned} replies)
+          </Link>
+        ) : (
+          <Link className="btn" to={`/practice/assigned/${next.id}`}>
+            Start exercise
+          </Link>
+        )}
       </div>
     </section>
   );
@@ -41,7 +50,7 @@ export function Home() {
       <div className="page-head">
         <div>
           <h1>Welcome back, {first}</h1>
-          <p className="sub">Practice one moment at a time, get coaching on what you actually wrote, and try it again.</p>
+          <p className="sub">Answer the buyer, get coaching on what you actually wrote, then handle the next objection.</p>
         </div>
         <Link className="btn btn-secondary" to="/practice">
           Open Practice Studio
@@ -82,7 +91,7 @@ export function Home() {
                 <table className="data">
                   <thead>
                     <tr>
-                      <th>Drill</th>
+                      <th>Question</th>
                       <th>Submitted</th>
                       <th>Attempt</th>
                       <th className="num">Score</th>
@@ -127,7 +136,7 @@ function ManagerSnapshot({ m }) {
       <div className="stats">
         <Stat label="First-attempt average" value={t.performance.firstAttemptAverage ?? '—'} note={`${t.performance.scoredFirstAttempts} scored first attempts`} />
         <Stat label="Reps practicing" value={`${t.participants} of ${t.activeReps}`} note="Based on submitted answers" />
-        <Stat label="Answers submitted" value={t.engagement.submitted} note={`${t.engagement.retries} retries`} />
+        <Stat label="Questions answered" value={t.engagement.submitted} note={`${t.engagement.replies} replies, ${t.engagement.retries} retries`} />
         <Stat label="Pending reviews" value={m.pendingReviews} note={<Link to="/coaching">Review now</Link>} />
       </div>
       {m.awaitingSetup > 0 && (

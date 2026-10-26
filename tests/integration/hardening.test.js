@@ -2,7 +2,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { addUser, drillBySlug, ownerClient, PASSWORD, sectionBy, startTestApp, submit, waitFor, waitForCoaching } from '../helpers.js';
+import { addUser, drillBySlug, finishConversation, ownerClient, PASSWORD, sectionBy, startTestApp, submit, waitFor, waitForCoaching } from '../helpers.js';
 
 let h;
 let owner;
@@ -127,7 +127,7 @@ test('coaching needs a relevant source: technique material cannot score an Omniz
   const unscored = await rep.post('/api/practice/attempts', { clientRequestId: randomUUID(), drillId: id, mode: 'unscored', answer: 'It depends on your firm. How many attorneys handle intake today?' });
   assert.equal(unscored.status, 201);
   assert.equal(unscored.data.attempt.mode, 'unscored');
-  const listed = (await rep.get('/api/drills')).data.drills.find((d) => d.id === id);
+  const listed = (await owner.get('/api/drills')).data.drills.find((d) => d.id === id);
   assert.equal(listed.coaching.available, false);
   assert.equal(listed.coaching.reason, 'no_relevant_sources');
 });
@@ -142,10 +142,9 @@ test('learners never see the titles of sources that are not approved', async () 
   assert.equal(draft.status, 201);
   const id = await createDrill({ title: 'Draft source drill', sourceRefs: [{ sourceId: draft.data.id, sections: [] }] });
   const { client: rep } = await addUser(h, owner, { name: 'Tia Titles', email: 'tia@ravenly.com' });
-  const detail = await rep.get(`/api/drills/${id}`);
-  assert.equal(detail.status, 200);
-  assert.equal(detail.data.drill.sources[0].title, null);
+  assert.equal((await rep.get(`/api/drills/${id}`)).status, 403, 'reps never open questions directly');
   const preview = await rep.post('/api/practice/preview', { drillId: id });
+  assert.equal(preview.data.scenario.sources[0].title, null);
   assert.ok(!JSON.stringify(preview.data).includes('Secret Omnizant pricing draft'));
   const mgrView = await owner.get(`/api/drills/${id}`);
   assert.equal(mgrView.data.drill.sources[0].title, 'Secret Omnizant pricing draft');
@@ -171,7 +170,7 @@ test('unscored practice does not use up the first attempt', async () => {
   assert.equal(c.status, 201, JSON.stringify(c.data));
   assert.equal(c.data.attempt.isFirstAttempt, true);
   assert.equal(c.data.attempt.coachedNumber, 1);
-  await waitForCoaching(rep, c.data.attempt.id);
+  await finishConversation(rep, c.data.attempt.id);
   const report = await owner.get(`/api/reports/rep/${user.id}?period=7`);
   assert.equal(report.data.reps[0].performance.scoredFirstAttempts, 1);
 });
@@ -364,7 +363,7 @@ test('a completed exercise shows a target verdict only once its evaluation count
     answer: 'Have you heard enough to make a decision today? I can send the agreement now. [[mock:unsupported]]',
   });
   assert.equal(a.status, 201, JSON.stringify(a.data));
-  await waitForCoaching(rep, a.data.attempt.id);
+  await finishConversation(rep, a.data.attempt.id);
   const after = (await rep.get('/api/curriculum/mine')).data.completed[0].items[0];
   assert.equal(after.state, 'completed');
   assert.equal(after.proficiency.reviewStatus, 'provisional');

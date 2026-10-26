@@ -455,12 +455,14 @@ test('learners never learn the name of a collection they cannot read', async () 
     [false, 'Omnizant product knowledge'],
     [false, 'Sales Playbook'],
   ]);
-  const forRep = (await rep.get(`/api/drills/${made.data.id}`)).data.drill;
-  assert.deepEqual(names(forRep), [
+  // Reps never list questions; what they see of one comes with practicing it.
+  assert.equal((await rep.get(`/api/drills/${made.data.id}`)).status, 403);
+  const preview = (await rep.post('/api/practice/preview', { drillId: made.data.id })).data;
+  assert.deepEqual(names(preview.scenario), [
     [true, null],
     [false, 'Sales Playbook'],
   ]);
-  assert.equal(forRep.coaching.available, false, 'draft outlines never support coaching');
+  assert.equal(preview.coaching.available, false, 'draft outlines never support coaching');
 
   const row = await h.db.one(`SELECT current_version_id FROM drills WHERE id = $1`, [made.data.id]);
   const created = await submit(rep, { id: made.data.id, version_id: row.current_version_id, personas: ['managing_partner'] }, 'We start with an audit.', { mode: 'unscored' });

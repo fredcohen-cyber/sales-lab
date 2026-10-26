@@ -13,6 +13,64 @@ const hasPendingCritical = (r) => (r.critical_failures || []).some((c) => c.stat
 const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 const round1 = (x) => (x === null ? null : Math.round(x * 10) / 10);
 
+// Reports count conversations: a rep's replies to one question, with the buyer's pushbacks between
+// them. A conversation counts once every planned reply is in and coached and every reply's coaching
+// counts. Its score is the average of its replies (a reply with a confirmed critical failure scores 0),
+// its dimension scores are averaged the same way, it waits for review while any reply does, and one
+// disputed reply makes it disputed. Input rows are replies; a conversation whose first reply is not
+// among them is left out.
+export function toConversationRows(replyRows) {
+  const groups = new Map();
+  for (const r of replyRows) {
+    const k = r.conversation_id || r.id;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  }
+  const out = [];
+  for (const turns of groups.values()) {
+    turns.sort((a, b) => (a.turn_number || 1) - (b.turn_number || 1));
+    const first = turns[0];
+    if ((first.turn_number || 1) !== 1) continue;
+    const planned = first.replies_planned || 1;
+    const unfinished = turns.length < planned;
+    const coached = first.mode === 'coached';
+    const evaluated = coached && !unfinished && turns.every((t) => t.evaluation_id);
+    const statuses = turns.map((t) => t.review_status);
+    const reviewStatus = !evaluated
+      ? null
+      : statuses.includes('disputed')
+        ? 'disputed'
+        : statuses.includes('provisional')
+          ? 'provisional'
+          : statuses.includes('confirmed')
+            ? 'confirmed'
+            : 'final';
+    const scores = turns.map((t) => t.overall_score);
+    const overall = evaluated && scores.every((s) => typeof s === 'number') ? Math.round(mean(scores)) : null;
+    const dimensionScores = (first.dimension_scores || []).map((d) => {
+      if (!d.assessed || !evaluated) return d;
+      const xs = turns.map((t) => (t.dimension_scores || []).find((x) => x.key === d.key && x.assessed)?.score).filter((x) => typeof x === 'number');
+      return xs.length ? { ...d, score: Math.round(mean(xs)) } : d;
+    });
+    const criticalFailures = turns.flatMap((t) => t.critical_failures || []);
+    const threshold = first.proficiency_threshold ?? null;
+    out.push({
+      ...first,
+      replies: turns.length,
+      unfinished,
+      evaluation_id: evaluated ? first.evaluation_id : null,
+      review_status: reviewStatus,
+      overall_score: overall,
+      dimension_scores: dimensionScores,
+      critical_failures: criticalFailures,
+      meets_target: overall !== null && threshold !== null && overall >= threshold && !criticalFailures.some((c) => c.status === 'confirmed'),
+      // The state of the first reply still waiting for coaching, if any.
+      run_status: (turns.find((t) => coached && !t.evaluation_id) || turns[turns.length - 1]).run_status,
+    });
+  }
+  return out;
+}
+
 export function dimensionStats(rows, rubricDims, settings) {
   const first = rows.filter(isFirstScored);
   return rubricDims.map((d) => {
@@ -141,6 +199,7 @@ export function engagementFor(rows) {
   const days = new Set(rows.map((r) => r.day));
   return {
     submitted: rows.length,
+    replies: rows.reduce((n, r) => n + (r.replies || 1), 0),
     coached: rows.filter((r) => r.mode === 'coached').length,
     retries: rows.filter(isRetry).length,
     unscored: rows.filter((r) => r.mode === 'unscored').length,
@@ -168,7 +227,8 @@ export function performanceFor(rows) {
       unscored: rows.filter((r) => r.mode === 'unscored').length,
       pendingReview: withEval.filter((r) => r.review_status === 'provisional').length,
       disputed: withEval.filter((r) => r.review_status === 'disputed').length,
-      awaitingCoaching: coached.filter((r) => !r.evaluation_id).length,
+      unfinished: coached.filter((r) => r.unfinished).length,
+      awaitingCoaching: coached.filter((r) => !r.evaluation_id && !r.unfinished).length,
     },
   };
 }
@@ -189,6 +249,6 @@ export function followUpReasons({ rep, rows, lastPracticeAt, assignmentStats, di
   const confirmedCf = rows.filter((r) => r.review_status === 'confirmed' && hasConfirmedCritical(r)).length;
   if (confirmedCf > 0) reasons.push({ kind: 'critical', text: `${confirmedCf} confirmed critical failure${confirmedCf === 1 ? '' : 's'}` });
   const stuck = rows.filter((r) => r.mode === 'coached' && !r.evaluation_id && ['failed', 'timed_out', 'superseded'].includes(r.run_status)).length;
-  if (stuck > 0) reasons.push({ kind: 'coaching_failed', text: `${stuck} answer${stuck === 1 ? '' : 's'} still waiting for coaching to be retried` });
+  if (stuck > 0) reasons.push({ kind: 'coaching_failed', text: `${stuck} conversation${stuck === 1 ? '' : 's'} with a reply still waiting for coaching to be retried` });
   return reasons;
 }

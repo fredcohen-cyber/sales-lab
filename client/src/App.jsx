@@ -7,6 +7,7 @@ import { SetPassword } from './pages/SetPassword.jsx';
 import { Home } from './pages/Home.jsx';
 import { PracticeStudio } from './pages/PracticeStudio.jsx';
 import { DrillRunner } from './pages/DrillRunner.jsx';
+import { StageRunner } from './pages/StageRunner.jsx';
 import { AttemptPage } from './pages/AttemptPage.jsx';
 import { Curriculum } from './pages/Curriculum.jsx';
 import { Progress } from './pages/Progress.jsx';
@@ -88,6 +89,7 @@ export function App() {
         <Route index element={<Home />} />
         <Route path="practice" element={<PracticeStudio />} />
         <Route path="practice/drill/:drillId" element={<DrillRunner />} />
+        <Route path="practice/stage/:stage" element={<StageRunner />} />
         <Route path="practice/assigned/:itemId" element={<DrillRunner />} />
         <Route path="attempts/:id" element={<AttemptPage />} />
         <Route path="curriculum" element={<Curriculum />} />

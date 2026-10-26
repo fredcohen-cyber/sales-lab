@@ -34,18 +34,19 @@ export const EVIDENCE_BASIS = {
   mixed: 'Mixed, labeled passage by passage',
 };
 
-// Ordered by training priority. AM stages follow the AE stages.
+// Ordered by training priority. AM stages follow the AE stages. The track is the rep role each stage
+// trains; the description is what reps see on the stage in the Practice Studio.
 export const STAGES = [
-  { key: 'cold_outreach', label: 'Cold outreach', track: 'ae' },
-  { key: 'discovery', label: 'Discovery', track: 'ae' },
-  { key: 'demo', label: 'Product demonstration', track: 'ae' },
-  { key: 'pricing', label: 'Pricing', track: 'ae' },
-  { key: 'competitor', label: 'Competitor comparison', track: 'ae' },
-  { key: 'closing', label: 'Closing', track: 'ae' },
-  { key: 'stalled', label: 'Stalled-deal follow-up', track: 'ae' },
-  { key: 'am_adoption', label: 'Adoption', track: 'am' },
-  { key: 'am_value', label: 'Ongoing value', track: 'am' },
-  { key: 'am_renewal', label: 'Renewal', track: 'am' },
+  { key: 'cold_outreach', label: 'Cold outreach', track: 'ae', description: 'First contact by phone, voicemail, or email: earn attention and a reason to talk.' },
+  { key: 'discovery', label: 'Discovery', track: 'ae', description: 'Uncover the problem, what it costs the firm, and how the firm decides.' },
+  { key: 'demo', label: 'Product demonstration', track: 'ae', description: 'Show only what matters to this buyer, accurately, and handle questions as they come.' },
+  { key: 'pricing', label: 'Pricing', track: 'ae', description: 'Plan questions, price objections, discount asks, and contract terms.' },
+  { key: 'competitor', label: 'Competitor comparison', track: 'ae', description: 'Compare fairly and accurately when the buyer has another option.' },
+  { key: 'closing', label: 'Closing', track: 'ae', description: 'Ask for the business and agree on a dated next step.' },
+  { key: 'stalled', label: 'Stalled-deal follow-up', track: 'ae', description: 'Restart deals that went quiet without sounding needy.' },
+  { key: 'am_adoption', label: 'Adoption', track: 'am', description: 'Help a new client’s team get value in the first weeks.' },
+  { key: 'am_value', label: 'Ongoing value', track: 'am', description: 'Show an existing client what they get, and grow the account.' },
+  { key: 'am_renewal', label: 'Renewal', track: 'am', description: 'Renewals, at-risk accounts, and pushback on cost.' },
 ];
 export const STAGE_KEYS = STAGES.map((s) => s.key);
 export const stageLabel = (key) => STAGES.find((s) => s.key === key)?.label || key;
@@ -127,6 +128,18 @@ export const DEFAULT_DIMENSIONS = [
 export const DIMENSION_KEYS = DEFAULT_DIMENSIONS.map((d) => d.key);
 
 export const LEVELS = [1, 2, 3, 4, 5];
+
+// In a practice conversation the buyer pushes back after each reply: once at easy levels, twice at the
+// standard level, three times at advanced and expert levels.
+export function pushbacksFor(difficulty) {
+  return difficulty <= 2 ? 1 : difficulty === 3 ? 2 : 3;
+}
+
+// How the coach and the expected answer see the rep's job.
+export const REP_ROLE_CONTEXT = {
+  ae: 'Account executive: wins new business from firms that are not clients yet.',
+  am: 'Account manager: looks after an existing client, its adoption, results, renewal, and growth.',
+};
 
 export const DIFFICULTY_TEXT = {
   1: 'Introductory: a cooperative buyer and a simple moment.',

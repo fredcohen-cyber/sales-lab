@@ -32,14 +32,22 @@ function CriticalItem({ c }) {
           {c.sourceTitle ? `${c.sourceTitle}: ` : 'Approved material: '}“{c.sourceQuote}”
         </span>
       )}
-      {c.origin === 'manager' && <span className="tiny muted" style={{ display: 'block', marginTop: 4 }}>Added by a manager in review.</span>}
+      {c.origin === 'manager' && (
+        <span className="tiny muted" style={{ display: 'block', marginTop: 4 }}>
+          Added by a manager in review.
+        </span>
+      )}
     </li>
   );
 }
 
-export function CoachingResult({ attempt, evaluation, next }) {
+export function CoachingResult({ attempt, evaluation, next, conversation = null, replyBelow = false }) {
   const ev = evaluation;
   const s = attempt.scenario;
+  // In a conversation the buyer's reaction is the next pushback, until the last reply.
+  const multi = (conversation?.repliesPlanned || 1) > 1;
+  const pushesBack = multi && attempt.turn < conversation.repliesPlanned;
+  const finished = !conversation || conversation.next.state === 'finished';
   const cfs = ev.criticalFailures || [];
   const pendingCfs = cfs.filter((c) => (c.status || 'pending') === 'pending');
   const confirmedCfs = cfs.filter((c) => c.status === 'confirmed');
@@ -71,17 +79,21 @@ export function CoachingResult({ attempt, evaluation, next }) {
           <div className="stack-sm">
             <div className="row">
               <span className="badge badge-neutral">{label}</span>
-              {!disputed && !awaiting && (ev.meetsTarget ? (
-                <span className="badge badge-ok">
-                  <CheckIcon />
-                  Met target of {ev.proficiencyThreshold}
-                </span>
-              ) : (
-                <span className="badge badge-neutral">Below target of {ev.proficiencyThreshold}</span>
-              ))}
+              {!disputed &&
+                !awaiting &&
+                (ev.meetsTarget ? (
+                  <span className="badge badge-ok">
+                    <CheckIcon />
+                    Met target of {ev.proficiencyThreshold}
+                  </span>
+                ) : (
+                  <span className="badge badge-neutral">Below target of {ev.proficiencyThreshold}</span>
+                ))}
               <ReviewBadge status={ev.reviewStatus} />
             </div>
-            <p className="small muted" style={{ margin: 0 }}>{ev.feedback.summary}</p>
+            <p className="small muted" style={{ margin: 0 }}>
+              {ev.feedback.summary}
+            </p>
             {awaiting && (
               <p className="small" style={{ margin: 0 }}>
                 Coaching found a possible critical failure. If your manager confirms it, this answer scores 0. If not, it scores {ev.weightedScore}.
@@ -142,15 +154,28 @@ export function CoachingResult({ attempt, evaluation, next }) {
         </Notice>
       )}
 
-      <section className="stack-sm" aria-labelledby="buyer-reaction">
-        <h2 id="buyer-reaction" className="section-title">
-          How the {s.persona.label.toLowerCase()} might respond
-        </h2>
-        <div className="buyer-reply">
-          <blockquote>{ev.feedback.buyerReaction}</blockquote>
-        </div>
-        <p className="tiny muted">A simulated reaction to your actual words, at skepticism level {s.settings.skepticism}.</p>
-      </section>
+      {/* While the rep can answer it, the pushback is shown once: in the reply box below. */}
+      {!(pushesBack && replyBelow) && (
+        <section className="stack-sm" aria-labelledby="buyer-reaction">
+          <h2 id="buyer-reaction" className="section-title">
+            {pushesBack
+              ? `The ${s.persona.label.toLowerCase()} pushes back`
+              : multi
+                ? `How the ${s.persona.label.toLowerCase()} responds`
+                : `How the ${s.persona.label.toLowerCase()} might respond`}
+          </h2>
+          <div className="buyer-reply">
+            <blockquote>{ev.feedback.buyerReaction}</blockquote>
+          </div>
+          <p className="tiny muted">
+            {pushesBack
+              ? `The buyer’s next words, written from what you actually said, at skepticism level ${s.settings.skepticism}. You answer them next.`
+              : multi
+                ? `The buyer’s closing response to the whole conversation, at skepticism level ${s.settings.skepticism}.`
+                : `A simulated reaction to your actual words, at skepticism level ${s.settings.skepticism}.`}
+          </p>
+        </section>
+      )}
 
       <div className="grid-2">
         <section className="panel">
@@ -229,20 +254,16 @@ export function CoachingResult({ attempt, evaluation, next }) {
       </section>
 
       <section className="panel panel-tight stack-sm">
-        <h2 className="section-title">Practice next</h2>
+        <h2 className="section-title">{finished ? 'Practice next' : 'Focus for your next reply'}</h2>
         <p style={{ margin: 0 }}>{ev.feedback.nextFocus.suggestion}</p>
-        {next?.drillId && (
+        {finished && next?.stage && !attempt.assignment && (
           <p className="small" style={{ margin: 0 }}>
-            Suggested drill for {next.dimensionLabel.toLowerCase()}: <Link to={`/practice/drill/${next.drillId}`}>{next.drillTitle}</Link>
+            To practice {next.dimensionLabel.toLowerCase()}, try a <Link to={`/practice/stage/${next.stage}`}>{next.stageLabel.toLowerCase()} question</Link>.
           </p>
         )}
       </section>
 
-      {ev.verificationNotes?.length > 0 && (
-        <p className="tiny muted">
-          Checks applied: {ev.verificationNotes.join(' ')}
-        </p>
-      )}
+      {ev.verificationNotes?.length > 0 && <p className="tiny muted">Checks applied: {ev.verificationNotes.join(' ')}</p>}
     </div>
   );
 }

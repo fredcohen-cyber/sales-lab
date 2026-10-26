@@ -1,12 +1,15 @@
+import { randomUUID } from 'node:crypto';
 import { conflict, forbidden, HttpError, notFound } from '../lib/errors.js';
 import { aiConfigured } from '../config.js';
 import { availabilityReason, DRILL_VERSION_SQL, UNAVAILABLE_TEXT } from '../drills/service.js';
 import { resolveSourceRefs } from '../knowledge/service.js';
-import { buildScenario } from './scenario.js';
+import { buildScenario, continueScenario, practiceRole, repliesPlanned, scenarioFor } from './scenario.js';
+import { CONVERSATION_SUMMARY_SQL, conversationView, loadConversationTurns, withConversationScore } from './conversation.js';
 import { abortRun, MIN_SECONDS_BEFORE_SUPERSEDE, RUNS_PER_ATTEMPT_PER_HOUR, startRun } from '../ai/evaluate.js';
 import { audit } from '../lib/audit.js';
 import { RUN_ERROR_MESSAGES } from '../ai/provider.js';
 import { nyDate } from '../lib/time.js';
+import { stageLabel } from '../domain.js';
 
 export const MIN_ANSWER_CHARS = 15;
 export const MAX_ANSWER_CHARS = 6000;
@@ -67,10 +70,13 @@ export async function resolvePractice(q, config, user, input) {
     personaKey = input.persona || drill.personas[0];
     if (!drill.personas.includes(personaKey)) throw new HttpError(400, 'validation_failed', 'That persona is not part of this drill.');
     const pick = (v, d) => (Number.isInteger(v) && v >= 1 && v <= 5 ? v : d);
+    // Reps practice at the levels each question sets. Only managers change them, for example to try a
+    // drill at another level before assigning it.
+    const own = user.isManager ? input : {};
     settings = {
-      difficulty: pick(input.difficulty, drill.default_difficulty),
-      skepticism: pick(input.skepticism, drill.default_skepticism),
-      depth: pick(input.depth, drill.default_depth),
+      difficulty: pick(own.difficulty, drill.default_difficulty),
+      skepticism: pick(own.skepticism, drill.default_skepticism),
+      depth: pick(own.depth, drill.default_depth),
     };
   }
   const persona = await loadPersona(q, personaKey);
@@ -78,8 +84,10 @@ export async function resolvePractice(q, config, user, input) {
   const sources = await resolveSourceRefs(q, drill.source_refs, drill, personaKey);
   const available = sources.filter((s) => s.available);
   const unavailableReason = availabilityReason(config, sources, drill);
-  const scenario = buildScenario({ drill, persona, settings, rubricDimensions: rubric.dimensions, sources });
-  return { drill, persona, settings, rubric, sources, available, scenario, assigned, coachingAvailable: !unavailableReason, unavailableReason };
+  const role = practiceRole(user, drill);
+  const replies = repliesPlanned({ difficulty: settings.difficulty, coached: !unavailableReason, pushbacks: drill.pushbacks });
+  const scenario = buildScenario({ drill, persona, settings, rubricDimensions: rubric.dimensions, sources, role, replies });
+  return { drill, persona, settings, rubric, sources, available, scenario, assigned, role, replies, coachingAvailable: !unavailableReason, unavailableReason };
 }
 
 // Bounds paid AI calls per person: new coached answers plus retries, across all their answers.
@@ -99,13 +107,18 @@ async function checkCoachingRate(q, config, user) {
   }
 }
 
+function cleanAnswer(text) {
+  const answer = text.replace(/\r\n?/g, '\n').trim();
+  if (answer.length < MIN_ANSWER_CHARS) throw new HttpError(400, 'answer_too_short', 'Write a fuller answer before submitting.');
+  if (answer.length > MAX_ANSWER_CHARS) throw new HttpError(400, 'answer_too_long', `Keep your answer under ${MAX_ANSWER_CHARS.toLocaleString()} characters.`);
+  return answer;
+}
+
 export async function createAttempt(db, config, user, body, { provider }) {
   const existing = await db.one(`SELECT id FROM attempts WHERE learner_id = $1 AND client_request_id = $2`, [user.id, body.clientRequestId]);
   if (existing) return { attemptId: existing.id, runId: null, duplicate: true };
-
-  const answer = body.answer.replace(/\r\n?/g, '\n').trim();
-  if (answer.length < MIN_ANSWER_CHARS) throw new HttpError(400, 'answer_too_short', 'Write a fuller answer before submitting.');
-  if (answer.length > MAX_ANSWER_CHARS) throw new HttpError(400, 'answer_too_long', `Keep your answer under ${MAX_ANSWER_CHARS.toLocaleString()} characters.`);
+  const answer = cleanAnswer(body.answer);
+  if (body.continueFrom) return createReply(db, config, user, { ...body, answer }, { provider });
 
   return db.tx(async (q) => {
     const ctx = await resolvePractice(q, config, user, body);
@@ -148,12 +161,16 @@ export async function createAttempt(db, config, user, body, { provider }) {
       evidenceBasis: s.evidenceBasis,
       sections: s.sections,
     }));
+    // The first reply opens a conversation: its id is the conversation's id.
+    const id = randomUUID();
     const attempt = await q.one(
-      `INSERT INTO attempts (learner_id, learner_role, drill_id, drill_version_id, persona, difficulty, skepticism, depth, brand, stage,
-         assignment_item_id, mode, unscored_reason, attempt_number, scenario, rubric_version_id, source_versions, answer, client_request_id,
-         coached_number)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) RETURNING id`,
+      `INSERT INTO attempts (id, conversation_id, turn_number, replies_planned, learner_id, learner_role, drill_id, drill_version_id, persona,
+         difficulty, skepticism, depth, brand, stage, assignment_item_id, mode, unscored_reason, attempt_number, scenario, rubric_version_id,
+         source_versions, answer, client_request_id, coached_number)
+       VALUES ($1,$1,1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING id`,
       [
+        id,
+        ctx.scenario.conversation.replies,
         user.id,
         user.role,
         ctx.drill.id,
@@ -176,8 +193,59 @@ export async function createAttempt(db, config, user, body, { provider }) {
         body.mode === 'coached' ? num.coached : null,
       ],
     );
+    // Answering the question a stage served settles it: the stage serves a new one next time.
+    await q.query(`DELETE FROM practice_draws WHERE learner_id = $1 AND drill_id = $2 AND persona = $3`, [user.id, ctx.drill.id, ctx.persona.key]);
     let runId = null;
     if (body.mode === 'coached') {
+      const run = await startRun(q, { attemptId: attempt.id, requestedBy: user.id, provider, config });
+      runId = run.id;
+    }
+    return { attemptId: attempt.id, runId, duplicate: false };
+  });
+}
+
+// The buyer's line a reply answers: the coach's pushback after the previous reply, or, in unscored
+// practice, the drill's next written pushback.
+async function counterAfter(q, prev) {
+  if (prev.mode === 'coached') {
+    const ev = prev.evaluation_id ? await q.one(`SELECT feedback FROM evaluations WHERE id = $1`, [prev.evaluation_id]) : null;
+    return { ready: Boolean(ev), line: ev?.feedback?.buyerReaction?.trim() || null };
+  }
+  return { ready: true, line: (prev.scenario.pushbacks || [])[prev.turn_number - 1] || null };
+}
+
+// A reply to the buyer's pushback: the next turn of the rep's conversation, coached like the first.
+async function createReply(db, config, user, body, { provider }) {
+  return db.tx(async (q) => {
+    const prev = await q.one(`SELECT * FROM attempts WHERE id = $1 FOR UPDATE`, [body.continueFrom]).catch(() => null);
+    if (!prev || prev.learner_id !== user.id) throw notFound('That conversation was not found.');
+    const dup = await q.one(`SELECT id FROM attempts WHERE learner_id = $1 AND client_request_id = $2`, [user.id, body.clientRequestId]);
+    if (dup) return { attemptId: dup.id, runId: null, duplicate: true };
+    if (prev.turn_number >= prev.replies_planned) {
+      throw conflict('conversation_finished', 'This conversation is finished. Start a new question from the Practice Studio.');
+    }
+    const next = await q.one(`SELECT id FROM attempts WHERE conversation_id = $1 AND turn_number = $2`, [prev.conversation_id, prev.turn_number + 1]);
+    if (next) throw conflict('already_replied', 'You already answered this. Continue from your latest reply.', { attemptId: next.id });
+    const counter = await counterAfter(q, prev);
+    if (!counter.ready) throw conflict('coaching_pending', 'The buyer responds once your last reply has been coached. Wait for coaching, or retry it if it stopped.');
+    if (!counter.line) throw conflict('no_pushback', 'The buyer has nothing more to say in this conversation.');
+    if (prev.mode === 'coached') {
+      if (!aiConfigured(config)) throw conflict('coaching_unavailable', RUN_ERROR_MESSAGES.ai_not_configured, { reason: 'ai_not_configured' });
+      await checkCoachingRate(q, config, user);
+    }
+    const attempt = await q.one(
+      `INSERT INTO attempts (conversation_id, turn_number, replies_planned, learner_id, learner_role, drill_id, drill_version_id, persona,
+         difficulty, skepticism, depth, brand, stage, assignment_item_id, mode, unscored_reason, attempt_number, scenario, rubric_version_id,
+         source_versions, answer, client_request_id, coached_number)
+       SELECT conversation_id, turn_number + 1, replies_planned, learner_id, $2, drill_id, drill_version_id, persona,
+              difficulty, skepticism, depth, brand, stage, assignment_item_id, mode, unscored_reason, attempt_number, $3, rubric_version_id,
+              source_versions, $4, $5, NULL
+         FROM attempts WHERE id = $1
+       RETURNING id`,
+      [prev.id, user.role, JSON.stringify(continueScenario(prev.scenario, { buyerLine: counter.line, previousAnswer: prev.answer })), body.answer, body.clientRequestId],
+    );
+    let runId = null;
+    if (prev.mode === 'coached') {
       const run = await startRun(q, { attemptId: attempt.id, requestedBy: user.id, provider, config });
       runId = run.id;
     }
@@ -283,21 +351,25 @@ export function shapeEvaluation(ev, { forManager }) {
   };
 }
 
-// Suggest the next drill: one that scores the weakest dimension in this evaluation.
+// Suggest where to practice next: the stage whose questions most often score the weakest dimension in
+// this evaluation, among the stages the rep has practiced least. Reps practice stages, not drills.
 async function suggestNext(q, attempt, evaluation, user) {
   if (!evaluation) return null;
   const scored = (evaluation.dimension_scores || []).filter((d) => d.assessed);
   if (!scored.length) return null;
   const focusKey = evaluation.feedback?.nextFocus?.dimension || scored.reduce((a, b) => (b.score < a.score ? b : a)).key;
+  const role = ['ae', 'am'].includes(attempt.learner_role) ? attempt.learner_role : user.role;
   const row = await q.one(
-    `SELECT d.id, v.title, v.stage FROM drills d JOIN drill_versions v ON v.id = d.current_version_id
-      WHERE d.status = 'active' AND d.id <> $1 AND $2 = ANY(v.assessed_dimensions) AND $3 = ANY(v.roles)
-      ORDER BY (v.brand = $4) DESC, (SELECT count(*) FROM attempts x WHERE x.drill_id = d.id AND x.learner_id = $5), v.title
+    `SELECT v.stage, count(*) AS questions
+       FROM drills d JOIN drill_versions v ON v.id = d.current_version_id
+      WHERE d.status = 'active' AND $1 = ANY(v.assessed_dimensions) AND $2 = ANY(v.roles)
+      GROUP BY v.stage
+      ORDER BY (SELECT count(*) FROM attempts x WHERE x.learner_id = $3 AND x.stage = v.stage AND x.turn_number = 1), count(*) DESC, v.stage
       LIMIT 1`,
-    [attempt.drill_id, focusKey, user.role === 'manager' ? attempt.learner_role : user.role, attempt.brand, attempt.learner_id],
+    [focusKey, role, attempt.learner_id],
   );
   const label = scored.find((d) => d.key === focusKey)?.label || focusKey;
-  return row ? { dimension: focusKey, dimensionLabel: label, drillId: row.id, drillTitle: row.title } : { dimension: focusKey, dimensionLabel: label };
+  return row ? { dimension: focusKey, dimensionLabel: label, stage: row.stage, stageLabel: stageLabel(row.stage) } : { dimension: focusKey, dimensionLabel: label };
 }
 
 export async function attemptView(db, config, viewer, attemptId) {
@@ -327,12 +399,17 @@ export async function attemptView(db, config, viewer, attemptId) {
       WHERE n.attempt_id = $1 ORDER BY n.created_at`,
     [a.id],
   );
-  const siblings = await db.many(
-    `SELECT a.id, a.attempt_number, a.coached_number, a.submitted_at, a.mode, e.overall_score, e.review_status
-       FROM attempts a LEFT JOIN evaluations e ON e.id = a.evaluation_id
-      WHERE a.learner_id = $1 AND a.drill_id = $2 AND a.persona = $3 ORDER BY a.attempt_number`,
-    [a.learner_id, a.drill_id, a.persona],
-  );
+  // Earlier and later attempts at this question with this buyer: one entry per conversation.
+  const siblings = (
+    await db.many(
+      `SELECT a.id, a.attempt_number, a.coached_number, a.submitted_at, a.mode, a.replies_planned, e.overall_score, e.review_status, conv.*
+         FROM attempts a LEFT JOIN evaluations e ON e.id = a.evaluation_id
+         ${CONVERSATION_SUMMARY_SQL}
+        WHERE a.learner_id = $1 AND a.drill_id = $2 AND a.persona = $3 AND a.turn_number = 1 ORDER BY a.attempt_number`,
+      [a.learner_id, a.drill_id, a.persona],
+    )
+  ).map(withConversationScore);
+  const turns = await loadConversationTurns(db, a.conversation_id);
   let assignment = null;
   if (a.assignment_item_id) {
     assignment = await db.one(
@@ -357,7 +434,10 @@ export async function attemptView(db, config, viewer, attemptId) {
       coachedNumber: a.coached_number,
       // The first coached answer is the first attempt; unscored practice never uses it up.
       isFirstAttempt: a.coached_number === 1,
-      scenario: a.scenario,
+      scenario: scenarioFor(viewer, a.scenario),
+      conversationId: a.conversation_id,
+      turn: a.turn_number,
+      repliesPlanned: a.replies_planned,
       sourceVersions: (a.source_versions || []).map(({ caveats, ...s }) => ({ ...s, caveats })),
       answer: a.answer,
       submittedAt: a.submitted_at,
@@ -381,6 +461,7 @@ export async function attemptView(db, config, viewer, attemptId) {
       serverNow: new Date().toISOString(),
     },
     evaluation: shapeEvaluation(evaluation, { forManager: viewer.isManager }),
+    conversation: conversationView(turns, { current: a, pushbacks: a.scenario?.pushbacks }),
     notes,
     siblings,
     next: await suggestNext(db, a, evaluation, viewer),

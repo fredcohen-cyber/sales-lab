@@ -67,7 +67,7 @@ export function RepReport() {
           <Stat label="First-attempt average" value={r.performance.firstAttemptAverage ?? '—'} note={`${r.performance.scoredFirstAttempts} scored first attempts`} />
           <Stat label="Met target" value={r.performance.scoredFirstAttempts ? `${r.performance.metTarget} of ${r.performance.scoredFirstAttempts}` : '—'} note={`Target ${data.thresholds.proficiency}`} />
           <Stat label="Critical failures" value={r.performance.criticalFailures.confirmed} note={`${r.performance.criticalFailures.pending} pending review`} />
-          <Stat label="Answers submitted" value={r.engagement.submitted} note={`${r.engagement.retries} retries, ${r.engagement.unscored} unscored`} />
+          <Stat label="Questions answered" value={r.engagement.submitted} note={`${r.engagement.replies} replies, ${r.engagement.retries} retries, ${r.engagement.unscored} unscored`} />
           <Stat label="Practice days" value={r.engagement.practiceDays} note={`In the last ${data.period.days} days`} />
           <Stat label="Curriculum" value={r.assignments.completionRate === null ? '—' : `${r.assignments.completionRate}%`} note={`${r.assignments.overdueItems} overdue`} />
         </div>

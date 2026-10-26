@@ -14,6 +14,9 @@ const ANSWER =
   'If one signed case covers the plan many times over, the real question is whether we catch the leads you are missing today. ' +
   'Could we look at last month together on Thursday?';
 const DRILL = /That’s too expensive/;
+const FOLLOW_UP =
+  'That is fair to ask. Firms like yours usually find the after-hours inquiries are where cases slip away. ' +
+  'What would one more signed case a month be worth to you? Could we review last month’s inquiries together on Thursday at 2?';
 
 const state = {};
 let owner;
@@ -142,17 +145,25 @@ test('Vic sets a password, signs in, and the link cannot be reused', async ({ br
   await again.context().close();
 });
 
-test('Vic practices a drill: draft survives a reload, the answer is saved first, then coaching appears', async () => {
+test('Vic chooses a stage, not a question: it is served with its buyer and levels set, and the draft survives a reload', async () => {
   await vic.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Practice Studio' }).click();
   await expect(vic.getByRole('heading', { name: 'Practice Studio', level: 1 })).toBeVisible();
+  await expect(vic.getByRole('heading', { name: 'Account executive stages' })).toBeVisible();
+  // Reps see stages, never a list of questions to pick from.
+  await expect(vic.getByRole('link', { name: DRILL })).toHaveCount(0);
+  await expect(vic.getByRole('tab', { name: 'Question bank' })).toHaveCount(0);
   await shot(vic, '07-practice-studio');
-  await vic.getByRole('link', { name: DRILL }).click();
-  await expect(vic.getByRole('heading', { name: DRILL, level: 1 })).toBeVisible();
-  state.drillUrl = new URL(vic.url()).pathname;
+  await vic.getByRole('link', { name: /^Pricing/ }).click();
+  await expect(vic).toHaveURL(/\/practice\/stage\/pricing$/);
   await expect(vic.getByText('Your goal')).toBeVisible();
+  await expect(vic.getByText('Set for this question')).toBeVisible();
+  await expect(vic.getByLabel('Buyer persona')).toHaveCount(0);
+  const title = await vic.getByRole('heading', { level: 1 }).textContent();
   await vic.getByRole('textbox', { name: 'Your answer' }).fill(ANSWER);
   await shot(vic, '08-drill-runner');
+  // Reloading serves the same question, with the draft.
   await vic.reload();
+  await expect(vic.getByRole('heading', { level: 1 })).toHaveText(title);
   await expect(vic.getByRole('textbox', { name: 'Your answer' })).toHaveValue(ANSWER);
   await vic.getByRole('button', { name: 'Submit for coaching' }).click();
   await expect(vic).toHaveURL(/\/attempts\/[0-9a-f-]{36}$/);
@@ -163,9 +174,42 @@ test('Vic practices a drill: draft survives a reload, the answer is saved first,
   await expect(vic.getByRole('heading', { name: 'To improve' })).toBeVisible();
   await expect(vic.getByText('First attempt', { exact: true })).toBeVisible();
   state.vicAttemptUrl = new URL(vic.url()).pathname;
+  // Later tests practice this same question again.
+  const attempt = await (await vic.request.get(`/api${state.vicAttemptUrl.replace('/attempts/', '/practice/attempts/')}`)).json();
+  state.drillUrl = `/practice/drill/${attempt.attempt.drillId}`;
+  // After coaching, the buyer pushes back.
+  await expect(vic.getByRole('heading', { name: /pushes back: reply 2 of \d/ })).toBeVisible();
   await shot(vic, '10-coaching-result');
 
-  // The draft was cleared once the answer was saved.
+  // Until the conversation is finished, the stage brings it back.
+  await vic.goto('/practice');
+  await expect(vic.getByText('Conversation in progress')).toBeVisible();
+  await vic.getByRole('link', { name: /^Pricing/ }).click();
+  await expect(vic).toHaveURL(new RegExp(`${state.vicAttemptUrl}$`));
+  await expect(vic.getByText('Finish this conversation first')).toBeVisible();
+});
+
+test('Vic answers each pushback; every reply is coached, and the replies are ranked at the end', async () => {
+  const box = vic.getByRole('textbox', { name: 'Your reply' });
+  const done = vic.getByRole('heading', { name: 'Conversation complete' });
+  for (let turn = 2; turn <= 4; turn += 1) {
+    // After coaching, either the buyer pushes back or the conversation is over.
+    await expect(box.or(done)).toBeVisible({ timeout: 20_000 });
+    if (await done.isVisible()) break;
+    const before = vic.url();
+    await box.fill(`${FOLLOW_UP} Reply ${turn}.`);
+    await vic.getByRole('button', { name: 'Send reply for coaching' }).click();
+    await expect(vic).not.toHaveURL(before);
+    await expect(vic.locator('.page-head .sub')).toContainText(`Reply ${turn} of`);
+    await expect(score(vic)).toBeVisible({ timeout: 20_000 });
+    if (turn === 2) await shot(vic, '10a-conversation-reply');
+  }
+  await expect(vic.getByRole('heading', { name: 'Conversation complete' })).toBeVisible();
+  await expect(vic.getByLabel(/^Conversation score \d+ out of 100$/)).toBeVisible();
+  await expect(vic.getByText('Replies from strongest to weakest')).toBeVisible();
+  await expect(vic.getByRole('heading', { name: /responds$/ })).toBeVisible();
+  await shot(vic, '10b-conversation-complete');
+  // The draft of the first answer was cleared once it was saved.
   await vic.goto(state.drillUrl);
   await expect(vic.getByRole('textbox', { name: 'Your answer' })).toHaveValue('');
 });
@@ -205,7 +249,7 @@ test('the manager reviews Vic’s answer, adds a note, and sees him on the dashb
   await shot(owner, '13-team-coaching');
   await owner.goto(state.vicAttemptUrl);
   await expect(owner.getByRole('heading', { name: 'Manager review' })).toBeVisible();
-  await expect(owner.getByText('Vic Alvarez wrote')).toBeVisible();
+  await expect(owner.getByText(/^Vic Alvarez replied/).first()).toBeVisible();
   await owner.getByLabel('Add a coaching note').fill('Good reframe. Next time, quantify one missed lead before you talk about price.');
   await owner.getByRole('button', { name: 'Add note' }).click();
   await expect(toast(owner, 'Coaching note added')).toBeVisible();
@@ -342,12 +386,25 @@ test('deactivation blocks Vic immediately, keeps his history, and reactivation n
   await expect(vic.getByRole('alert')).toHaveText('That email and password do not match an active account.');
 
   await owner.goto(state.vicAttemptUrl);
-  await expect(owner.getByText('Vic Alvarez wrote')).toBeVisible();
+  await expect(owner.getByText(/^Vic Alvarez replied/).first()).toBeVisible();
   await owner.goBack();
   await owner.getByRole('button', { name: 'Reactivate' }).click();
   await expect(toast(owner, 'Account reactivated')).toBeVisible();
   await signIn(vic, VIC.email, VIC.reset);
   await expect(vic.getByRole('heading', { name: 'Practice Studio', level: 1 })).toBeVisible();
+});
+
+test('managers browse the question bank and see each question’s pushbacks', async () => {
+  await owner.goto('/practice');
+  await expect(owner.getByRole('heading', { name: 'Account manager stages' })).toBeVisible();
+  await owner.getByRole('tab', { name: 'Question bank' }).click();
+  await expect(owner).toHaveURL(/view=bank/);
+  await expect(owner.getByRole('heading', { name: /^Cold outreach/, level: 2 })).toBeVisible();
+  await expect(owner.getByRole('link', { name: DRILL })).toBeVisible();
+  await shot(owner, '28-question-bank');
+  await owner.goto(`${state.drillUrl.replace('/practice/drill/', '/drills/')}/edit`);
+  await expect(owner.getByRole('heading', { name: 'The buyer’s pushbacks' })).toBeVisible();
+  await expect(owner.getByLabel('Pushback 1')).not.toHaveValue('');
 });
 
 test('managers cannot deactivate or demote themselves, and the owner is protected', async () => {

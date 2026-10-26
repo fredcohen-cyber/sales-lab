@@ -321,10 +321,14 @@ export function stageLabel(meta, key) {
   return meta?.stages?.find((s) => s.key === key)?.label || key;
 }
 
-// "First attempt", "Retry 2", or "Unscored practice". Only coached answers are numbered, so unscored
-// practice never uses up the first attempt. Accepts API rows in either naming style.
+// "First attempt", "Retry 2", "Reply 2 of 3", or "Unscored practice". Only coached conversations are
+// numbered, so unscored practice never uses up the first attempt; later replies in a conversation belong
+// to it. Accepts API rows in either naming style.
 export function attemptLabel(a, { short = false } = {}) {
   if (!a) return '';
+  const turn = a.turn ?? a.turn_number ?? 1;
+  const planned = a.repliesPlanned ?? a.replies_planned ?? 1;
+  if (turn > 1) return short ? `Reply ${turn}` : `Reply ${turn} of ${planned}`;
   if (a.mode === 'unscored') return short ? 'Unscored' : 'Unscored practice';
   const n = a.coachedNumber ?? a.coached_number;
   if (!n) return short ? '—' : 'Answer';
@@ -332,12 +336,22 @@ export function attemptLabel(a, { short = false } = {}) {
   return `Retry ${n - 1}`;
 }
 
-// What to show for an answer's score: a number, or why there is none yet.
+// What to show for an answer's score: a number, or why there is none yet. For a conversation it is the
+// average of its replies once they are all in and coached.
 export function scoreText(a) {
-  const mode = a.mode;
+  if (a.mode === 'unscored') return '—';
+  const planned = a.repliesPlanned ?? a.replies_planned ?? 1;
+  const state = a.conversation_state;
+  if (state) {
+    if (state === 'scored') return String(a.conversation_score);
+    if (state === 'unfinished') return `${a.replies_done} of ${planned} replies`;
+    if (state === 'pending_review') return 'Pending review';
+    if (state === 'disputed') return 'Disputed';
+    return '—';
+  }
+  if (a.unfinished) return `${a.replies} of ${planned} replies`;
   const score = a.overallScore ?? a.overall_score;
   const status = a.reviewStatus ?? a.review_status;
-  if (mode === 'unscored') return '—';
   if (status === 'disputed') return 'Disputed';
   if (score === null || score === undefined) return status === 'provisional' ? 'Pending review' : '—';
   return String(score);

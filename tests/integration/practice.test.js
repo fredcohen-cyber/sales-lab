@@ -2,6 +2,8 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { addUser, drillBySlug, GOOD_ANSWER, ownerClient, sleep, startTestApp, submit, waitFor, waitForCoaching } from '../helpers.js';
+import { SEED_DRILLS } from '../../server/seed/drills.js';
+import { BANK_QUESTIONS } from '../../server/seed/bank/index.js';
 import { runEvaluation, sweepStaleRuns } from '../../server/ai/evaluate.js';
 
 let h;
@@ -16,27 +18,40 @@ before(async () => {
 });
 after(() => h.close());
 
-test('drill catalog lists seeded drills with coaching available', async () => {
-  const r = await rep.get('/api/drills');
+test('the question bank is for managers, and coaching can score every question in it', async () => {
+  // Reps are served questions by stage and never list or open one directly.
+  assert.equal((await rep.get('/api/drills')).status, 403);
+  assert.equal((await rep.get(`/api/drills/${(await drillBySlug(h, 'ravenly-too-expensive')).id}`)).status, 403);
+  const r = await owner.get('/api/drills');
   assert.equal(r.status, 200);
-  assert.equal(r.data.drills.length, 26);
-  assert.ok(r.data.drills.every((d) => d.coaching.available));
-  assert.ok(r.data.drills.every((d) => d.goodLooksLike === undefined), 'criteria hidden from learners before answering');
-  const ravenly = await rep.get('/api/drills?brand=ravenly&stage=pricing');
-  assert.ok(ravenly.data.drills.length >= 3);
+  assert.equal(r.data.drills.length, SEED_DRILLS.length + BANK_QUESTIONS.length);
+  const off = r.data.drills.filter((d) => !d.coaching.available).map((d) => `${d.title}: ${d.coaching.reason}`);
+  assert.deepEqual(off, []);
+  assert.ok(r.data.drills.every((d) => Array.isArray(d.pushbacks) && d.pushbacks.length === 3), 'every question lists the buyer’s pushbacks');
+  const ravenly = await owner.get('/api/drills?brand=ravenly&stage=pricing');
+  assert.ok(ravenly.data.drills.length >= 5);
 });
 
-test('preview shows persona, situation, objective, and settings, not the grading criteria', async () => {
+test('preview shows persona, situation, objective, and settings, not the grading criteria or pushbacks', async () => {
   const d = await drillBySlug(h, 'ravenly-too-expensive');
   const r = await rep.post('/api/practice/preview', { drillId: d.id, persona: 'solo_attorney', difficulty: 5, skepticism: 4, depth: 2 });
   assert.equal(r.status, 200);
   const s = r.data.scenario;
   assert.equal(s.persona.key, 'solo_attorney');
-  assert.equal(s.settings.difficulty, 5);
+  // Reps practice at the levels the question sets, whatever they send.
+  const { default_difficulty: difficulty, default_skepticism: skepticism, default_depth: depth } = await h.db.one(`SELECT v.* FROM drills d JOIN drill_versions v ON v.id = d.current_version_id WHERE d.id = $1`, [d.id]);
+  assert.deepEqual(s.settings, { difficulty, skepticism, depth });
   assert.ok(s.buyerLine.includes('case management'));
   assert.ok(s.objective.length > 10);
   assert.equal(s.goodLooksLike, undefined);
+  assert.equal(s.pushbacks, undefined);
+  assert.equal(s.repRole, 'ae');
+  assert.equal(s.conversation.replies, 1 + (difficulty <= 2 ? 1 : difficulty === 3 ? 2 : 3));
   assert.ok(s.assessedDimensions.length >= 3);
+  // Managers can try a question at other levels.
+  const asManager = await owner.post('/api/practice/preview', { drillId: d.id, persona: 'solo_attorney', difficulty: 5, skepticism: 4, depth: 2 });
+  assert.deepEqual(asManager.data.scenario.settings, { difficulty: 5, skepticism: 4, depth: 2 });
+  assert.equal(asManager.data.scenario.conversation.replies, 4);
 });
 
 test('answer is saved before coaching, then coaching completes with a verified evaluation', async () => {

@@ -26,7 +26,8 @@ function GroupTable({ groups }) {
           g.formerMembersPracticed ? `, plus ${g.formerMembersPracticed} who have since changed role` : ''
         }`,
     ],
-    ['Answers submitted', (g) => g.engagement.submitted],
+    ['Questions answered', (g) => g.engagement.submitted],
+    ['Replies, including pushbacks', (g) => g.engagement.replies],
     ['Retries', (g) => g.engagement.retries],
     ['Unscored practice', (g) => g.engagement.unscored],
     ['Practice days (all reps)', (g) => g.engagement.practiceDays],
@@ -138,7 +139,7 @@ export function ManagerDashboard() {
                     <tr>
                       <th>Rep</th>
                       <th>Last practice</th>
-                      <th className="num">Answers</th>
+                      <th className="num">Questions</th>
                       <th className="num">Practice days</th>
                       <th className="num">First-attempt avg (n)</th>
                       <th className="num">Pending reviews</th>

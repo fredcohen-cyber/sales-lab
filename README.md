@@ -1,9 +1,10 @@
 # Sales Lab
 
-Practice, coaching, and reporting for the shared Omnizant and Ravenly sales team. Reps answer one buyer
-moment at a time in writing, get AI coaching grounded in approved source material, and retry. Managers
-assign ordered practice, review evaluations, and follow performance and engagement. Scores are for coaching
-and development only, not employment decisions or rankings.
+Practice, coaching, and reporting for the shared Omnizant and Ravenly sales team. Reps choose a stage of
+the sale, answer the buyer's question in writing, get AI coaching grounded in approved source material, and
+then answer the buyer's pushbacks, one objection after another. Managers assign ordered practice, review
+evaluations, and follow performance and engagement. Scores are for coaching and development only, not
+employment decisions or rankings.
 
 ## Deploy on Railway
 
@@ -92,6 +93,32 @@ On the first deploy of this version, the supplied Sales Playbook and Ravenly gui
 their text unchanged, every drill is moved to the same material in its new sections, and the two original
 documents stay archived so past answers still show exactly what they were scored against.
 
+## Practice Studio: stages and conversations
+
+- **Reps choose a stage, never a question.** Each stage (Cold outreach, Discovery, Pricing, Renewal, and so
+  on) serves one question at random from those written for the rep's role, preferring questions the rep
+  has not answered and ones coaching can score. The question sets the buyer persona and the challenge
+  levels, and reps cannot change them. The served question waits until it is answered, and a conversation
+  the rep has not finished comes back first, so skipping never leads to an easier question.
+- **Every question is a conversation.** After each reply the coach scores it and writes the buyer's next
+  line from what the rep actually said: one pushback at difficulty 1 or 2, two at 3, and three at 4 or 5.
+  The rep reads the coaching, then answers the pushback. When the last reply is coached, the rep sees the
+  buyer's closing response, every reply ranked from strongest to weakest, and the conversation's score,
+  the average of its replies.
+- **Expectations fit the rep's role.** Each question says what a good answer does; questions that happen
+  in both jobs add what differs for an account executive (winning new business) and an account manager
+  (looking after an existing client). The coach is told which role is answering.
+- **The question bank** has at least 12 questions per stage, written only from the approved Sales Playbook
+  and Ravenly product knowledge (see `server/seed/bank/`, checked by `node server/seed/bank/validate.js`).
+  Each lists three follow-up objections the buyer is likely to raise: the coach uses them as a guide, and
+  practice without coaching uses them word for word. Omnizant questions practice technique only until its
+  product sections are written and approved. Managers browse and edit every question under **Question
+  bank** in the Practice Studio, and can still assign specific questions in Curriculum.
+- **Reports count conversations.** A conversation counts once every planned reply is in and coached and
+  every reply's coaching counts: one disputed reply leaves it out, and one waiting for review holds it.
+  Unfinished conversations are listed separately. An assigned exercise is complete when its conversation
+  is.
+
 ## How coaching stays honest
 
 - Approved sections are the only product facts coaching may rely on. Each drill names the sections it
@@ -114,7 +141,10 @@ documents stay archived so past answers still show exactly what they were scored
   renumbers them; sections that were removed or retitled are reported before approval and are not used
   until a manager updates the drill.
 - Answers are saved before any AI request. If coaching fails, times out, or is interrupted, the answer is
-  kept, no score is recorded, and the rep can retry without retyping.
+  kept, no score is recorded, and the rep can retry without retyping. In a conversation the buyer pushes
+  back only after the last reply has been coached.
+- In a conversation, each reply is judged on its own, as an answer to the buyer's latest words, with the
+  earlier turns as context. Evidence quotes come only from that reply.
 - Disputed evaluations and unresolved flagged ones are left out of averages. Strengths and weaknesses need
   at least three scored first attempts. Unscored practice never uses up a rep's first attempt, and answers
   count under the role the person had when they wrote them.
@@ -145,23 +175,25 @@ Automated tests use a test-only stand-in for the AI service that cannot be enabl
 
 ## Status
 
-Implemented and covered by automated tests (126 server tests and 20 browser tests): company email and
+Implemented and covered by automated tests (NN_SERVER server tests and NN_BROWSER browser tests): company email and
 password sign-in with manager-created accounts only, private single-use setup and reset links, sign-in
 throttling, deactivation and session revocation, server-side roles and learner privacy, the knowledge
 library as collections of sections with versions, approval, evidence basis, ordering, and document
-splitting, drills with relevance checks, the Practice Studio
-with coaching, retries, and a coaching queue, Team Coaching with per-item review of critical failures and
+splitting, drills with relevance checks, the Practice Studio with stages that serve questions at random,
+practice conversations with per-reply coaching and buyer pushbacks, role-specific expectations, retries,
+and a coaching queue, Team Coaching with per-item review of critical failures and
 flags, Curriculum assignments and learning paths, the Manager Dashboard and rep reports with CSV export,
 and recovery from failed, stuck, or queued coaching. The code was also reviewed independently for security
 and against the specification, and the findings were fixed and re-checked.
 
 Needs verification or material:
 
-- Real coaching has only been exercised with the test stand-in. After adding the API key, run a few drills
-  and review the first evaluations in Team Coaching to calibrate the rubric and targets.
+- Real coaching has only been exercised with the test stand-in. After adding the API key, run a few
+  conversations and review the first evaluations and pushbacks in Team Coaching to calibrate the rubric and
+  targets.
 - No Omnizant product or competitive material has been supplied. Omnizant product knowledge holds draft
   outlines for Web development, SEO, and GEO, so there are no Omnizant product drills yet and the
   Knowledge Library shows that gap. Sales-technique drills apply to both brands.
 - Company logo files have not been added (see above).
-- Out of scope for this version: voice, full-call or multi-turn simulation, CRM integrations, automated
-  emails or reminders, and imports beyond pasted text, `.txt`, and `.md`.
+- Out of scope for this version: voice, full-call simulation, CRM integrations, automated emails or
+  reminders, and imports beyond pasted text, `.txt`, and `.md`.

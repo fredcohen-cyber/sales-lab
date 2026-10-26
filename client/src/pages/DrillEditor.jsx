@@ -17,6 +17,8 @@ const BLANK = {
   personaLines: {},
   objective: '',
   goodLooksLike: '',
+  roleGuidance: {},
+  pushbacks: [],
   assessedDimensions: ['objection_handling', 'persuasion', 'advancing'],
   defaults: { difficulty: 3, skepticism: 3, depth: 3 },
   sourceRefs: [],
@@ -263,6 +265,8 @@ export function DrillEditor() {
           personaLines: d.personaLines || {},
           objective: d.objective,
           goodLooksLike: d.goodLooksLike,
+          roleGuidance: d.roleGuidance || {},
+          pushbacks: d.pushbacks || [],
           assessedDimensions: d.assessedDimensions,
           defaults: d.defaults,
           sourceRefs: d.sourceRefs || [],
@@ -292,6 +296,7 @@ export function DrillEditor() {
       const { version, ...rest } = form;
       const body = {
         ...rest,
+        pushbacks: Array.from(form.pushbacks, (x) => (x || '').trim()).filter(Boolean),
         sourceRefs: form.sourceRefs.map((r) => ({
           sourceId: r.sourceId,
           sections: r.wholeSource ? [] : r.sections,
@@ -414,9 +419,48 @@ export function DrillEditor() {
           <Field label="The rep’s objective" id="d-obj">
             <textarea id="d-obj" rows={2} value={form.objective} onChange={(e) => set('objective', e.target.value)} />
           </Field>
-          <Field label="What a good answer does" id="d-good" hint="Shown to the rep after they submit, and given to coaching as your criteria. One point per line works well.">
+          <Field
+            label="What a good answer does"
+            id="d-good"
+            hint={`Shown to the rep after they submit, and given to coaching as your criteria. One point per line works well.${form.roles.length > 1 ? ' Put what applies to both roles here, and what differs below.' : ''}`}
+          >
             <textarea id="d-good" rows={6} value={form.goodLooksLike} onChange={(e) => set('goodLooksLike', e.target.value)} />
           </Field>
+          {form.roles.length > 1 &&
+            form.roles.map((role) => (
+              <Field
+                key={role}
+                label={`What a good answer adds for an ${role === 'am' ? 'account manager' : 'account executive'}`}
+                id={`d-rg-${role}`}
+                hint={role === 'am' ? 'For example protecting and growing an existing client.' : 'For example earning a first commitment from a new firm.'}
+              >
+                <textarea id={`d-rg-${role}`} rows={3} value={form.roleGuidance[role] || ''} onChange={(e) => set('roleGuidance', { ...form.roleGuidance, [role]: e.target.value })} />
+              </Field>
+            ))}
+        </section>
+
+        <section className="panel stack">
+          <h2 className="section-title">The buyer’s pushbacks</h2>
+          <p className="small muted" style={{ margin: 0 }}>
+            After each reply the buyer pushes back: once at difficulty 1 or 2, twice at 3, three times at 4 or 5. Coaching writes each pushback from what the rep actually said and
+            uses these as a guide. Without coaching, they are used word for word, in order.
+          </p>
+          {[0, 1, 2].map((i) => (
+            <Field key={i} label={`Pushback ${i + 1}${i === 0 ? '' : i === 1 ? ' (difficulty 3 and up)' : ' (difficulty 4 and up)'}`} id={`d-pb-${i}`}>
+              <input
+                id={`d-pb-${i}`}
+                type="text"
+                maxLength={600}
+                value={form.pushbacks[i] || ''}
+                placeholder={i === 0 ? 'What the buyer is most likely to say next' : ''}
+                onChange={(e) => {
+                  const next = [...form.pushbacks];
+                  next[i] = e.target.value;
+                  set('pushbacks', next);
+                }}
+              />
+            </Field>
+          ))}
         </section>
 
         <section className="panel stack">
@@ -434,7 +478,7 @@ export function DrillEditor() {
           </div>
           <div className="form-row">
             {['difficulty', 'skepticism', 'depth'].map((k) => (
-              <Field key={k} label={`Default ${k === 'depth' ? 'product depth' : k}`} id={`d-def-${k}`}>
+              <Field key={k} label={`${k === 'depth' ? 'Product depth' : k === 'difficulty' ? 'Difficulty' : 'Skepticism'} (set for reps)`} id={`d-def-${k}`}>
                 <select id={`d-def-${k}`} value={form.defaults[k]} onChange={(e) => set('defaults', { ...form.defaults, [k]: Number(e.target.value) })}>
                   {[1, 2, 3, 4, 5].map((n) => (
                     <option key={n} value={n}>

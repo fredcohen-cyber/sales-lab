@@ -5,6 +5,7 @@ import { DEFAULT_DIMENSIONS, DEFAULT_PERSONAS } from '../domain.js';
 import { SEED_DRILLS, SEED_PATHS } from './drills.js';
 import { SEED_COLLECTIONS } from './collections.js';
 import { createCollection, createSection, splitSourceIntoCollection } from '../knowledge/sections.js';
+import { seedQuestionBank, SEEDED_DRILL_NOTE } from './bank/seed.js';
 import { createPasswordLink, linkUrl } from '../users/links.js';
 import { audit } from '../lib/audit.js';
 
@@ -170,7 +171,7 @@ export async function seed(db, config, { log = console.log } = {}) {
             d.defaults[1],
             d.defaults[2],
             JSON.stringify(refs),
-            'Seeded from the supplied Ravenly reference and Sales Playbook.',
+            SEEDED_DRILL_NOTE,
             owner.id,
           ],
         );
@@ -208,6 +209,9 @@ export async function seed(db, config, { log = console.log } = {}) {
   // The playbook and the Ravenly guide become collections of sections that are edited one at a time.
   // Drills move to the matching sections; the two documents stay archived for history.
   await once(db, 'knowledge-sections-v1', (q) => createSeedCollections(q, owner, log), log);
+
+  // The Practice Studio question bank: questions per stage, each with the buyer's follow-up objections.
+  await once(db, 'question-bank-v1', (q) => seedQuestionBank(q, owner, log), log);
 }
 
 // Creates the starting collections. A document that cannot be split (edited since it was supplied, or

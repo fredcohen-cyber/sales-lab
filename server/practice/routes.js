@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { notFound, parseBody, route } from '../lib/errors.js';
 import { previewOf } from './scenario.js';
 import { attemptView, createAttempt, resolvePractice, retryCoaching } from './service.js';
+import { drawQuestion, stageOverview } from './feed.js';
+import { CONVERSATION_SUMMARY_SQL, withConversationScore } from './conversation.js';
 import { scheduleEvaluation } from '../ai/evaluate.js';
 import { UNAVAILABLE_TEXT } from '../drills/service.js';
 import { FIT_TEXT } from '../knowledge/service.js';
@@ -21,11 +23,39 @@ const previewSchema = z.object(practiceInput).refine((v) => v.drillId || v.assig
 const attemptSchema = z
   .object({
     ...practiceInput,
+    // A reply to the buyer's pushback continues the conversation that this attempt belongs to.
+    continueFrom: z.string().uuid().optional(),
     clientRequestId: z.string().uuid(),
     mode: z.enum(['coached', 'unscored']),
     answer: z.string().max(20_000),
   })
-  .refine((v) => v.drillId || v.assignmentItemId, { message: 'Choose a drill.' });
+  .refine((v) => v.drillId || v.assignmentItemId || v.continueFrom, { message: 'Choose a drill.' });
+
+// What the practice screen needs before an answer: the scenario without the answer key.
+function previewPayload(p, user) {
+  return {
+    scenario: previewOf(p.scenario),
+    drill: { id: p.drill.id, versionId: p.drill.version_id, personas: p.drill.personas, status: p.drill.status },
+    assigned: p.assigned
+      ? { itemId: p.assigned.id, assignmentId: p.assigned.assignment_id, title: p.assigned.assignment_title, position: p.assigned.position, dueDate: p.assigned.due_date }
+      : null,
+    coaching: {
+      available: p.coachingAvailable,
+      reason: p.unavailableReason,
+      message: p.unavailableReason ? UNAVAILABLE_TEXT[p.unavailableReason] : null,
+    },
+    // Managers also see why a source is not used and which chosen sections are missing.
+    sourceDetails: user.isManager
+      ? p.sources.map((s) => ({
+          sourceId: s.sourceId,
+          title: s.title || s.latestTitle,
+          reason: s.reason,
+          reasonText: s.reason ? FIT_TEXT[s.reason] : null,
+          missingSections: s.missingSections,
+        }))
+      : undefined,
+  };
+}
 
 export const isUuid = (s) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(s));
 
@@ -38,28 +68,30 @@ export function practiceRoutes({ db, config, provider, log }) {
     route(async (req, res) => {
       const body = parseBody(previewSchema, req.body);
       const p = await db.tx((q) => resolvePractice(q, config, req.user, body));
-      res.json({
-        scenario: previewOf(p.scenario),
-        drill: { id: p.drill.id, versionId: p.drill.version_id, personas: p.drill.personas, status: p.drill.status },
-        assigned: p.assigned
-          ? { itemId: p.assigned.id, assignmentId: p.assigned.assignment_id, title: p.assigned.assignment_title, position: p.assigned.position, dueDate: p.assigned.due_date }
-          : null,
-        coaching: {
-          available: p.coachingAvailable,
-          reason: p.unavailableReason,
-          message: p.unavailableReason ? UNAVAILABLE_TEXT[p.unavailableReason] : null,
-        },
-        // Managers also see why a source is not used and which chosen sections are missing.
-        sourceDetails: req.user.isManager
-          ? p.sources.map((s) => ({
-              sourceId: s.sourceId,
-              title: s.title || s.latestTitle,
-              reason: s.reason,
-              reasonText: s.reason ? FIT_TEXT[s.reason] : null,
-              missingSections: s.missingSections,
-            }))
-          : undefined,
+      res.json(previewPayload(p, req.user));
+    }),
+  );
+
+  // The stages a person can practice, with how much of each they have done.
+  r.get(
+    '/stages',
+    route(async (req, res) => {
+      res.set('Cache-Control', 'no-store');
+      res.json({ stages: await db.tx((q) => stageOverview(q, config, req.user)) });
+    }),
+  );
+
+  // Serve a stage's question: the unfinished conversation, the question waiting, or a new one.
+  r.post(
+    '/stages/:stage/draw',
+    route(async (req, res) => {
+      const out = await db.tx(async (q) => {
+        const drawn = await drawQuestion(q, config, req.user, String(req.params.stage));
+        if (drawn.resumeAttemptId) return { resumeAttemptId: drawn.resumeAttemptId };
+        const p = await resolvePractice(q, config, req.user, { drillId: drawn.drillId, persona: drawn.persona });
+        return { ...previewPayload(p, req.user), stage: req.params.stage };
       });
+      res.json(out);
     }),
   );
 
@@ -109,21 +141,25 @@ export function practiceRoutes({ db, config, provider, log }) {
       }
       const limit = Math.min(200, Math.max(1, Number.parseInt(req.query.limit, 10) || 50));
       params.push(limit);
+      // One entry per conversation (its first reply), with how far it got and its score.
+      where.push('a.turn_number = 1');
       const rows = await db.many(
         `SELECT a.id, a.learner_id, u.name AS learner_name, a.drill_id, a.scenario->>'title' AS drill_title, a.stage, a.brand, a.persona,
                 a.scenario->'persona'->>'label' AS persona_label, a.difficulty, a.skepticism, a.depth, a.mode, a.attempt_number, a.coached_number,
-                a.submitted_at, a.assignment_item_id, e.overall_score, e.review_status, e.meets_target,
-                (SELECT count(*) FROM jsonb_array_elements(COALESCE(e.critical_failures, '[]'::jsonb)) c WHERE c->>'status' = 'confirmed') AS critical_count,
-                r.status AS run_status
+                a.submitted_at, a.assignment_item_id, a.replies_planned, e.overall_score, e.review_status, e.meets_target,
+                (SELECT count(*) FROM attempts t JOIN evaluations te ON te.id = t.evaluation_id, jsonb_array_elements(COALESCE(te.critical_failures, '[]'::jsonb)) c
+                  WHERE t.conversation_id = a.conversation_id AND c->>'status' = 'confirmed') AS critical_count,
+                r.status AS run_status, conv.*
            FROM attempts a
            JOIN users u ON u.id = a.learner_id
            LEFT JOIN evaluations e ON e.id = a.evaluation_id
            LEFT JOIN evaluation_runs r ON r.id = a.latest_run_id
-          ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+           ${CONVERSATION_SUMMARY_SQL}
+          WHERE ${where.join(' AND ')}
           ORDER BY a.submitted_at DESC LIMIT $${params.length}`,
         params,
       );
-      res.json({ attempts: rows });
+      res.json({ attempts: rows.map(withConversationScore) });
     }),
   );
 

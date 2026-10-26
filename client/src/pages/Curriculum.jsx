@@ -8,6 +8,9 @@ import { ItemsBuilder } from '../components/ItemsBuilder.jsx';
 import { NextUpCard } from './Home.jsx';
 
 function ItemRow({ item, learnerView }) {
+  // An exercise is a conversation: one that is under way is continued, not started again.
+  const replies = item.lastAttempt?.replies;
+  const inProgress = item.state !== 'completed' && replies && replies.done < replies.planned;
   return (
     <li className="row-between" style={{ alignItems: 'flex-start' }}>
       <div style={{ minWidth: 0 }}>
@@ -19,7 +22,11 @@ function ItemRow({ item, learnerView }) {
         </div>
         {item.lastAttempt && item.state !== 'completed' && (
           <div className="tiny" style={{ marginTop: 4 }}>
-            {item.lastAttempt.runStatus === 'running' ? (
+            {inProgress && item.lastAttempt.runStatus !== 'running' && !['failed', 'timed_out'].includes(item.lastAttempt.runStatus) ? (
+              <span className="badge badge-info">
+                Conversation under way: {replies.done} of {replies.planned} replies
+              </span>
+            ) : item.lastAttempt.runStatus === 'running' ? (
               <span className="badge badge-info">Coaching running</span>
             ) : ['failed', 'timed_out'].includes(item.lastAttempt.runStatus) ? (
               <Link to={`/attempts/${item.lastAttempt.id}`}>Coaching did not finish: open to retry</Link>
@@ -51,9 +58,15 @@ function ItemRow({ item, learnerView }) {
         )}
         {item.state === 'available' &&
           (learnerView ? (
-            <Link className="btn btn-small" to={`/practice/assigned/${item.id}`}>
-              Start
-            </Link>
+            inProgress ? (
+              <Link className="btn btn-small" to={`/attempts/${item.lastAttempt.id}`}>
+                Continue
+              </Link>
+            ) : (
+              <Link className="btn btn-small" to={`/practice/assigned/${item.id}`}>
+                Start
+              </Link>
+            )
           ) : (
             <span className="badge badge-info">Up next</span>
           ))}
