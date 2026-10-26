@@ -289,7 +289,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“The partners won’t read a methodology note. Can’t I just say we’re recommended 40% of the time?”',
+      '“The partners won’t read a methodology note. What do I actually lose if I leave the caveats off the slide?”',
       '“Which prompts did you even pick? If you chose easy ones, the number means nothing.”',
       '“If this number can’t tell the partners whether AI search brings in cases, why are we paying for it?”',
     ],
@@ -398,7 +398,7 @@ export const QUESTIONS = [
     roleGuidance: {},
     pushbacks: [
       '“You’re my agency. Isn’t your job to make the AI plan look good?”',
-      '“My partners won’t know the difference between ‘observed’ and ‘influenced.’ Why does it matter?”',
+      '“My partners don’t care about fine print. If a client used ChatGPT, that’s an AI client as far as they’re concerned. Why split hairs?”',
       '“If your report shows less than I tell my partners, I look like a fool. Either back me up or I’ll find an agency that will.”',
     ],
     assessed: ['product_accuracy', 'objection_handling', 'empathy_clarity', 'advancing'],
@@ -436,7 +436,7 @@ export const QUESTIONS = [
     pushbacks: [
       '“Half our clients don’t remember how they found us. Can’t we assume most of the new ones came from AI?”',
       '“It’s just an internal report. Does the wording really matter that much?”',
-      '“If the AI line comes out tiny, the partners will want to cancel. Can’t we include all the website clients so it looks fair?”',
+      '“If the AI line comes out tiny, the partners will want to cancel. Can we just leave it out of the report this month?”',
     ],
     assessed: ['product_accuracy', 'empathy_clarity', 'advancing'],
     defaults: [3, 2, 4],
@@ -514,7 +514,7 @@ export const QUESTIONS = [
     assessed: ['product_accuracy', 'empathy_clarity', 'discovery', 'advancing'],
     defaults: [3, 3, 3],
     sources: [
-      { collection: 'omnizant-ai-search', sections: ['How the plans fit', 'How we earn confidence', 'The story we tell'] },
+      { collection: 'omnizant-ai-search', sections: ['How the plans fit', 'How we earn confidence', 'The story we tell', 'Messaging guidance'] },
       { collection: 'sales-playbook', sections: ['4. '] },
     ],
   },
@@ -574,7 +574,7 @@ export const QUESTIONS = [
       'Handle the price comparison without confirming or disputing an unverified competitor price: compare like for like, tie cost to what the firm needs, and set up a comparison the partners can trust.',
     goodLooksLike: [
       '- Does not confirm $80 as Intaker’s current price or argue with it: no current Intaker price has been verified, and the figures on file come from an undated screenshot, so the firm should get a current, complete Intaker quote.',
-      '- States Ravenly’s published prices accurately, as checked October 11, 2026: Launch at $99 a month on yearly billing or $119 monthly, Ascend at $199 a month on yearly billing or $229 monthly, and Summit by custom quote, with invoicing and terms confirmed in the quote.',
+      '- Quotes Ravenly’s published price accurately for the plan that fits the firm, as checked October 11, 2026 (Launch $99 a month on yearly billing or $119 monthly; Ascend $199 or $229; Summit by custom quote), with invoicing and terms confirmed in the quote.',
       '- Explains that the two may price different things: the Intaker plans on file were set by users and unique website views, while Ravenly’s published plans are set mainly by monthly leads (phone calls and spam excluded), users, and practice areas.',
       '- Lists what to compare before calling either option cheaper: what each plan includes, users, how traffic or leads are counted, implementation, usage, and contract term.',
       '- Asks how many people work intake and roughly how many inquiries the firm gets a month, so the comparison fits the firm.',
@@ -649,7 +649,7 @@ export const QUESTIONS = [
       '- Stays composed and does not offer a discount to close the gap.',
       '- Says plainly that a price in an article is not a quote: no current Intaker price has been verified and old published pricing is unsuitable, so he should get a current, complete quote for his firm’s needs.',
       '- Explains that the plans may count different units: the Intaker tiers on file, from an undated screenshot, were set by users and unique website views, which can weigh on a firm with heavy advertising traffic, while Ravenly’s published plans are set mainly by monthly leads, users, and practice areas.',
-      '- Lists what must match before calling either cheaper: users, how traffic or leads are counted, implementation, usage, integrations, and contract term, and notes that Ascend is $199 a month on yearly billing.',
+      '- Lists what must match before calling either cheaper: users, how traffic or leads are counted, implementation, usage, integrations, and contract term; if it mentions Ascend’s yearly rate ($199 a month), presents it as a longer commitment, not a discount.',
       '- Ties the price back to the problem he described, using his numbers, such as what one retained matter is worth against the monthly difference, without inventing results.',
       '- Asks for a decision date tied to having both complete quotes in hand.',
     ].join('\n'),
@@ -831,7 +831,7 @@ export const QUESTIONS = [
     pushbacks: [
       '“Will my staff have to learn a lot of new screens?”',
       '“Can Ravenly text people back automatically, like Intaker’s AI?”',
-      '“The partners will ask why we’d pay for the one that does less. What do I tell them?”',
+      '“The partners will look at price first. If Intaker’s quote comes in lower, what do I tell them?”',
     ],
     assessed: ['product_accuracy', 'discovery', 'empathy_clarity', 'advancing'],
     defaults: [2, 2, 3],
@@ -889,7 +889,7 @@ export const QUESTIONS = [
       'Explain the different pricing units accurately, settle what counts toward Ravenly’s allowance instead of guessing, and build a like-for-like comparison.',
     goodLooksLike: [
       '- Explains the difference fairly: Ravenly’s published plans are set mainly by monthly leads (phone calls and spam excluded), users, and practice areas, while her Intaker quote follows website traffic, which can weigh on a firm whose visitors far outnumber its inquiries; does not call either option cheaper yet.',
-      '- Fits her volume to the published plans: about 30 inquiries a month is above Launch’s 25 monthly leads and within Ascend’s 50, at $199 a month on yearly billing or $229 monthly.',
+      '- Fits her volume to the published plans without settling the count early: if each of her roughly 30 monthly inquiries counts as one lead, that is above Launch’s 25 monthly leads and within Ascend’s 50, at $199 a month on yearly billing or $229 monthly.',
       '- Does not guess what counts toward the allowance; commits to confirming how duplicate inquiries, reopened, imported, and disqualified leads, and several submissions from one person are counted, and what happens at the allowance.',
       '- Normalizes the rest before comparing: users, practice areas, implementation, usage such as SMS segments and voice minutes, and contract term.',
       '- Does not promise that Ravenly will turn more of the blog’s traffic into inquiries.',

@@ -193,7 +193,7 @@ export const QUESTIONS = [
       '- Explains that a 10-day trial can test setup and the daily workflow but may be too short to show retained cases, given the lag between inquiry and retention.',
       '- Asks what the team measured and what happened to the trial inquiries: response times, owners, follow-up, and stages.',
       '- Does not guarantee signed cases or cite website statistics as proof; says outcomes depend on traffic quality, the team’s response, practice fit, and follow-through.',
-      '- Does not offer free months or discounts that are not approved.',
+      '- Does not offer free months, discounts, or any other concession.',
       '- Proposes one measured next step with agreed measures and a decision date, or accepts the no without pressure.',
     ].join('\n'),
     roleGuidance: {},

@@ -316,7 +316,7 @@ export const QUESTIONS = [
       'Take the concern seriously, explain accurately what the intake experience and the AI do and do not do, and earn a short follow-up conversation without making compliance promises.',
     goodLooksLike: [
       '- Treats the concern as legitimate and answers calmly and briefly.',
-      '- Explains accurately that the chat asks the intake questions the firm configures and approves, and that the AI summary and score help him review an inquiry; they are not legal advice, verified case valuation, or a decision to take the case.',
+      '- Explains accurately that visitors answer the intake questions in flows the firm approves, and that the AI summary and score help him review an inquiry; they are not legal advice, verified case valuation, or a decision to take the case. Does not claim the AI never says anything to visitors, or that it does, and offers to show exactly what a visitor would see.',
       '- Does not claim Ravenly is bar-approved or ethics-compliant, and does not suggest it can answer questions like an attorney.',
       '- Notes that he would approve the questions and the consent wording, and can read every original answer himself.',
       '- Asks a question that opens a conversation, such as what he wishes he knew before calling an inquiry back, and proposes a short look at how a criminal defense intake flow could work.',

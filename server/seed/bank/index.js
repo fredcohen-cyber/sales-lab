@@ -67,6 +67,10 @@ export const BANK_QUESTIONS = [...FIRST_BANK_QUESTIONS, ...Object.values(EXTRA_F
 // Additions for the drills seeded before the question bank existed, by slug.
 export const EXISTING_UPDATES = Object.assign({}, ...Object.values(BANK_FILES).map((f) => f.EXISTING));
 
+// First-bank questions corrected after a fact-check; the seed gives each a new version (see
+// refreshCorrectedQuestions).
+export const CORRECTED_QUESTIONS = ['cold-ravenly-ai-legal-advice', 'stall-ravenly-trial-no-cases'];
+
 // A question's product line: its own, or the usual one for its brand.
 export const productOf = (q) => q.product || EXISTING_UPDATES[q.slug]?.product || defaultProductLine(q.brand);
 // A question's concept: the slug of the concept's first question (a question that starts a concept

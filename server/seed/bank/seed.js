@@ -24,22 +24,28 @@ async function sectionFinder(q) {
   };
 }
 
+// A question's source references: each cited section, chosen whole.
+function refsFor(find, b, log) {
+  const refs = [];
+  for (const ref of b.sources) {
+    for (const prefix of ref.sections) {
+      const hit = find(ref.collection, prefix);
+      if (!hit) {
+        log(`[seed] question ${b.slug}: no single section “${prefix}” in ${ref.collection}; left out`);
+        continue;
+      }
+      if (!refs.some((r) => r.sourceId === hit.id)) refs.push({ sourceId: hit.id, sections: [], versionId: hit.latest_version_id });
+    }
+  }
+  return refs;
+}
+
 export async function seedQuestionBank(q, owner, log = () => {}, { questions = BANK_QUESTIONS, updates = EXISTING_UPDATES } = {}) {
   const find = await sectionFinder(q);
   let added = 0;
   for (const b of questions) {
     if (await q.one(`SELECT id FROM drills WHERE slug = $1`, [b.slug])) continue;
-    const refs = [];
-    for (const ref of b.sources) {
-      for (const prefix of ref.sections) {
-        const hit = find(ref.collection, prefix);
-        if (!hit) {
-          log(`[seed] question ${b.slug}: no single section “${prefix}” in ${ref.collection}; left out`);
-          continue;
-        }
-        if (!refs.some((r) => r.sourceId === hit.id)) refs.push({ sourceId: hit.id, sections: [], versionId: hit.latest_version_id });
-      }
-    }
+    const refs = refsFor(find, b, log);
     const drill = await q.one(`INSERT INTO drills (slug, status, created_by) VALUES ($1, 'active', $2) RETURNING id`, [b.slug, owner.id]);
     const v = await insertSeedVersion(q, drill.id, 1, { ...b, sourceRefs: refs, changeNote: BANK_NOTE }, owner.id);
     await q.query(`UPDATE drills SET current_version_id = $2 WHERE id = $1`, [drill.id, v.id]);
@@ -84,6 +90,39 @@ export async function seedQuestionBank(q, owner, log = () => {}, { questions = B
   return { added, upgraded };
 }
 
+export const CORRECTED_NOTE = 'Corrected after a fact-check against the approved material.';
+
+// Questions corrected in the bank after they were seeded: each gets a new version with the corrected text,
+// unless a manager has edited it since (the manager's version stands) or it already matches.
+export async function refreshCorrectedQuestions(q, owner, log = () => {}, { slugs, questions = BANK_QUESTIONS } = {}) {
+  const find = await sectionFinder(q);
+  let refreshed = 0;
+  for (const slug of slugs) {
+    const b = questions.find((x) => x.slug === slug);
+    if (!b) throw new Error(`Corrected question ${slug} is not in the bank`);
+    const cur = await q.one(`SELECT v.* FROM drills d JOIN drill_versions v ON v.id = d.current_version_id WHERE d.slug = $1`, [slug]);
+    if (!cur) continue;
+    if (![FIRST_BANK_NOTE, BANK_NOTE].includes(cur.change_note)) {
+      log(`[seed] question ${slug} was edited, so its correction was not applied`);
+      continue;
+    }
+    const same =
+      cur.title === b.title &&
+      cur.situation === b.situation &&
+      cur.buyer_line === b.buyerLine &&
+      cur.objective === b.objective &&
+      cur.good_looks_like === b.goodLooksLike &&
+      JSON.stringify(cur.pushbacks || []) === JSON.stringify(b.pushbacks || []) &&
+      JSON.stringify(cur.role_guidance || {}) === JSON.stringify(b.roleGuidance || {});
+    if (same) continue;
+    const v = await insertSeedVersion(q, cur.drill_id, cur.version + 1, { ...b, sourceRefs: refsFor(find, b, log), changeNote: CORRECTED_NOTE }, owner.id);
+    await q.query(`UPDATE drills SET current_version_id = $2, updated_at = now() WHERE id = $1`, [cur.drill_id, v.id]);
+    refreshed += 1;
+  }
+  log(`[seed] question bank: ${refreshed} corrected questions given a new version`);
+  return refreshed;
+}
+
 async function insertSeedVersion(q, drillId, version, b, ownerId) {
   return q.one(
     `INSERT INTO drill_versions (drill_id, version, title, brand, subject, stage, roles, personas, situation, buyer_line, persona_lines,
@@ -123,7 +162,7 @@ async function insertSeedVersion(q, drillId, version, b, ownerId) {
 // and filter questions, so they are updated in place rather than as a new version. A question a manager
 // has edited since keeps its product line, and gets a concept only if it has none.
 export async function classifyBankDrills(q, log = () => {}, { questions = [...SEED_DRILLS, ...BANK_QUESTIONS] } = {}) {
-  const seeded = [SEEDED_DRILL_NOTE, FIRST_BANK_NOTE, BANK_NOTE, UPGRADE_NOTE];
+  const seeded = [SEEDED_DRILL_NOTE, FIRST_BANK_NOTE, BANK_NOTE, UPGRADE_NOTE, CORRECTED_NOTE];
   let changed = 0;
   for (const b of questions) {
     const r = await q.query(

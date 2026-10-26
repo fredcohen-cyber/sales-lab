@@ -5,8 +5,8 @@ import { DEFAULT_DIMENSIONS, DEFAULT_PERSONAS, defaultProductLine } from '../dom
 import { SEED_DRILLS, SEED_PATHS } from './drills.js';
 import { ADDED_SECTIONS, CALL_LEARNINGS, OMNIZANT_AI_SEARCH, SEED_COLLECTIONS } from './collections.js';
 import { createCollection, createSection, splitDocument, splitSourceIntoCollection } from '../knowledge/sections.js';
-import { classifyBankDrills, seedQuestionBank, SEEDED_DRILL_NOTE } from './bank/seed.js';
-import { FIRST_BANK_QUESTIONS } from './bank/index.js';
+import { classifyBankDrills, refreshCorrectedQuestions, seedQuestionBank, SEEDED_DRILL_NOTE } from './bank/seed.js';
+import { CORRECTED_QUESTIONS, FIRST_BANK_QUESTIONS } from './bank/index.js';
 import { createPasswordLink, linkUrl } from '../users/links.js';
 import { audit } from '../lib/audit.js';
 
@@ -245,13 +245,14 @@ export async function seed(db, config, { log = console.log } = {}) {
     log,
   );
 
-  // Three versions of every concept: questions added since the first bank, and each question's product
-  // line and concept.
+  // Three versions of every concept: questions added since the first bank, corrections to first-bank
+  // questions, and each question's product line and concept.
   await once(
     db,
     'question-bank-v2',
     async (q) => {
       await seedQuestionBank(q, owner, log);
+      await refreshCorrectedQuestions(q, owner, log, { slugs: CORRECTED_QUESTIONS });
       await classifyBankDrills(q, log);
     },
     log,
