@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { addUser, ownerClient, startTestApp } from '../helpers.js';
 import { PRODUCT_LINES } from '../../server/domain.js';
 import { BANK_QUESTIONS } from '../../server/seed/bank/index.js';
+import { CORRECTED_NOTE, refreshCorrectedQuestions } from '../../server/seed/bank/seed.js';
 
 let h;
 let owner;
@@ -104,4 +105,24 @@ test('a question’s product line must belong to its brand; its concept is for m
   assert.equal(made.status, 201, JSON.stringify(made.data));
   const shown = (await owner.get(`/api/drills/${made.data.id}`)).data.drill;
   assert.deepEqual([shown.productLine, shown.concept], ['ravenly', 'close-partners-decide']);
+});
+
+test('a corrected question gets a new version on upgrade, unless a manager has edited it', async () => {
+  const ownerRow = await h.db.one(`SELECT id FROM users WHERE is_owner`);
+  const current = (slug) =>
+    h.db.one(`SELECT v.id, v.version, v.change_note, v.good_looks_like FROM drills d JOIN drill_versions v ON v.id = d.current_version_id WHERE d.slug = $1`, [slug]);
+  // Two first-bank questions as an older release seeded them, with text since corrected.
+  const [fixed, edited] = ['price-ravenly-over-allowance', 'price-ravenly-onboarding-fee'];
+  for (const slug of [fixed, edited]) await h.db.query(`UPDATE drill_versions SET good_looks_like = '- Old criteria.\n- More old criteria.' WHERE id = $1`, [(await current(slug)).id]);
+  await h.db.query(`UPDATE drill_versions SET change_note = 'Edited by a manager.' WHERE id = $1`, [(await current(edited)).id]);
+  const before = await current(fixed);
+  const log = [];
+  assert.equal(await refreshCorrectedQuestions(h.db, ownerRow, (l) => log.push(l), { slugs: [fixed, edited] }), 1);
+  const after = await current(fixed);
+  assert.deepEqual([after.version, after.change_note], [before.version + 1, CORRECTED_NOTE]);
+  assert.equal(after.good_looks_like, BANK_QUESTIONS.find((q) => q.slug === fixed).goodLooksLike);
+  assert.equal((await current(edited)).good_looks_like, '- Old criteria.\n- More old criteria.', 'the manager’s version stands');
+  assert.ok(log.some((l) => l.includes(`${edited} was edited`)));
+  // Running it again changes nothing.
+  assert.equal(await refreshCorrectedQuestions(h.db, ownerRow, () => {}, { slugs: [fixed, edited] }), 0);
 });
