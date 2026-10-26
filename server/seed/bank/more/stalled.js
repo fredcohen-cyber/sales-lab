@@ -33,7 +33,7 @@ export const QUESTIONS = [
     ],
     assessed: ['persuasion', 'empathy_clarity', 'advancing'],
     defaults: [3, 3, 1],
-    sources: [{ collection: 'sales-playbook', sections: ['7. ', '8. ', '1. ', '4. ', '6. '] }],
+    sources: [{ collection: 'sales-playbook', sections: ['7. ', '8. ', '1. ', '4. ', '6. ', '3. '] }],
   },
   {
     slug: 'stall-stalled-follow-up-v3',
@@ -54,7 +54,7 @@ export const QUESTIONS = [
     goodLooksLike: [
       '- Fits a text: a few plain sentences that say who it is from.',
       '- Hands him the decision: assumes he has gone in another direction and says that is completely okay.',
-      '- Carries no guilt trip, sarcasm, or count of unanswered messages, and no last-minute discount, deadline, or pitch to provoke a reply.',
+      '- Carries no guilt trip or sarcasm, such as listing every unanswered message, and no last-minute discount, deadline, or pitch to provoke a reply.',
       '- Wishes him well with his practice and leaves the door open: if he would still like to talk, you will be glad to help.',
       '- If he replies, restarts from where the deal stalled, finds out whether timing, money, or need is the real issue, and asks for a dated next step or a clear no.',
     ].join('\n'),
@@ -150,7 +150,7 @@ export const QUESTIONS = [
     personas: ['office_manager'],
     personaLines: {},
     situation:
-      'You represent Ravenly. After your demo, the intake director at a seven-attorney criminal defense firm started Ravenly’s 10-day free trial for her three intake staff. The trial ended yesterday, and she replies to your email.',
+      'You represent Ravenly. After your demo, the intake director at a seven-attorney criminal defense firm started Ravenly’s 10-day free trial for her three intake staff, then went quiet. The trial ended yesterday, and she replies to your email.',
     buyerLine: '“I’m so sorry. Two of my people were out sick and the trial just slipped by. Is there any way we could start it over?”',
     objective:
       'Find out what got in the way, avoid promising a restart you cannot confirm, and plan a focused second look around one workflow her team runs every day, with a dated working session.',
@@ -187,7 +187,7 @@ export const QUESTIONS = [
     personas: ['marketing_manager'],
     personaLines: {},
     situation:
-      'You represent Ravenly. The marketing manager of a 20-attorney Social Security disability firm started Ravenly’s 10-day free trial to see which ad campaigns lead to retained cases, but the trial ended before the intake team really used it. On a call to review the trial, she makes a request.',
+      'You represent Ravenly. The marketing manager of a 20-attorney Social Security disability firm started Ravenly’s 10-day free trial to see which ad campaigns lead to retained cases, but the trial ended before the intake team really used it. After a week of silence, she agrees to a call to review the trial and makes a request.',
     buyerLine: '“Ten days was never going to show me retained cases, and my intake team barely logged in. Give me sixty days and I’ll get you real data.”',
     objective:
       'Agree with what is true about the trial’s length, avoid promising an extension you cannot confirm, find out why the intake team did not use it, and restart the evaluation around one measurable workflow with a dated working session.',
@@ -458,7 +458,7 @@ export const QUESTIONS = [
     objective: 'Leave a voicemail of about 30 seconds with one specific, accurate reason to call back and a clear next step. No “just checking in.”',
     goodLooksLike: [
       '- Says who is calling and why in the first sentence, without “just checking in” or “following up.”',
-      '- Brings one idea tied to her problem, described accurately: when a new website inquiry arrives, Ravenly can send an approved acknowledgment by text or email and alert her, once consent wording, sender setup, and messaging registration are in place.',
+      '- Brings one idea tied to her problem, described accurately: when a new website inquiry arrives, Ravenly can be set up to send an approved acknowledgment by text or email and to alert her, once consent wording, sender setup, and messaging registration are in place.',
       '- Does not suggest that Ravenly answers legal questions, holds a conversation for her, or puts a live person on the line.',
       '- Proposes a next step that fits her court schedule, such as 15 minutes at 8:30 or after 5:00 on a named day, and leaves a callback number.',
       '- Keeps it short, friendly, and free of guilt.',
@@ -501,7 +501,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“I got your message. Every vendor says one dashboard fixes everything. What’s actually different?”',
+      '“I got your message. Every vendor says their system will fix our follow-up. What’s actually different?”',
       '“Can it pull in the alerts from our case management system too, so everything is in one place?”',
       '“My team already juggles three systems. I’m not adding a fourth unless it replaces one.”',
     ],
@@ -654,7 +654,7 @@ export const QUESTIONS = [
     roleGuidance: {},
     pushbacks: [
       '“My last vendor promised a Clio connection and it never worked right. How do I know yours will?”',
-      '“Three thousand for setup and my people still have to do part of the work? What am I paying for?”',
+      '“Three thousand dollars just for setup? What exactly am I paying for, and what will my people still have to do?”',
       '“My two new associates start on the fifteenth. Yes or no: will it be running by then?”',
     ],
     assessed: ['product_accuracy', 'objection_handling', 'advancing'],

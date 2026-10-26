@@ -88,7 +88,7 @@ export const QUESTIONS = [
       'In about 20 seconds, give a reason to talk that fits the person who runs intake day to day, tied to what happens after an inquiry arrives, and end with one question about her team’s process.',
     goodLooksLike: [
       '- Positions Ravenly around what happens after an inquiry arrives (capture, qualify, respond, manage, measure), not around more leads or “we have a chatbot.”',
-      '- Picks the angle that fits an intake director whose team is stretched, such as scattered notifications, uneven qualification, duplicate records, or follow-up that relies on memory, and offers more consistent triage as the benefit.',
+      '- Picks the angle that fits an intake director whose team is stretched, such as scattered notifications, uneven qualification, duplicate records, or inconsistent follow-up, and offers more consistent triage and fewer handoffs that rely on memory as the benefit.',
       '- Keeps the claims modest: her team would see the original answers, a priority, and the next action in one place, with no promise of time saved or more signed cases.',
       '- Does not present marketing statistics, such as the share of leads that go unanswered, as facts about her firm.',
       '- Ends with one question about her process, such as who first sees a website inquiry that arrives at 8 p.m. and how that person knows they own it.',
@@ -430,7 +430,7 @@ export const QUESTIONS = [
       '- Agrees that a referral-driven practice is a strength and does not argue that the firm needs marketing.',
       '- Plays back what she said without judgment, for example that the site works like a digital business card, and asks one question about it, such as whether referred clients look the firm up before calling and what they find.',
       '- Offers the complimentary website review as a credibility and health check rather than marketing, covering public things such as page speed, whether pages are properly linked, and whether the firm’s details and Google Business Profile are consistent, with no logins or data needed.',
-      '- Is upfront that the review is free and mainly informative, that any services would be a separate conversation, and makes no claims about results.',
+      '- Is upfront that the review is free and mainly informative and that any services would be a separate conversation, and makes no claims about results.',
       '- Offers to book 15 minutes at a specific time, with her and any attorney she wants on the invite.',
     ].join('\n'),
     roleGuidance: {},
@@ -903,7 +903,7 @@ export const QUESTIONS = [
       'Answer his challenge precisely: what the visitor sees, what the AI does and does not do, and what the firm controls, without compliance promises, and earn a short follow-up.',
     goodLooksLike: [
       '- Treats the concern as serious and answers precisely, without minimizing it or getting defensive.',
-      '- Explains that visitors answer the intake questions the firm writes and approves, and that the AI produces a summary and score for staff to review; neither is legal advice, an eligibility decision, or a promise that the firm will take the matter.',
+      '- Explains that visitors answer the intake questions the firm configures and approves, and that the AI produces a summary and score for staff to review; neither is legal advice, an eligibility decision, or a promise that the firm will take the matter.',
       '- Names what the firm controls: the questions and their order, required answers and disqualifiers, the consent wording, and the completion messages visitors see.',
       '- Does not claim the product is bar-approved, ethics-compliant, or always accurate; notes that Ravenly’s own terms say AI outputs can be inaccurate, which is why staff review the original answers.',
       '- Does not suggest the chat can answer legal questions, and proposes a specific next step, such as 20 minutes to review a draft immigration intake flow his team would approve before anything goes live.',
@@ -940,7 +940,7 @@ export const QUESTIONS = [
       'Take her concern seriously, explain accurately what the intake experience and the AI do and do not do, show how her rules stay in the firm’s control, and earn a short conversation she can bring to the attorneys.',
     goodLooksLike: [
       '- Respects her team’s standard and treats the concern as legitimate, without brushing it aside.',
-      '- Explains accurately that the chat asks the intake questions the firm writes and approves, much like her team’s own intake script, and that the AI summary and score help staff review an inquiry; neither is legal advice or a decision to take the case.',
+      '- Explains accurately that the chat asks the intake questions the firm configures and approves, much like her team’s own intake script, and that the AI summary and score help staff review an inquiry; neither is legal advice or a decision to take the case.',
       '- Notes that she and the attorneys would approve the questions, required answers, consent wording, and completion messages, and that her staff can read every original answer.',
       '- Does not claim the product is bar-approved or ethics-compliant, and does not suggest the chat can answer legal questions.',
       '- Asks what her team needs to know before a first call, and proposes a short look at how a family law intake flow could work, with the attorney she would want involved.',

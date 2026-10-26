@@ -23,7 +23,7 @@ export const QUESTIONS = [
       '- Asks what the partners judge the firm by, such as retained matters, revenue, or staff time, and what prompted the question, before choosing reports.',
       '- Points her to reports available today: Insights to orient the partners, then Lead Performance, with qualified, won, and lost leads, won revenue, and a previous-period comparison, plus its Channels and Sources views.',
       '- Defines each measure in plain terms: a lead is an inquiry record, qualified is a defined status, not automatically a consultation or an accepted matter, and won revenue is recorded value, not collected cash.',
-      '- Does not present Revenue & Pipeline, Team Performance, or Conversion Funnel as available; they are marked coming soon.',
+      '- Steers her away from report modules marked coming soon, such as Team Performance, Revenue & Pipeline, and Conversion Funnel, so nothing she shows the partners depends on them.',
       '- Keeps the answer short, suggests a few measures the partners can follow every quarter, and offers to review her draft or join the meeting, with a date set before Thursday.',
     ].join('\n'),
     roleGuidance: {},
@@ -54,7 +54,7 @@ export const QUESTIONS = [
       'Show a low-volume solo what his own Ravenly data says, define what it means, keep the economics plausible, and agree on what to track before he decides.',
     goodLooksLike: [
       '- Asks what he wanted Ravenly to fix when he started, such as missed after-hours inquiries or time spent sorting them, and what would make it worth keeping.',
-      '- Shows his own figures from reports available today, such as Lead Performance totals, qualified, won, and lost leads, won revenue, and the previous-period comparison, explains what each one counts, and does not present coming-soon modules such as Revenue & Pipeline as live.',
+      '- Walks him through his own numbers in Lead Performance, such as inquiries received, how many were qualified, won, or lost, and recorded won revenue against the previous period, in plain terms, without presenting coming-soon modules such as Revenue & Pipeline as live.',
       '- Keeps the economics plausible for his volume: works from his own numbers, such as what one retained matter is worth to him against what he pays, instead of projecting large revenue gains.',
       '- Separates what Ravenly recorded from what it caused, and does not present the public calculator’s figures as his results.',
       '- Ends with a decision or a dated review against two or three measures he chooses.',
@@ -90,8 +90,8 @@ export const QUESTIONS = [
       'Show what the LLM referral report can tell the managing partner about AI-referred inquiries and retained matters, be clear about what it cannot, and help him set a measure he can use before and after any AI search spend.',
     goodLooksLike: [
       '- Asks what decision he is weighing and what result would justify the spend before walking through figures.',
-      '- Shows what the report contains: inquiries whose visit was referred by an AI assistant, by platform, with qualified, high-priority, and retained counts, rates, value, and landing pages.',
-      '- Explains that this is referral attribution: it does not count how often AI tools mention or recommend the firm, does not show what people typed, and does not capture every visit an AI tool influenced; unknown or stripped referral data is possible.',
+      '- Answers with what the report can show: inquiries referred by AI assistants such as ChatGPT, by platform, and how many were qualified, high priority, or retained, with their rates, recorded value, and landing pages.',
+      '- Is clear that it counts referrals, not influence or visibility: it misses AI-influenced visits that arrive another way, does not measure how often AI tools mention or recommend the firm or what people typed, and can be affected by unknown or stripped referral data.',
       '- Treats retained counts and value as recorded outcomes that depend on the firm’s stages and value entries, not collected fees.',
       '- Suggests recording today’s figures, with their dates and limits, as a baseline to compare against after any AI search spend, and agrees on a dated follow-up.',
     ].join('\n'),
@@ -161,8 +161,8 @@ export const QUESTIONS = [
       '- Does not recite the original pitch or argue from why the firm first bought Ravenly; asks what the partners expect from the cuts and how she will judge each vendor.',
       '- Asks how her intake team handles a new inquiry today and where Ravenly fits in that work, so the answer reflects how the firm actually uses it.',
       '- Explains plainly what Ravenly is for: capturing website inquiries through chat, webforms, and case evaluations, organizing follow-up with owners, stages, and tasks, and connecting sources to retained matters and recorded value.',
-      '- Shows the firm’s own figures from available reports, such as Lead Performance totals, qualified, won, and lost leads, and won revenue against the previous period, and separates what Ravenly recorded from what it caused.',
-      '- Proposes a short evaluation against an agreed baseline and a dated review that includes the partner who approves vendor spending.',
+      '- Gives her figures she can put in a vendor review, from the firm’s own reports, such as Lead Performance totals, qualified, won, and lost leads, and won revenue against the previous period, and is clear that they show what Ravenly recorded, not what it caused.',
+      '- Since she recommends and the partners decide, proposes a short evaluation against an agreed baseline and a dated review with the partner who approves vendor spending.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -237,7 +237,7 @@ export const QUESTIONS = [
       '- Asks about the new practice before answering: expected inquiry volume, what the associate needs to know before a first call, and who will work those inquiries.',
       '- States the published scope accurately: Launch lists three practice areas for custom bot and form flows and two users, and the firm is using all of both; Ascend lists five practice areas and five users.',
       '- Offers to confirm whether a practice area or a user can be added to Launch and how it would be priced, and how a plan change works mid-term, rather than inventing add-on terms.',
-      '- Gives published prices accurately if a plan change comes up: Ascend is $199 a month on yearly billing or $229 monthly, against Launch at $99 or $119.',
+      '- If moving to Ascend comes up, gives her the published rates to brief the partners: $199 a month on yearly billing or $229 monthly, against $99 or $119 for Launch, with the actual terms confirmed in a quote.',
       '- Mentions that the public trial page lists bankruptcy among its practice-area templates, as a possible starting point to be confirmed for this account and approved by the firm.',
       '- Recommends one option and agrees on a dated next step, such as a short call with the partner who approves spending.',
     ].join('\n'),
@@ -312,10 +312,10 @@ export const QUESTIONS = [
     objective:
       'Celebrate the result while helping the intake director write a claim the partners will trust: what won revenue measures, which matters came through Ravenly’s capture, and what her team contributed.',
     goodLooksLike: [
-      '- Shares the good news, then explains that won revenue is the recorded value of matters marked won, built from her team’s stage and value entries, not collected cash.',
+      '- Celebrates the quarter with her, then explains that won revenue adds up the values her team recorded on matters marked won, so it is not collected cash.',
       '- Points out that the total includes matters her team entered from phone calls and referrals, so it cannot all be credited to Ravenly’s website capture; offers to separate them with the channel and source views and to confirm how staff-entered leads are counted.',
       '- Gives her team its share of the credit: they responded to and signed these matters, and Ravenly supported that work rather than producing every client.',
-      '- Suggests a fair comparison with the firm’s results before Ravenly, keeping capture, qualification, and conversion changes separate so nothing is counted twice.',
+      '- Suggests a claim she can stand behind, such as how won matters and won revenue compare with the quarters before Ravenly, without counting the same gain twice across capture, qualification, and conversion.',
       '- Offers to review her draft before it goes to the partners, on a set date.',
     ].join('\n'),
     roleGuidance: {},
@@ -346,10 +346,10 @@ export const QUESTIONS = [
     objective:
       'Help the managing partner make a return claim his partners will trust: explain what won revenue measures, why dividing it by the subscription is not a return on investment, and how to build a figure he can defend.',
     goodLooksLike: [
-      '- Shares in the good year, then explains that won revenue is the recorded value of matters marked won, dependent on the team’s stage and value entries, not collected cash.',
+      '- Acknowledges a strong year, then says plainly that won revenue is the value recorded on matters marked won, which depends on the team’s stage and value entries; it is not collected cash.',
       '- Explains why the division overstates the return: the firm’s marketing and lawyers produced those matters, so only the change against the firm’s results before Ravenly could reflect Ravenly’s contribution.',
       '- Describes a defensible calculation: additional retained matters against the baseline, valued at contribution after variable costs rather than gross revenue, against the total cost, including subscription, implementation, usage, third-party tools, and staff time.',
-      '- Names what can distort the comparison, such as seasonality, campaign changes, and the lag between inquiry and retention, and keeps capture, qualification, and conversion gains separate.',
+      '- Notes what else could explain a record year, such as campaign changes, traffic mix, practice mix, or seasonality, and the lag between inquiry and retention, so the letter does not credit Ravenly for them.',
       '- Offers to build the figures with him or his finance lead before the letter goes out, on a set date.',
     ].join('\n'),
     roleGuidance: {},
@@ -384,7 +384,7 @@ export const QUESTIONS = [
     goodLooksLike: [
       '- Acknowledges the pressure she is under and does not blame her team, the partners, or the onboarding.',
       '- Explains that pipeline value is a recorded estimate, which can be seeded from each case type’s estimated value, not a prediction of settlements or fees, so a high figure alone does not show that intake is neglecting cases; no probability weighting was established, so offers to confirm whether any applies.',
-      '- Asks diagnostic questions: what the case-type estimates were meant to represent, such as settlement amounts or expected fees, and whether leads that went nowhere are moved to closed stages or left in active ones.',
+      '- Asks the questions her team can answer: which stage a lead goes to when it goes nowhere, how often stale leads are closed out, and what the case-type estimates were meant to represent, such as settlement amounts or expected fees.',
       '- Proposes fixes with owners: the partners agree on what the value should mean, the estimates are reviewed, and her team clears stale active leads, using the stage filters and inactive-lead indicators.',
       '- Gives her a plain explanation she can repeat to the partners and sets a dated review of the corrected figures, ideally with a partner present.',
     ].join('\n'),
