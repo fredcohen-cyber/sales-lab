@@ -98,3 +98,26 @@ export const SEED_COLLECTIONS = [
     ].map((d) => ({ ...d, content: OUTLINE, subjects: ['product'] })),
   },
 ];
+
+// Collections built from a document Fred supplied after launch, one seed step each. The document is split
+// at its "## " headings into approved sections (its text before the first heading becomes the collection's
+// description), and every section shares the document's date, caveats, and evidence basis.
+export const OMNIZANT_AI_SEARCH = {
+  seedKey: 'omnizant-ai-search-v1',
+  slug: 'omnizant-ai-search',
+  name: 'Omnizant AI Search Plans (GEO)',
+  kind: 'product',
+  brand: 'omnizant',
+  file: 'sources/omnizant-ai-search-plans.md',
+  asOfDate: '2026-10-26',
+  evidenceBasis: 'documented',
+  caveats:
+    'Internal positioning brief for sales, marketing, and leadership (October 2026). It sets the story and the language for the AI Search Plans; it does not give prices, quantities, or a list of deliverables, so confirm those before quoting. ' +
+    'AI platforms control their own answers: describe strengthening the firm’s presence without promising inclusion, a recommendation, or results. “The proof we should develop” lists proof still to be built, not proof that exists.',
+  changeNote:
+    'Supplied by Fred Cohen (Omnizant AI Search Plans positioning brief, October 26, 2026) and split into sections at its main headings. ' +
+    'Wording unchanged except for spacing typos and the heading over the Max AI description, which read “Discovery”.',
+  // Every section is about the plans; the story and the messaging guidance also teach how to sell them.
+  subjects: (section) =>
+    ['the story we tell', 'messaging guidance for the team'].includes(sectionTitleKey(section.title)) ? ['product', 'sales_technique'] : ['product'],
+};

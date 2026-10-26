@@ -3,8 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_DIMENSIONS, DEFAULT_PERSONAS } from '../domain.js';
 import { SEED_DRILLS, SEED_PATHS } from './drills.js';
-import { SEED_COLLECTIONS } from './collections.js';
-import { createCollection, createSection, splitSourceIntoCollection } from '../knowledge/sections.js';
+import { OMNIZANT_AI_SEARCH, SEED_COLLECTIONS } from './collections.js';
+import { createCollection, createSection, splitDocument, splitSourceIntoCollection } from '../knowledge/sections.js';
 import { seedQuestionBank, SEEDED_DRILL_NOTE } from './bank/seed.js';
 import { createPasswordLink, linkUrl } from '../users/links.js';
 import { audit } from '../lib/audit.js';
@@ -212,6 +212,38 @@ export async function seed(db, config, { log = console.log } = {}) {
 
   // The Practice Studio question bank: questions per stage, each with the buyer's follow-up objections.
   await once(db, 'question-bank-v1', (q) => seedQuestionBank(q, owner, log), log);
+
+  // Omnizant's GEO offer, the AI Search Plans, from the positioning brief Fred supplied.
+  await once(db, OMNIZANT_AI_SEARCH.seedKey, (q) => createDocumentCollection(q, owner, log, OMNIZANT_AI_SEARCH), log);
+}
+
+// A collection of approved sections made from one supplied document (see OMNIZANT_AI_SEARCH). Nothing
+// changes when a collection with that slug already exists.
+export async function createDocumentCollection(q, owner, log, spec) {
+  if (await q.one(`SELECT 1 FROM knowledge_collections WHERE slug = $1`, [spec.slug])) {
+    log(`[seed] ${spec.name}: a collection “${spec.slug}” already exists, so it was left as it is`);
+    return null;
+  }
+  const { intro, sections } = splitDocument(await readFile(path.join(HERE, spec.file), 'utf8'));
+  const collection = await createCollection(q, { slug: spec.slug, name: spec.name, kind: spec.kind, brand: spec.brand, description: intro, actorId: owner.id });
+  for (const s of sections) {
+    await createSection(q, {
+      collection,
+      title: s.title,
+      content: s.content,
+      brand: spec.brand,
+      subjects: spec.subjects(s),
+      asOfDate: spec.asOfDate,
+      caveats: spec.caveats,
+      evidenceBasis: spec.evidenceBasis,
+      changeNote: spec.changeNote,
+      approve: true,
+      append: true,
+      actorId: owner.id,
+    });
+  }
+  log(`[seed] ${spec.name}: ${sections.length} approved sections`);
+  return { collectionId: collection.id, sections: sections.length };
 }
 
 // Creates the starting collections. A document that cannot be split (edited since it was supplied, or

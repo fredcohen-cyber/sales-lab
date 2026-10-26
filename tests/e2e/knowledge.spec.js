@@ -33,6 +33,10 @@ test('the library lists the playbook and product knowledge as contents pages', a
   }
   const omnizant = page.locator('article.collection').filter({ has: page.getByRole('heading', { name: 'Omnizant product knowledge' }) });
   await expect(omnizant.getByText('Draft', { exact: true })).toHaveCount(3);
+  // The AI Search Plans brief is its own collection of approved sections.
+  const geo = page.locator('article.collection').filter({ has: page.getByRole('heading', { name: 'Omnizant AI Search Plans (GEO)' }) });
+  await expect(geo.getByText('How the plans fit: Advantage AI and Max AI')).toBeVisible();
+  await expect(geo.getByText('Draft', { exact: true })).toHaveCount(0);
   // The original documents are archived, so they appear only when asked for.
   await expect(page.getByRole('heading', { name: 'Other documents' })).toHaveCount(0);
   await page.getByLabel('Approval').selectOption('archived');
@@ -54,6 +58,16 @@ test('a collection reads end to end, and a section links to its neighbors', asyn
   await expect(page.getByRole('heading', { name: 'Drills that use this section' })).toBeVisible();
   await page.getByRole('link', { name: /Next section/ }).click();
   await expect(page.getByRole('heading', { name: '7. Follow-up and re-engagement', level: 1 })).toBeVisible();
+});
+
+test('the AI Search Plans collection reads as one brief', async () => {
+  await page.goto('/knowledge');
+  await page.getByRole('link', { name: 'Omnizant AI Search Plans (GEO)', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Omnizant AI Search Plans (GEO)', level: 1 })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Contents' }).getByRole('link')).toHaveCount(6);
+  await expect(page.getByRole('cell', { name: 'Get Found' })).toBeVisible();
+  await expect(page.getByText('Caveats for every section')).toBeVisible();
+  await shot(page, '44-ai-search-plans');
 });
 
 test('editing one section waits for approval without touching the others', async () => {

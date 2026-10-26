@@ -264,9 +264,9 @@ test('rubric weights are versioned; new attempts use the new version, old ones k
 
 test('knowledge library: drafts, approval, archive, and learner visibility', async () => {
   const created = await owner.post('/api/knowledge', {
-    title: 'Omnizant SEO plans',
+    title: 'Omnizant SEO competitors',
     brand: 'omnizant',
-    subjects: ['product'],
+    subjects: ['competitive'],
     personas: [],
     asOfDate: '2026-10-01',
     caveats: 'Draft from sales; confirm pricing.',
@@ -277,7 +277,7 @@ test('knowledge library: drafts, approval, archive, and learner visibility', asy
   const draft = await ae.get(`/api/knowledge/${created.data.id}`);
   assert.equal(draft.status, 404, 'learners cannot see drafts');
   const lib = await owner.get('/api/knowledge');
-  assert.ok(lib.data.coverage.missing.some((m) => m.brand === 'omnizant' && m.subject === 'product'), 'draft does not count as coverage');
+  assert.ok(lib.data.coverage.missing.some((m) => m.brand === 'omnizant' && m.subject === 'competitive'), 'draft does not count as coverage');
   const v = await owner.get(`/api/knowledge/${created.data.id}`);
   await owner.post(`/api/knowledge/${created.data.id}/approve`, { versionId: v.data.version.id });
   const visible = await ae.get(`/api/knowledge/${created.data.id}`);
@@ -285,7 +285,7 @@ test('knowledge library: drafts, approval, archive, and learner visibility', asy
   assert.equal(visible.data.version.asOfDate, '2026-10-01');
   assert.equal(visible.data.version.caveats, 'Draft from sales; confirm pricing.');
   const lib2 = await owner.get('/api/knowledge');
-  assert.ok(!lib2.data.coverage.missing.some((m) => m.brand === 'omnizant' && m.subject === 'product'));
+  assert.ok(!lib2.data.coverage.missing.some((m) => m.brand === 'omnizant' && m.subject === 'competitive'));
   await owner.post(`/api/knowledge/${created.data.id}/archive`, {});
   assert.equal((await ae.get(`/api/knowledge/${created.data.id}`)).status, 404);
   const learnerList = await ae.get('/api/knowledge');

@@ -73,7 +73,9 @@ Knowledge is kept in **collections** made of **sections**:
 - **Product knowledge** has one collection per brand. Ravenly's is grouped into Start here, Positioning
   and fit, Product capabilities, Pricing and packaging, Competitive (including the Intaker and Juvo Leads
   battlecards), Selling Ravenly, and Claims and sources. Omnizant's starts as draft outlines for Web
-  development, SEO, and GEO.
+  development, SEO, and GEO. **Omnizant AI Search Plans (GEO)** holds the positioning brief for the
+  Advantage AI and Max AI plans, one approved section per part of the brief (from
+  `server/seed/sources/omnizant-ai-search-plans.md`; the supplied original is in `server/seed/originals/`).
 - A **section** is the unit you edit. It has its own text, brand, subjects, buyer personas, evidence
   basis, as-of date, caveats, version history, and approval. Editing a section saves a new version; the
   approved version keeps supporting coaching until the new one is approved. Approving one section never
@@ -113,8 +115,8 @@ documents stay archived so past answers still show exactly what they were scored
 - **The question bank** has at least 12 questions per stage, written only from the approved Sales Playbook
   and Ravenly product knowledge (see `server/seed/bank/`, checked by `node server/seed/bank/validate.js`).
   Each lists three follow-up objections the buyer is likely to raise: the coach uses them as a guide, and
-  practice without coaching uses them word for word. Omnizant questions practice technique only until its
-  product sections are written and approved. Managers browse and edit every question under **Question
+  practice without coaching uses them word for word. Omnizant questions practice technique only; none
+  cite the AI Search Plans brief yet. Managers browse and edit every question under **Question
   bank** in the Practice Studio, and can still assign specific questions in Curriculum.
 - **Reports count conversations.** A conversation counts once every planned reply is in and coached and
   every reply's coaching counts: one disputed reply leaves it out, and one waiting for review holds it.
@@ -178,7 +180,7 @@ Automated tests use a test-only stand-in for the AI service that cannot be enabl
 
 ## Status
 
-Implemented and covered by automated tests (146 server tests and 22 browser tests): company email and
+Implemented and covered by automated tests (147 server tests and 23 browser tests): company email and
 password sign-in with manager-created accounts only, private single-use setup and reset links, sign-in
 throttling, deactivation and session revocation, server-side roles and learner privacy, the knowledge
 library as collections of sections with versions, approval, evidence basis, ordering, and document
@@ -194,9 +196,10 @@ Needs verification or material:
 - Real coaching has only been exercised with the test stand-in. After adding the API key, run a few
   conversations and review the first evaluations and pushbacks in Team Coaching to calibrate the rubric and
   targets.
-- No Omnizant product or competitive material has been supplied. Omnizant product knowledge holds draft
-  outlines for Web development, SEO, and GEO, so there are no Omnizant product drills yet and the
-  Knowledge Library shows that gap. Sales-technique drills apply to both brands.
+- Omnizant product material so far is the AI Search Plans positioning brief, which gives the story and
+  language but no prices, quantities, or deliverable lists. Omnizant product knowledge still holds draft
+  outlines for Web development, SEO, and GEO, no Omnizant competitive material has been supplied, and
+  there are no Omnizant product drills yet. Sales-technique drills apply to both brands.
 - Company logo files have not been added (see above).
 - Out of scope for this version: voice, full-call simulation, CRM integrations, automated emails or
   reminders, and imports beyond pasted text, `.txt`, and `.md`.

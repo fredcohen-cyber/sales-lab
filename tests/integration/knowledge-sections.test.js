@@ -7,7 +7,8 @@ import { addUser, drillBySlug, ownerClient, prepare, sectionBy, startTestApp, su
 import { parseSections } from '../../server/lib/text.js';
 import { SEED_DRILLS } from '../../server/seed/drills.js';
 import { BANK_QUESTIONS, EXISTING_UPDATES } from '../../server/seed/bank/index.js';
-import { createSeedCollections, seed } from '../../server/seed/index.js';
+import { createDocumentCollection, createSeedCollections, seed } from '../../server/seed/index.js';
+import { OMNIZANT_AI_SEARCH } from '../../server/seed/collections.js';
 import { loadSourceText } from '../../server/knowledge/service.js';
 import { buildCoachingRequest } from '../../server/ai/prompt.js';
 
@@ -45,7 +46,7 @@ const drillBody = (fields) => ({
 });
 const docVersion = (title, content) => ({ title, brand: 'omnizant', subjects: ['product'], content });
 
-test('the playbook and the Ravenly guide become collections of approved sections; Omnizant starts as drafts', async () => {
+test('the playbook, the Ravenly guide, and the AI Search Plans brief are collections of approved sections; Omnizant product knowledge starts as drafts', async () => {
   const lib = await owner.get('/api/knowledge');
   assert.equal(lib.status, 200);
   assert.deepEqual(
@@ -54,6 +55,7 @@ test('the playbook and the Ravenly guide become collections of approved sections
       ['sales-playbook', 'playbook', 'both', 10, 0],
       ['ravenly-product', 'product', 'ravenly', 22, 0],
       ['omnizant-product', 'product', 'omnizant', 0, 3],
+      ['omnizant-ai-search', 'product', 'omnizant', 6, 0],
     ],
   );
   const docs = await h.db.many(`SELECT slug, status, split_into_collection_id FROM knowledge_sources WHERE slug IN ('sales-playbook', 'ravenly-sales-training')`);
@@ -90,6 +92,38 @@ test('every section keeps the exact text, title, and metadata it had in the docu
       assert.ok(rows[i].approved_at);
     });
   }
+});
+
+test('the AI Search Plans brief is its own Omnizant collection, its text unchanged and every section approved', async () => {
+  const c = await collectionBySlug('omnizant-ai-search');
+  assert.deepEqual([c.name, c.brand, c.kind], ['Omnizant AI Search Plans (GEO)', 'omnizant', 'product']);
+  assert.match(c.description, /^Omnizant’s AI search plans apply Symphony’s connected growth philosophy/);
+  const rows = await h.db.many(
+    `SELECT v.title, v.content, v.subjects, v.as_of_date, v.caveats, v.evidence_basis, v.approved_at, s.status FROM knowledge_sources s
+       JOIN knowledge_versions v ON v.id = s.approved_version_id WHERE s.collection_id = $1 ORDER BY s.position`,
+    [c.id],
+  );
+  const file = parseSections(readFileSync(new URL('../../server/seed/sources/omnizant-ai-search-plans.md', import.meta.url), 'utf8')).filter((s) => s.key !== 'intro');
+  assert.deepEqual(
+    rows.map((r) => r.title),
+    ['Positioning in brief', 'The role within the growth system', 'The story we tell', 'How the plans fit: Advantage AI and Max AI', 'How we earn confidence', 'Messaging guidance for the team'],
+  );
+  rows.forEach((r, i) => {
+    assert.equal(`## ${r.title}\n\n${r.content}`, file[i].text, `text of “${r.title}” is unchanged`);
+    assert.deepEqual([r.status, r.evidence_basis, r.as_of_date, r.caveats], ['approved', 'documented', '2026-10-26', OMNIZANT_AI_SEARCH.caveats]);
+    assert.ok(r.approved_at);
+  });
+  assert.deepEqual(rows.find((r) => r.title === 'Messaging guidance for the team').subjects, ['product', 'sales_technique']);
+  assert.deepEqual(rows.find((r) => r.title.startsWith('How the plans fit')).subjects, ['product']);
+  assert.match(rows.find((r) => r.title.startsWith('How the plans fit')).content, /### Max AI\n\n\*\*Build on that foundation/);
+  // Reps can read it, and Omnizant product knowledge now has approved material.
+  const section = (await owner.get(`/api/knowledge/collections/${c.id}`)).data.sections[0];
+  assert.equal((await rep.get(`/api/knowledge/${section.id}`)).status, 200);
+  const lib = await owner.get('/api/knowledge');
+  assert.ok(!lib.data.coverage.missing.some((m) => m.brand === 'omnizant' && m.subject === 'product'));
+  // Running the seed step again changes nothing.
+  assert.equal(await h.db.tx((q) => createDocumentCollection(q, { id: null }, () => {}, OMNIZANT_AI_SEARCH)), null);
+  assert.equal((await h.db.one(`SELECT count(*)::int AS n FROM knowledge_collections WHERE slug = 'omnizant-ai-search'`)).n, 1);
 });
 
 test('every seeded drill now points at the sections it pointed at before, in the same order', async () => {
@@ -158,7 +192,7 @@ test('reps read approved collections only; managers also see drafts', async () =
   const lib = await rep.get('/api/knowledge');
   assert.deepEqual(
     lib.data.collections.map((c) => c.slug),
-    ['sales-playbook', 'ravenly-product'],
+    ['sales-playbook', 'ravenly-product', 'omnizant-ai-search'],
   );
   assert.ok(lib.data.sources.every((s) => s.status === 'approved' && s.collectionId), 'no drafts and no archived documents');
   const omnizant = await collectionBySlug('omnizant-product');
