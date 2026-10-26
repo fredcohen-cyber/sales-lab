@@ -132,7 +132,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“Okay, I picked up. What about my website?”',
+      '“Okay, I picked up. What is this about?”',
       '“Is this going to cost me something?”',
       '“I’m a one-person office, and my website works fine. Why would I spend fifteen minutes on it?”',
     ],
@@ -204,7 +204,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“So what’s wrong with our website? Or is that just what you say to get past my screener?”',
+      '“Is something wrong with our website, or is this just a sales call?”',
       '“My assistant deals with the website people. Why are you calling me?”',
       '“I don’t take unscheduled sales calls. Give me one sentence on why I shouldn’t hang up.”',
     ],
@@ -282,7 +282,7 @@ export const QUESTIONS = [
     assessed: ['discovery', 'empathy_clarity', 'advancing'],
     defaults: [2, 2, 1],
     sources: [
-      { collection: 'sales-playbook', sections: ['3. ', '2. '] },
+      { collection: 'sales-playbook', sections: ['3. ', '2. ', '8. '] },
       { collection: 'omnizant-product', sections: ['Competitor angles', 'The complimentary website review'] },
     ],
   },
@@ -345,6 +345,7 @@ export const QUESTIONS = [
       '- Does not ask him to switch: offers a free 15-minute review with findings he could act on with Scorpion, another vendor, or Omnizant.',
       '- Takes the pressure off, for example “It’s not going to be a high-pressure sales call,” and says that if he ever wants Omnizant’s services, that would be a separate call.',
       '- Makes no promises about rankings, leads, or cases, and asks for a specific time next week.',
+      '- If asked whether Omnizant works with competing firms nearby, describes only Omnizant’s own policy once it is confirmed, and makes no claim about whom Scorpion works with.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -488,7 +489,7 @@ export const QUESTIONS = [
       '- Pins the callback to a specific slot instead of “I’ll call you tomorrow,” offering a couple of afternoon times with room for court.',
       '- Settles the time zone out loud, for example by asking what time it is there now, and names the time in her zone.',
       '- Gets the email she wants the invite sent to, reads it back, and tells her to look for a plain subject such as “Website Review: [name] at Omnizant.”',
-      '- Ends by reading back the day, time, and time zone.',
+      '- Ends by reading back the day, time, and time zone from the invite, not from memory.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [

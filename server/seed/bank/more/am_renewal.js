@@ -181,7 +181,7 @@ export const QUESTIONS = [
     pushbacks: [
       '“What happens if I have a busy month and go over 25?”',
       '“If Spanish isn’t included on Launch, can you just leave it switched on for me?”',
-      '“Be straight with me: are you steering me away from Launch because it’s a smaller sale for you?”',
+      '“Be straight with me: would you tell me if the cheaper plan was the right one, even though it’s a smaller sale for you?”',
     ],
     assessed: ['discovery', 'product_accuracy', 'persuasion', 'advancing'],
     defaults: [3, 3, 4],
@@ -291,7 +291,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“So it doesn’t do what theirs does. Why shouldn’t I just switch?”',
+      '“If Ravenly doesn’t hold the conversation the way their responder does, why shouldn’t I just switch?”',
       '“How fast would one of our Local Services leads actually get a reply from Ravenly?”',
       '“Put a response time for our Local Services leads in writing, and I’ll renew today. Can you?”',
     ],
@@ -460,7 +460,7 @@ export const QUESTIONS = [
     objective:
       'Help her answer accurately from Ravenly’s published policy statements, attributed as such, and get approved documentation for anything the published material does not settle.',
     goodLooksLike: [
-      '- Shares what the privacy policy states, attributed as a policy statement: US hosting on AWS, and it names Twilio for SMS and voice, and CallRail.',
+      '- Shares what the privacy policy describes, attributed as policy statements: US hosting on AWS, Twilio for SMS and voice, and CallRail.',
       '- Notes that the policy says MFA is available, data is encrypted in transit and at rest, and role-based access is used, and presents these as vendor policy statements, not independently verified certifications.',
       '- Does not tell her to answer yes on multifactor login for the firm: the policy says MFA is available, so whether the firm’s users have it turned on needs to be checked.',
       '- Does not answer what the published material does not settle, such as certifications or backup recovery, and gets current approved documentation from the right internal owner.',
@@ -502,7 +502,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“Every other vendor I asked just said yes. Why can’t you?”',
+      '“Every other vendor I asked gave me a straight yes. Can you?”',
       '“Can I switch off the injury and treatment questions until you get me an answer?”',
       '“If you can’t give me a yes today, I’ll sign with someone who will. Why shouldn’t I?”',
     ],
@@ -569,7 +569,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“Until I hear back from you, what should my team say if someone asks again today?”',
+      '“What should my team say if someone asks again today, before anything is in writing?”',
       '“Your terms say you can use anonymized data to improve your own models. Can we opt out of that?”',
       '“Our consent screen tells visitors we protect their privacy. If your answer comes back with exceptions, are we on the hook for what we told people?”',
     ],
@@ -604,7 +604,7 @@ export const QUESTIONS = [
     pushbacks: [
       '“If we go monthly, can we cancel any month we want?”',
       '“Does monthly billing change anything else, like our lead allowance or the onboarding fee?”',
-      '“Finance will say monthly is safer and the extra $360 is the price of flexibility. What do I tell them?”',
+      '“Finance assumes monthly is the safer choice whatever it costs. How do I make the case to them either way?”',
     ],
     assessed: ['discovery', 'product_accuracy', 'persuasion', 'advancing'],
     defaults: [3, 3, 4],
@@ -709,7 +709,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“So you don’t even know how your own score works?”',
+      '“Do you actually know how your own score works, or are you reading me a script?”',
       '“If the score is only a guide, why does a high score set off an alert to me?”',
       '“Give me a number. What percentage of the time is the score right? If you won’t commit to one, I’m not renewing.”',
     ],
@@ -938,7 +938,7 @@ export const QUESTIONS = [
       '- Stays calm, does not criticize the other agency or its proposal, and acknowledges why a guarantee is appealing.',
       '- Does not match the guarantee, and explains plainly that each AI platform determines its own answers, so no one can guarantee a recommendation.',
       '- Asks what the partner needs the work to produce, such as truck accident inquiries the firm can trace, and how the firm judges that today.',
-      '- Explains how Omnizant earns confidence instead: a baseline and changes observed within the tracked scope, plus lead-source and conversion tracking through Growth Studio, without treating a mention as revenue.',
+      '- Explains how Omnizant earns confidence instead: a baseline and changes observed within the tracked scope, and a website connected to lead-source and conversion tracking, with Growth Studio supporting lead capture and follow-up, without treating a mention as revenue.',
       '- Does not invent Omnizant prices, results, or retention figures to win the comparison, and offers to confirm specifics.',
       '- Proposes a concrete next step, such as reviewing both proposals side by side with the partners before Friday.',
     ].join('\n'),
@@ -981,7 +981,7 @@ export const QUESTIONS = [
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
-      '“If no one can guarantee it, how can they?”',
+      '“They sounded very sure about the ChatGPT part. How can they promise that?”',
       '“The partners will ask why we’d pay more for the same thing. What do I say is different?”',
       '“Side by side, yours has no guarantee and a higher price. How do I make that look like the better choice?”',
     ],

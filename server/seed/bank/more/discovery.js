@@ -118,14 +118,14 @@ export const QUESTIONS = [
       '- Asks process questions in her terms: what happens to a web form at 8 p.m. or over a weekend, how a specialist knows an inquiry is theirs, and how follow-up attempts are tracked.',
       '- Asks where her team loses time today, such as scattered notifications, duplicate records, repeated questions, or piecing an inquiry’s details together before calling back.',
       '- Connects only what she raises to Ravenly, accurately: the original answers and an AI summary on the lead record, tasks, templates, and a shared view of the messages, tasks, and high-priority leads that need attention, with her team still making the calls and decisions.',
-      '- Does not claim that Ravenly provides a human answering service, AI phone answering, or round-the-clock coverage.',
+      '- Does not claim that Ravenly provides a human answering service or AI phone answering, or that a person or every channel responds around the clock; saying that website capture works outside office hours is accurate.',
       '- Asks what the managing partner wants from this evaluation and proposes a next step built on her team’s real inquiries, such as a focused look at the intake workspace with her and one specialist.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
       '“We already have an intake screen in our case management system. Why would my team work in two places?”',
       '“After hours, our answering service takes messages, and we call everyone back first thing. What’s wrong with that?”',
-      '“The last system the partners bought, my team stopped using within a month, and I got the blame. Why would this be any different?”',
+      '“If I tell the partner this is worth a look and my team ends up working around it, that’s on me. What would you want my team to try first?”',
     ],
     assessed: ['discovery', 'product_accuracy', 'empathy_clarity', 'advancing'],
     defaults: [4, 4, 3],
@@ -220,7 +220,7 @@ export const QUESTIONS = [
     situation:
       'The marketing manager of a 28-attorney employment law firm booked a call through your website. She is running a vendor review for the partners and has a comparison spreadsheet open. You represent your own company: Omnizant or Ravenly.',
     buyerLine:
-      '“We’re just exploring options. I have five vendors on a comparison sheet and twenty minutes with each. Give me your overview, and I’ll fill in the columns.”',
+      '“I’m running a vendor review for the partners: five companies, twenty minutes each, one comparison sheet. Give me your two-minute version, and I’ll fill in the columns.”',
     objective:
       'Respect her process without becoming one more row in a spreadsheet: find out what prompted the review, what the partners need it to answer, and how the decision will be made, then offer direction.',
     goodLooksLike: [
@@ -353,7 +353,7 @@ export const QUESTIONS = [
     ],
     assessed: ['discovery', 'empathy_clarity', 'advancing'],
     defaults: [2, 2, 1],
-    sources: [{ collection: 'sales-playbook', sections: ['3. ', '6. ', '8. ', '5. ', '1. '] }],
+    sources: [{ collection: 'sales-playbook', sections: ['3. ', '6. ', '8. ', '5. ', '1. ', '4. '] }],
   },
   {
     slug: 'disc-omnizant-deal-with-me-v3',
@@ -389,7 +389,7 @@ export const QUESTIONS = [
     assessed: ['discovery', 'objection_handling', 'advancing'],
     defaults: [4, 4, 1],
     sources: [
-      { collection: 'sales-playbook', sections: ['3. ', '6. ', '8. ', '1. '] },
+      { collection: 'sales-playbook', sections: ['3. ', '6. ', '8. ', '1. ', '4. '] },
       { collection: 'omnizant-product', sections: ['The complimentary website review'] },
     ],
   },
@@ -442,9 +442,9 @@ export const QUESTIONS = [
     personas: ['office_manager'],
     personaLines: {},
     situation:
-      'You are on a phone discovery call for Omnizant with the office manager of a three-attorney bankruptcy firm. She manages the firm’s website provider, and the attorneys asked her to find someone who could bring in more clients.',
+      'You are on a phone discovery call for Omnizant with the office manager of a three-attorney bankruptcy firm. She manages the firm’s website provider, and the attorneys asked her to find someone who could bring in more clients. Nobody at the firm tracks where new clients come from.',
     buyerLine:
-      '“The attorneys just said, ‘Find someone who can get us more clients.’ That’s really all I know. Nobody here keeps track of where people come from. Is that something you can help with?”',
+      '“The attorneys just said, ‘Find someone who can get us more clients.’ That’s really all I know, and I’m the one who has to report back. Where would we even start?”',
     objective:
       'Help her turn the attorneys’ request into a specific goal and gap she can take back to them, in the firm’s own words and numbers, before describing what Omnizant would do.',
     goodLooksLike: [
@@ -490,7 +490,7 @@ export const QUESTIONS = [
       '- Asks what he wants the result to produce, such as more of the employment matters the firm wants most, and how he would judge it: appearances, inquiries, consultations, or retained clients.',
       '- Asks how the firm tracks where inquiries come from today and what happens when one arrives, so any change can be measured beyond a mention.',
       '- Does not jump to Advantage AI or Max AI, or quote prices or deliverables, before the diagnosis.',
-      '- Proposes a dated next step that respects his deadline without promising to meet it, such as reviewing a baseline with him and whoever runs the firm’s marketing.',
+      '- Proposes a dated next step that respects his deadline without promising to meet it, such as a meeting with him and whoever runs the firm’s marketing to agree on the goal, how success would be judged, and what a baseline would cover.',
     ].join('\n'),
     roleGuidance: {
       ae: [
@@ -501,7 +501,7 @@ export const QUESTIONS = [
       am: [
         '- Starts from what Omnizant already does for the firm and what is working, rather than treating the call as a fresh start.',
         '- Treats an AI search plan as an expansion only if it serves the goal he names, and confirms any new scope and pricing before proposing it.',
-        '- Involves the client’s main contact and sets a dated review, so he hears about progress before his deadline.',
+        '- Involves the client’s main contact and sets a dated review before his deadline to agree on the goal, the measures, and whether an AI search plan fits, without implying results by then.',
       ].join('\n'),
     },
     pushbacks: [
@@ -530,7 +530,7 @@ export const QUESTIONS = [
     situation:
       'You are on a call about AI search with the office manager of a five-attorney estate planning firm. She handles the firm’s website provider, so the attorneys asked her to look into it. If you are an AE, the firm is a new prospect; if you are an AM, it is an existing Omnizant website and SEO client.',
     buyerLine:
-      '“The attorneys keep bringing up AI search, and since I deal with our website people, it landed on my desk. I don’t really know what I’m supposed to ask for. What should we be doing?”',
+      '“Since I deal with our website people, the attorneys handed this AI search question to me. I don’t even know what I’m supposed to ask for. Where do I start?”',
     objective:
       'Diagnose before prescribing: find out what prompted the attorneys’ interest and what they hope it will do for the firm, and give her a clear, honest way to take it back to them.',
     goodLooksLike: [
@@ -561,7 +561,7 @@ export const QUESTIONS = [
     assessed: ['discovery', 'empathy_clarity', 'advancing'],
     defaults: [2, 2, 1],
     sources: [
-      { collection: 'sales-playbook', sections: ['3. ', '5. '] },
+      { collection: 'sales-playbook', sections: ['3. ', '5. ', '4. '] },
       { collection: 'omnizant-ai-search', sections: ['Positioning in brief', 'The role within', 'Messaging guidance'] },
     ],
   },
@@ -686,16 +686,16 @@ export const QUESTIONS = [
     personas: ['office_manager'],
     personaLines: {},
     situation:
-      'You are on a phone discovery call for Ravenly with the office manager of a two-attorney estate planning firm in a small town. She answers the phone, keeps both attorneys’ calendars, and replies to the few website inquiries herself when she has a minute.',
+      'You are on a phone discovery call for Ravenly with the office manager of a two-attorney immigration firm. She answers the phone, keeps both attorneys’ calendars, and replies to the few website inquiries between other work. One of the attorneys saw Ravenly online and asked her to look into it.',
     buyerLine:
-      '“We get maybe two or three website inquiries a week, and I email them back when I get a chance. I liked your website, but honestly, is this overkill for an office our size?”',
+      '“One of the attorneys asked me to look into you. We get two or three website inquiries a week, and I answer them between everything else. Before I put a demo on her calendar, tell me honestly: is this overkill for an office our size?”',
     objective:
       'Assess fit honestly at her volume: how inquiries are handled and how quickly, whether any slip away, and whether the numbers would justify a change, without overselling.',
     goodLooksLike: [
-      '- Takes the question seriously and does not insist that the firm needs Ravenly.',
+      '- Takes her question seriously, respects that she is screening this for the attorneys, and does not insist that the firm needs Ravenly.',
       '- Asks how soon an inquiry usually gets a reply, what happens on busy days or when she is out, and whether anyone has hired another firm before she got back to them.',
       '- Asks what she needs to know before booking a consultation and how much back-and-forth that takes today.',
-      '- Asks what a new estate planning client is worth to the firm, or who would know, without supplying a number or quoting marketing statistics as facts.',
+      '- Asks what a new immigration client is worth to the firm, or which attorney would know, without supplying a number or quoting marketing statistics as facts.',
       '- If price or scope comes up, states it accurately: Launch lists 25 monthly leads, 2 users, 3 practice areas, and 1 website at $99 a month on yearly billing or $119 monthly, with what counts toward the allowance to confirm.',
       '- Gives an honest view, which may be that it is not worth it at their volume yet, and if there is a fit, suggests a next step that includes an attorney.',
     ].join('\n'),
@@ -747,7 +747,7 @@ export const QUESTIONS = [
     ],
     assessed: ['discovery', 'product_accuracy', 'objection_handling', 'advancing'],
     defaults: [5, 5, 4],
-    sources: [{ collection: 'ravenly-product', sections: ['08 · ', '06 · ', '05 · ', '11 · ', '12 · ', '18 · '] }],
+    sources: [{ collection: 'ravenly-product', sections: ['08 · ', '06 · ', '05 · ', '11 · ', '12 · ', '20 · '] }],
   },
   {
     slug: 'disc-ravenly-run-itself-v3',
@@ -769,7 +769,7 @@ export const QUESTIONS = [
       '- Answers honestly that it would not run itself: automations can be configured to send an approved acknowledgement by text or email and create a task, while he still calls people back, decides on each inquiry, and keeps stages up to date.',
       '- Asks how he handles an inquiry today, from arrival to response, and where it falls through, such as during a long day in court.',
       '- Asks how many web inquiries he gets and what a new bankruptcy client is worth to him, without supplying the figures.',
-      '- Notes accurately that texting requires messaging registration and approved consent wording, and that Calendly scheduling from chat or case evaluation depends on the integration being set up.',
+      '- Notes accurately that texting requires messaging registration and approved consent wording, and that Calendly scheduling from chat or case evaluation depends on the integration being set up and on confirming whether the plan he would choose includes it.',
       '- Mentions mobile access only as published, if it fits: Ravenly has iOS and Android app listings and describes mobile replies that keep personal numbers private, with details to confirm.',
       '- Raises the fit question plainly, since software cannot follow up for him if no one owns the responses, and proposes a next step that fits, such as a short look at how an acknowledgement and a task would work for his practice.',
     ].join('\n'),
@@ -845,7 +845,7 @@ export const QUESTIONS = [
       '- Notes that $500 is not one of the named plan prices, and that the 108x multiple compares incremental revenue with cost, not profit.',
       '- Asks for his own numbers: how many inquiries he gets a month, how many become clients, and what a typical case is worth to him.',
       '- Does the math out loud with his numbers, keeps any scenario modest, and includes what happens if nothing changes.',
-      '- Does not replace the calculator figure with another projection or a promise.',
+      '- Does not replace the calculator figure with a different multiple, a forecast of its own, or a promise; any scenario uses his numbers and is framed as an assumption to test.',
       '- Proposes a next step tied to his numbers, such as a short evaluation focused on the inquiries he currently misses or answers late.',
     ].join('\n'),
     roleGuidance: {},
