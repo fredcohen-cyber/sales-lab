@@ -51,7 +51,8 @@ export async function seedQuestionBank(q, owner, log = () => {}, { questions = B
       `SELECT v.* FROM drills d JOIN drill_versions v ON v.id = d.current_version_id WHERE d.slug = $1`,
       [slug],
     );
-    if (!cur) continue;
+    // Missing, or given its follow-up objections already.
+    if (!cur || cur.change_note === UPGRADE_NOTE) continue;
     if (cur.version !== 1 || cur.change_note !== SEEDED_DRILL_NOTE) {
       log(`[seed] drill ${slug} was edited, so its follow-up objections were not added`);
       continue;
@@ -118,18 +119,21 @@ async function insertSeedVersion(q, drillId, version, b, ownerId) {
   );
 }
 
-// Sets each seeded question's product line and concept on its current version. Questions a manager has
-// edited since are left alone. These two fields only sort and filter questions, so they are updated in
-// place rather than as a new version.
+// Sets each seeded question's product line and concept on its current version. These two fields only sort
+// and filter questions, so they are updated in place rather than as a new version. A question a manager
+// has edited since keeps its product line, and gets a concept only if it has none.
 export async function classifyBankDrills(q, log = () => {}, { questions = [...SEED_DRILLS, ...BANK_QUESTIONS] } = {}) {
+  const seeded = [SEEDED_DRILL_NOTE, FIRST_BANK_NOTE, BANK_NOTE, UPGRADE_NOTE];
   let changed = 0;
   for (const b of questions) {
     const r = await q.query(
-      `UPDATE drill_versions v SET product_line = $2, concept = $3
+      `UPDATE drill_versions v
+          SET product_line = CASE WHEN v.change_note = ANY($4::text[]) THEN $2 ELSE v.product_line END,
+              concept = CASE WHEN v.change_note = ANY($4::text[]) OR v.concept = '' THEN $3 ELSE v.concept END
          FROM drills d
-        WHERE d.slug = $1 AND v.id = d.current_version_id AND v.change_note = ANY($4::text[])
-          AND (v.product_line <> $2 OR v.concept <> $3)`,
-      [b.slug, productOf(b), b.concept || b.slug, [SEEDED_DRILL_NOTE, FIRST_BANK_NOTE, BANK_NOTE, UPGRADE_NOTE]],
+        WHERE d.slug = $1 AND v.id = d.current_version_id
+          AND ((v.change_note = ANY($4::text[]) AND (v.product_line <> $2 OR v.concept <> $3)) OR v.concept = '')`,
+      [b.slug, productOf(b), b.concept || b.slug, seeded],
     );
     changed += r.rowCount;
   }

@@ -373,6 +373,7 @@ test('Ana narrows the Practice Studio to one product and one buyer, and a stage 
   await tile.click();
   await expect(ana).toHaveURL(new RegExp(`/practice/stage/${stage.key}\\?product=ravenly&buyer=office_manager$`));
   await expect(ana.getByText('About this buyer: Office manager or intake director')).toBeVisible();
+  await expect(ana.getByText('Questions narrowed to Ravenly, office manager or intake director')).toBeVisible();
   // The filters are remembered on this device until cleared.
   await ana.goto('/practice');
   await expect(filters.getByLabel('Product')).toHaveValue('ravenly');

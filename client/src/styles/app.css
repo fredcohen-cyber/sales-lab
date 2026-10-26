@@ -338,6 +338,11 @@ p {
   margin-bottom: 10px;
   display: inline-block;
 }
+.crumb-note {
+  font-size: 13px;
+  color: var(--ink-3);
+  margin-left: 14px;
+}
 
 @media (max-width: 900px) {
   .shell {

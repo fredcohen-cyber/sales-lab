@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { post } from '../api.js';
-import { useAuth } from '../state.jsx';
+import { useAuth, useMeta } from '../state.jsx';
 import { ErrorNotice, Loading } from '../components/ui.jsx';
 import { DrillRunner } from './DrillRunner.jsx';
 import { filterQuery, savedPracticeFilters } from './PracticeStudio.jsx';
@@ -12,6 +12,7 @@ import { filterQuery, savedPracticeFilters } from './PracticeStudio.jsx';
 export function StageRunner() {
   const { stage } = useParams();
   const { user } = useAuth();
+  const { meta } = useMeta();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [state, setState] = useState({});
@@ -19,6 +20,8 @@ export function StageRunner() {
   const filters = fromUrl ? { product: params.get('product') || '', buyer: params.get('buyer') || '' } : savedPracticeFilters(user.id);
   const query = filterQuery(filters);
   const backTo = `/practice${query ? `?${query}` : ''}`;
+  // What the questions are narrowed to, shown on the question so a rep arriving from another page knows.
+  const narrowedTo = [meta.productLines?.[filters.product]?.label, meta.personas.find((p) => p.key === filters.buyer)?.label.toLowerCase()].filter(Boolean).join(', ');
   useEffect(() => {
     let live = true;
     setState({});
@@ -51,5 +54,5 @@ export function StageRunner() {
       </div>
     );
   }
-  return <DrillRunner key={`${state.preview.drill.id}:${state.preview.scenario.persona.key}`} stage={stage} initialPreview={state.preview} backHref={backTo} />;
+  return <DrillRunner key={`${state.preview.drill.id}:${state.preview.scenario.persona.key}`} stage={stage} initialPreview={state.preview} backHref={backTo} narrowedTo={narrowedTo} />;
 }

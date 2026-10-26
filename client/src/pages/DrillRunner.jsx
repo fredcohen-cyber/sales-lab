@@ -50,7 +50,7 @@ function levelsFromQuery(params) {
 
 // A stage serves one question at a time (see StageRunner); a manager can also open any question from
 // the question bank. Reps never choose the buyer or the levels: each question sets them.
-export function DrillRunner({ stage = null, initialPreview = null, backHref = null }) {
+export function DrillRunner({ stage = null, initialPreview = null, backHref = null, narrowedTo = '' }) {
   const { drillId: routeDrillId, itemId } = useParams();
   const [params] = useSearchParams();
   const { user } = useAuth();
@@ -173,6 +173,7 @@ export function DrillRunner({ stage = null, initialPreview = null, backHref = nu
       <Link className="crumb" to={backTo}>
         Back to {backLabel}
       </Link>
+      {narrowedTo && <span className="crumb-note">Questions narrowed to {narrowedTo}</span>}
       <div className="split">
         <section className="stack" aria-labelledby="drill-title">
           <div className="row">

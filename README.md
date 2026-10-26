@@ -102,12 +102,20 @@ documents stay archived so past answers still show exactly what they were scored
 ## Practice Studio: stages and conversations
 
 - **Reps choose a stage, never a question.** Each stage (Cold outreach, Discovery, Pricing, Renewal, and so
-  on) serves one question at random from those written for the rep's role, preferring questions the rep
-  has not answered and ones coaching can score. The question sets the buyer persona and the challenge
-  levels, and reps cannot change them. The served question waits until it is answered, and a conversation
-  the rep has not finished comes back first, so skipping never leads to an easier question. (One whose
-  coaching stopped and was already retried as often as a rep may in an hour is set aside until it can be
-  retried, so the stage keeps serving other questions.)
+  on) serves one question at random from those written for the rep's role. The question sets the buyer
+  persona and the challenge levels, and reps cannot change them. The served question waits until it is
+  answered, and a conversation the rep has not finished comes back first, so skipping never leads to an
+  easier question. (One whose coaching stopped and was already retried as often as a rep may in an hour
+  is set aside until it can be retried, so the stage keeps serving other questions.)
+- **Each skill from several angles.** Questions that test the same skill share a **concept**, and each
+  concept in the bank has three versions with a different buyer, situation, and challenge level. A stage
+  serves the concept the rep has met least, then the version they have answered least, then the buyer
+  they have met least on it, preferring questions coaching can score.
+- **Filter by product and buyer.** In the Practice Studio, reps and managers can narrow the stages to one
+  product (Ravenly, Omnizant AI Search Plans, Omnizant websites and SEO, or sales technique for both
+  brands) and one buyer (managing partner, solo attorney, marketing manager, or office manager or intake
+  director). Each stage then counts and serves only matching questions. The filters are kept in the link
+  and remembered on the device until cleared; an unfinished conversation still comes back first.
 - **Every question is a conversation.** After each reply the coach scores it and writes the buyer's next
   line from what the rep actually said: one pushback at difficulty 1 or 2, two at 3, and three at 4 or 5.
   The rep reads the coaching, then answers the pushback. When the last reply is coached, the rep sees the
@@ -116,12 +124,19 @@ documents stay archived so past answers still show exactly what they were scored
 - **Expectations fit the rep's role.** Each question says what a good answer does; questions that happen
   in both jobs add what differs for an account executive (winning new business) and an account manager
   (looking after an existing client). The coach is told which role is answering.
-- **The question bank** has at least 12 questions per stage, written only from the approved Sales Playbook
-  and Ravenly product knowledge (see `server/seed/bank/`, checked by `node server/seed/bank/validate.js`).
-  Each lists three follow-up objections the buyer is likely to raise: the coach uses them as a guide, and
-  practice without coaching uses them word for word. Omnizant questions practice technique only; none
-  cite the AI Search Plans brief yet. Managers browse and edit every question under **Question
-  bank** in the Practice Studio, and can still assign specific questions in Curriculum.
+- **The question bank** has BANK_TOTAL questions on CONCEPT_TOTAL concepts, at least STAGE_MIN per stage, written only
+  from approved material: the Sales Playbook with its call field notes, Ravenly product knowledge with the
+  Ravenly vs Intaker battle card, the Omnizant AI Search Plans brief, and the Omnizant website review and
+  competitor angles (see `server/seed/bank/`, checked by `node server/seed/bank/validate.js`). Each lists
+  three follow-up objections the buyer is likely to raise: the coach uses them as a guide, and practice
+  without coaching uses them word for word. Questions about Omnizant's websites and SEO practice technique,
+  because only the website review and the competitor angles are approved; none rely on the unconfirmed
+  "Omnizant at a glance" draft. Managers browse every question under **Question bank** in the Practice
+  Studio, filter it by product, set a question's product and concept in the editor, and can still assign
+  specific questions in Curriculum.
+- **Four buyers.** The office manager or intake director joined the managing partner, solo attorney, and
+  marketing manager: the person who runs the intake team and the website vendor, books the attorneys'
+  time, and recommends but rarely signs. Managers can edit how each buyer is described in Settings.
 - **Reports count conversations.** A conversation counts once every planned reply is in and coached and
   every reply's coaching counts: one disputed reply leaves it out, and one waiting for review holds it.
   Unfinished conversations are listed separately, and managers are told about any left for more than a
