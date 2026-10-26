@@ -1,12 +1,13 @@
-_Facts Omnizant’s reps gave prospects on recorded calls in October 2026. Confirm each one, correct anything that has changed, then approve this section so reps can read it and coaching can use it._
+_Facts Omnizant’s reps gave prospects on fourteen recorded outbound calls. Confirm each one, correct anything that has changed, then approve this section so reps can read it and coaching can use it. Several approved notes rely on these facts: the State Bar of Texas partnership, the LawLytics moves, and the Director of Sales’ tenure._
 
 ### The company
 
 - Founded in 2006: about 20 years serving law firms.
-- About 45 employees, with headquarters in Port Washington, New York, on Long Island. Some reps work remotely.
+- About 45 employees, with headquarters in Port Washington, New York, on Long Island. Reps on these calls were based in several states, though one described himself as one of the company’s few remote workers; confirm how to describe where the team works.
 - Founded by Fred Cohen, an estate planning attorney, who is still president and CEO. Omnizant works only with attorneys; it is not a general marketing agency.
-- A member benefit partner with the State Bar of Texas, which includes educational outreach to members.
+- A member benefit partner with the State Bar of Texas. One rep told a prospect the partnership requires Omnizant to provide value to members, so it occasionally does educational outreach such as the free website audit.
 - Donna, the Director of Sales, has been with the company about 18 years.
+- Many firms have switched to Omnizant from FindLaw since its sale, and from Scorpion and Justia.
 
 ### Websites and services
 

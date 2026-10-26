@@ -70,7 +70,7 @@ Knowledge is kept in **collections** made of **sections**:
 
 - The **Sales Playbook** (both brands) holds sales technique: mindset, openers, discovery, presenting,
   closing, objections, follow-up, language, and practice. Openers, Discovery, Closing, and Objections end
-  with field notes from 14 booked Omnizant outbound calls (October 2026), in `server/seed/sources/field-notes/`.
+  with field notes from 14 booked Omnizant outbound calls, in `server/seed/sources/field-notes/`.
 - **Product knowledge** has one collection per brand. Ravenly's is grouped into Start here, Positioning
   and fit, Product capabilities, Pricing and packaging, Competitive (including the Intaker and Juvo Leads
   battlecards, and the sales team's Ravenly vs Intaker battle card, aligned with the Intaker research),

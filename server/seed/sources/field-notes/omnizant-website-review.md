@@ -1,8 +1,8 @@
-The free website review is how Omnizant’s outbound calls earn a first meeting. On fourteen recorded calls from October 2026, every booked meeting was some version of it.
+The free website review is how Omnizant’s outbound calls most often earn a first meeting. On fourteen recorded outbound calls, it was the meeting booked on twelve; the other two booked a call to go over Omnizant’s services.
 
 ### What it is
 
-A 10- to 20-minute video call, usually Google Meet with a shared screen, where the rep goes over what they found on the firm’s website and online presence and learns what the firm wants from its site. A website specialist or the Director of Sales often joins. It is informative, not a sales call: if the firm wants Omnizant’s services, that is a separate conversation.
+A 10- to 20-minute video call, usually Google Meet, sometimes with a shared screen, where the rep goes over what they found on the firm’s website and online presence and learns what the firm wants from its site. A website specialist or the Director of Sales sometimes joins. Reps promise it won’t be a high-pressure sales call: it is mainly informative, and the rep also tells the firm about Omnizant. Some reps add that if the firm wants Omnizant’s services, that will be a separate call.
 
 ### How reps describe it
 

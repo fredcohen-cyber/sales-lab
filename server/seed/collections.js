@@ -145,7 +145,7 @@ export const RAVENLY_VS_INTAKER = {
 };
 export const ADDED_SECTIONS = [RAVENLY_VS_INTAKER];
 
-// What 14 booked Omnizant outbound calls (October 2026) taught, distilled from the transcripts and analysis
+// What 14 booked Omnizant outbound calls taught, distilled from the transcripts and analysis
 // Fred supplied. Field notes go at the end of the matching Sales Playbook sections as a new approved
 // version; Omnizant gets new sections. Company facts the reps stated wait as a draft for Fred to confirm.
 // The transcripts themselves are not stored: they name prospects and their email addresses.
@@ -153,7 +153,7 @@ export const CALL_LEARNINGS = {
   seedKey: 'call-learnings-2026-10-v1',
   asOfDate: '2026-10-26',
   changeNote:
-    'Field notes from 14 booked Omnizant outbound calls (October 2026), distilled from the call transcripts and analysis supplied by Fred Cohen.',
+    'Field notes from 14 booked Omnizant outbound calls, distilled from the call transcripts and analysis Fred Cohen supplied on October 26, 2026, and checked against the transcripts.',
   appendTo: [
     { collectionSlug: 'sales-playbook', titleStart: '2. Openers', file: 'sources/field-notes/playbook-2-openers.md' },
     { collectionSlug: 'sales-playbook', titleStart: '3. Discovery', file: 'sources/field-notes/playbook-3-discovery.md' },
@@ -169,7 +169,7 @@ export const CALL_LEARNINGS = {
       brand: 'omnizant',
       subjects: ['product'],
       approve: false,
-      caveats: 'Facts as reps stated them on calls in October 2026, not yet confirmed. Approve only after checking each one.',
+      caveats: 'Facts as reps stated them on 14 recorded outbound calls, not yet confirmed. Approve only after checking each one.',
     },
     {
       collectionSlug: 'omnizant-product',
@@ -179,7 +179,7 @@ export const CALL_LEARNINGS = {
       brand: 'omnizant',
       subjects: ['product', 'sales_technique'],
       approve: true,
-      caveats: 'How reps described and offered the review on 14 booked calls in October 2026. These calls show what worked, not how often it works.',
+      caveats: 'How reps described and offered the review on 14 booked outbound calls. These calls show what worked, not how often it works.',
     },
     {
       collectionSlug: 'omnizant-product',
@@ -190,7 +190,7 @@ export const CALL_LEARNINGS = {
       subjects: ['competitive'],
       approve: true,
       caveats:
-        'From 14 booked Omnizant calls in October 2026. Competitor experiences are what firms reported on those calls, not verified facts; the FindLaw sale is from Thomson Reuters’ announcement of December 2, 2024.',
+        'From 14 booked Omnizant outbound calls. Competitor experiences are what firms reported on those calls, not verified facts; the FindLaw sale is from Thomson Reuters’ announcement of December 2, 2024.',
     },
   ],
 };
