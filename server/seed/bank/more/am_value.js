@@ -276,8 +276,8 @@ export const QUESTIONS = [
       '- States the published scope accurately: Ascend lists five practice areas, all in use, and Summit, a custom-quote plan, lists flexible practice areas, users, and volume.',
       '- Does not promise an exception or invent terms: offers to confirm by a set date whether one more practice area can be added to Ascend and how it would be priced, and gives no Summit price or range.',
       '- Raises the lead allowance: the new group may push the firm past Ascend’s 50 monthly leads, and what happens at the allowance must be confirmed rather than guessed.',
-      '- Mentions that the public trial page lists employment among its practice-area templates, as a starting point to be confirmed for this account and approved by the firm.',
-      '- Recommends one option based on what the partner said and asks for a decision or a dated call to review the confirmed terms.',
+      '- Notes that employment appears among the templates on Ravenly’s public trial page, so the new group may not start from a blank flow, while making clear that its use on this account must be confirmed and the group’s attorneys approve the questions.',
+      '- Recommends the one path that fits what the partner described, and asks him for a decision or a dated call once the terms are confirmed.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -346,7 +346,7 @@ export const QUESTIONS = [
     objective:
       'Help the managing partner make a return claim his partners will trust: explain what won revenue measures, why dividing it by the subscription is not a return on investment, and how to build a figure he can defend.',
     goodLooksLike: [
-      '- Acknowledges a strong year, then says plainly that won revenue is the value recorded on matters marked won, which depends on the team’s stage and value entries; it is not collected cash.',
+      '- Acknowledges a strong year, then says plainly what the $3.2 million is: the values the team entered on matters marked won, which depend on their stage and value entries, not cash the firm collected.',
       '- Explains why the division overstates the return: the firm’s marketing and lawyers produced those matters, so only the change against the firm’s results before Ravenly could reflect Ravenly’s contribution.',
       '- Describes a defensible calculation: additional retained matters against the baseline, valued at contribution after variable costs rather than gross revenue, against the total cost, including subscription, implementation, usage, third-party tools, and staff time.',
       '- Notes what else could explain a record year, such as campaign changes, traffic mix, practice mix, or seasonality, and the lag between inquiry and retention, so the letter does not credit Ravenly for them.',
@@ -451,7 +451,7 @@ export const QUESTIONS = [
     objective:
       'Explain what the abandonment report shows and does not show, avoid promising contact details or outreach that the product and the firm’s consent settings do not support, and agree on how to investigate the question.',
     goodLooksLike: [
-      '- Explains that the report shows where visitors stop, with individual events by step and progress, not why they stop.',
+      '- Explains what she is looking at: individual abandonment events with the step and progress where each visitor stopped, which show where people leave but not why.',
       '- Does not promise that names, phone numbers, or partial entries from abandoned sessions are available or saved as leads; offers to confirm what each abandonment event records.',
       '- Raises consent before any outreach: contact depends on the consent a visitor gave, the firm approves its own consent language and channel settings, and calling and texting are regulated, so the firm’s counsel should decide.',
       '- Does not offer Ravenly texts or calls to these visitors as a workaround; abandonment reporting does not establish recovery messages.',
@@ -489,11 +489,11 @@ export const QUESTIONS = [
     objective:
       'Explain what the abandonment report and the automation builder do and do not establish, avoid promising recovery emails, and agree on how to investigate where visitors stop.',
     goodLooksLike: [
-      '- Explains that the report shows where visitors stop, by step and question, with capture method and chatflow filters, not why they stop.',
+      '- Explains that the report pinpoints the questions where case-evaluation visitors drop off, and can be filtered by capture method and chatflow, but cannot say why they left.',
       '- Does not promise recovery emails: abandonment reporting does not establish them, and the automation triggers seen in Ravenly are events such as a new lead being created or a stage being set, not an abandoned session; offers to confirm with the product team.',
       '- Notes that any email would depend on the consent each visitor gave, that consent behavior differs across the chat, webform, and case evaluation, and that the firm approves its own consent language and settings.',
       '- Suggests investigating the steps with the most drop-off, such as their wording, required fields, and the evaluation’s length, then comparing drop-off after an approved change.',
-      '- Agrees on a dated next step, such as a short review of the case evaluation’s questions.',
+      '- Sets a date to go through the case evaluation’s questions together, starting with the step that loses the most visitors.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
@@ -527,7 +527,7 @@ export const QUESTIONS = [
     goodLooksLike: [
       '- Gives a direct answer, neither rubber-stamping nor dismissing the conclusion, and keeps the explanation short.',
       '- Checks how each tab gets its data: whether the Local Services integration is set up and importing this firm’s leads, how spend reaches each tab, and how the Google Ads account and conversions are connected.',
-      '- Explains that a lower cost per retained lead for Local Services is only as reliable as the spend recorded for it, the attribution of its leads, and the outcomes the team recorded, and that ROAS, if it comes up, is not profit.',
+      '- Explains that the Local Services advantage is only as solid as what feeds it: the spend recorded for each tab, which leads each channel was credited with, and the outcomes the team recorded; ROAS, if it comes up, is not profit.',
       '- Asks how many retained matters sit behind each figure and over what dates, and whether recent Google Ads leads may still be open given the lag between inquiry and retention.',
       '- Offers a way to act on the finding while testing it, such as moving part of the budget and comparing results over an agreed period, plus a specific check before tomorrow.',
     ].join('\n'),
@@ -559,7 +559,7 @@ export const QUESTIONS = [
     objective:
       'Help the attorney decide about Google Ads from the Paid report: check what the figures rest on, especially the small sample, before backing or questioning his decision.',
     goodLooksLike: [
-      '- Takes his frustration seriously and neither rubber-stamps nor dismisses the decision.',
+      '- Treats his frustration as fair, without talking him out of the decision or simply agreeing with it.',
       '- Points out how small the sample is: one retained matter in three months, with a lag between inquiry and retention, so a single case more or less changes the picture.',
       '- Checks the inputs: whether the Google Ads spend in Ravenly matches his ad account, and how many leads from the period have unknown or missing sources or are still in open stages.',
       '- Explains in plain terms that his cost per retained lead depends on the spend recorded in Ravenly, which leads were attributed to Google Ads, and which ones his own stages mark as retained.',
@@ -597,8 +597,8 @@ export const QUESTIONS = [
     goodLooksLike: [
       '- Asks what only she can answer: who at the web company controls the site and its access, which practice areas the new office will handle, expected volume, and how the two new staff will share the work.',
       '- Is accurate about the plan: the firm’s Ascend plan lists one website, while Summit, a custom-quote plan, lists multiple sites, so the options for a second site are confirmed before anything is quoted.',
-      '- Is honest about routing to the new office’s staff: teams can be tied to case types, with a default team as a fallback, but routing by office or location was not verified, so it must be confirmed and then tested before opening day.',
-      '- Notes that Ravenly describes its snippet as working on sites such as Wix, that installation needs the website owner’s access, and that the product or web team must verify the generated embed code before it goes on the site.',
+      '- Tells her plainly what routing can do today: teams can be linked to case types, with a default team catching the rest, but sending inquiries by office or location was not verified, so it needs confirming and a test before opening day.',
+      '- Covers the website side: Ravenly describes its snippet as working on sites such as Wix, the web company will need to provide access, and the product or web team must check the generated embed code before it goes live.',
       '- Gives her a short list of what to gather and agrees on a dated scoping call that includes the web company.',
     ].join('\n'),
     roleGuidance: {},
@@ -633,7 +633,7 @@ export const QUESTIONS = [
       '- Plan coverage: the firm’s Ascend plan lists one website and Summit, quoted individually, lists multiple sites; confirms the options and gives no Summit price.',
       '- Routing to the new office’s intake team: teams tied to case types, with a default fallback team, were observed, but routing by office or location was not verified; commits only to confirming it and testing it before launch.',
       '- Reporting: Lead Performance filters by date, practice area, attorney, and channel, and the channel views show landing pages, but separate reporting by website or office was not established; offers to confirm it rather than promising it.',
-      '- Installation: needs the website owner’s access, and the generated embed code must be verified by the product or web team, so the launch date depends on both.',
+      '- Installation: the launch date depends on getting access from whoever owns the new site and on the product or web team verifying the generated embed code first.',
       '- Proposes a scoping call this week with whoever builds the new site, and a test plan before launch.',
     ].join('\n'),
     roleGuidance: {},

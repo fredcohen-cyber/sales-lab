@@ -825,7 +825,7 @@ export const QUESTIONS = [
       '- Does not claim Ravenly has every one of those features, and does not call Intaker’s interface cluttered or hard to use.',
       '- Asks what her team does with an inquiry every day and where work slows down, such as spotting new inquiries, knowing who owns them, or keeping track of follow-up.',
       '- Connects Ravenly to her answer: leads, messages, tasks, and stages in one workspace, with an Action Center that shows what needs attention first, such as messages awaiting a reply, tasks due, and high-priority leads.',
-      '- Offers to let her work a few realistic inquiries in Ravenly with you, and books a time.',
+      '- Offers a short session in which she works a few realistic inquiries in Ravenly herself, and books a time.',
     ].join('\n'),
     roleGuidance: {},
     pushbacks: [
