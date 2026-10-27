@@ -1178,10 +1178,15 @@ input[type='radio'] {
 .notice-ok > svg {
   color: var(--green);
 }
-.notice a {
+/* Links in a notice take its color; buttons placed in one keep their own look. */
+.notice a:not(.btn) {
   color: inherit;
   font-weight: 600;
   text-decoration: underline;
+}
+.notice > .btn {
+  flex: none;
+  align-self: center;
 }
 
 /* ------------------------------------------------------------------ tables */
