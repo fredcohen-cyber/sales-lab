@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { get } from '../api.js';
 import { useAuth, useMeta } from '../state.jsx';
 import { BrandChip, Empty, ErrorNotice, fmtDate, Loading, Notice, useLoad } from '../components/ui.jsx';
-import { PlusIcon } from '../components/Icons.jsx';
+import { PadIcon, PlusIcon, STAGE_ICONS } from '../components/Icons.jsx';
 import { NextUpCard } from './Home.jsx';
 
 const TRACK_TITLE = { ae: 'Account executive stages', am: 'Account manager stages' };
@@ -77,14 +77,20 @@ function StageTile({ stage, filters }) {
   const status = stage.openAttemptId ? 'Conversation in progress' : stage.waiting ? 'Question waiting' : null;
   const count = `${stage.questions} question${stage.questions === 1 ? '' : 's'}${stage.concepts ? ` on ${stage.concepts} concept${stage.concepts === 1 ? '' : 's'}` : ''}`;
   const progress = stage.answered ? `You have answered ${stage.answered} of ${count}` : count;
+  const Icon = STAGE_ICONS[stage.key] || PadIcon;
+  const tile = (
+    <span className={`icon-tile${!stage.questions ? ' gray' : stage.track === 'am' ? ' rose' : ''}`} aria-hidden="true">
+      <Icon />
+    </span>
+  );
   if (!stage.questions) {
     return (
       <div className="drill stage-tile stage-tile-empty" aria-disabled="true">
+        <div className="stage-tile-top">{tile}</div>
         <h3>{stage.label}</h3>
         <p className="drill-line">{stage.description}</p>
         <div className="drill-foot">
           <span className="tiny muted">{narrowed ? 'No questions for these filters yet.' : 'No questions for your role yet.'}</span>
-          {status && <span className="badge badge-info">{status}</span>}
         </div>
       </div>
     );
@@ -92,6 +98,8 @@ function StageTile({ stage, filters }) {
   const query = filterQuery(filters);
   return (
     <Link to={`/practice/stage/${stage.key}${query ? `?${query}` : ''}`} className="drill stage-tile" aria-describedby={`stage-${stage.key}-progress`}>
+      {/* The title comes first in the link's text, so the link reads as the stage's name. */}
+      <div className="stage-tile-top">{tile}</div>
       <h3>{stage.label}</h3>
       <p className="drill-line">{stage.description}</p>
       <div className="drill-foot">

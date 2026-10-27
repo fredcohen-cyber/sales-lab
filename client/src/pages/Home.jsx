@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { get } from '../api.js';
 import { useAuth } from '../state.jsx';
 import { Empty, ErrorNotice, fmtDate, fmtRelative, Loading, Notice, ReviewBadge, RunBadge, Stat, useLoad, attemptLabel, scoreText } from '../components/ui.jsx';
+import { ArrowRightIcon, ClipboardIcon, SparkIcon, TargetIcon } from '../components/Icons.jsx';
 
 export function NextUpCard({ next }) {
   if (!next) return null;
@@ -10,29 +11,103 @@ export function NextUpCard({ next }) {
   const replies = next.lastAttempt?.replies;
   const underWay = replies && replies.done < replies.planned;
   return (
-    <section className="next-up stack-sm" aria-labelledby="next-up-title">
-      <div className="row-between">
-        <span className="small muted">
-          Next in “{next.assignmentTitle}”
-          {next.dueDate ? `, due ${fmtDate(next.dueDate)}` : ''}
-        </span>
-        {next.overdue && <span className="badge badge-critical">Overdue</span>}
+    <section className="next-up" aria-labelledby="next-up-title">
+      <div className="hero-top">
+        <div>
+          <span className="hero-label">Assigned exercise</span>
+          <div className="hero-meta">
+            Next in “{next.assignmentTitle}”
+            {next.dueDate ? `, due ${fmtDate(next.dueDate)}` : ''}
+          </div>
+        </div>
+        {next.overdue ? (
+          <span className="badge badge-critical">Overdue</span>
+        ) : (
+          <span className="hero-symbol" aria-hidden="true">
+            <ClipboardIcon />
+          </span>
+        )}
       </div>
       <h2 id="next-up-title">{next.title}</h2>
-      <p className="small muted" style={{ marginBottom: 6 }}>
+      <p className="hero-text">
         {next.stageLabel}. Buyer: {next.personaLabel}. Difficulty {next.settings.difficulty}, skepticism {next.settings.skepticism}, product depth {next.settings.depth}.
       </p>
-      <div>
+      <div className="hero-actions">
         {underWay ? (
           <Link className="btn" to={`/attempts/${next.lastAttempt.id}`}>
             Continue the conversation ({replies.done} of {replies.planned} replies)
+            <ArrowRightIcon size={16} />
           </Link>
         ) : (
           <Link className="btn" to={`/practice/assigned/${next.id}`}>
             Start exercise
+            <ArrowRightIcon size={16} />
           </Link>
         )}
       </div>
+    </section>
+  );
+}
+
+// No assignment waiting: the stages are where the next question comes from.
+function PracticeHero() {
+  return (
+    <section className="hero-card" aria-labelledby="practice-hero-title">
+      <div className="hero-top">
+        <div>
+          <span className="hero-label">Practice</span>
+          <div className="hero-meta">No assigned exercises right now</div>
+        </div>
+        <span className="hero-symbol" aria-hidden="true">
+          <TargetIcon />
+        </span>
+      </div>
+      <h2 id="practice-hero-title">Choose a stage and answer the buyer in your own words.</h2>
+      <p className="hero-text">Your manager’s assignments will appear here. Meanwhile, each stage serves you a question with its buyer and challenge levels set.</p>
+      <div className="hero-actions">
+        <Link className="btn" to="/practice">
+          Choose a stage
+          <ArrowRightIcon size={16} />
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function HowItWorks() {
+  return (
+    <section className="panel focus-card" aria-labelledby="how-title">
+      <div className="row">
+        <span className="icon-tile" aria-hidden="true">
+          <SparkIcon />
+        </span>
+        <div>
+          <h2 id="how-title" className="section-title" style={{ margin: 0 }}>
+            How a practice conversation works
+          </h2>
+          <p className="tiny muted" style={{ margin: 0 }}>
+            Up to five replies, depending on the question’s difficulty.
+          </p>
+        </div>
+      </div>
+      <ol className="steps">
+        <li>
+          <strong>Choose a stage</strong>
+          <p>Each stage serves one question, with its buyer and levels set.</p>
+        </li>
+        <li>
+          <strong>Answer in your own words</strong>
+          <p>Write exactly what you would say or send.</p>
+        </li>
+        <li>
+          <strong>Read your coaching</strong>
+          <p>A score, what worked, what to improve, and a stronger answer.</p>
+        </li>
+        <li>
+          <strong>Handle the pushback</strong>
+          <p>The buyer answers what you actually wrote, and you reply again.</p>
+        </li>
+      </ol>
     </section>
   );
 }
@@ -52,21 +127,15 @@ export function Home() {
           <h1>Welcome back, {first}</h1>
           <p className="sub">Answer the buyer, get coaching on what you actually wrote, then handle the next objection.</p>
         </div>
-        <Link className="btn btn-secondary" to="/practice">
-          Open Practice Studio
-        </Link>
       </div>
       <ErrorNotice error={error} retry={reload} />
       {loading && !data && <Loading />}
       {data && (
         <div className="stack-lg">
-          {data.next ? (
-            <NextUpCard next={data.next} />
-          ) : (
-            <Empty title="No assigned exercises right now" action={<Link className="btn" to="/practice">Choose a stage</Link>}>
-              Your manager’s assignments will appear here. Meanwhile, choose a stage in the Practice Studio for your next question.
-            </Empty>
-          )}
+          <div className="hero-grid">
+            {data.next ? <NextUpCard next={data.next} /> : <PracticeHero />}
+            <HowItWorks />
+          </div>
           {data.overdueAssignments > 0 && (
             <Notice kind="warn" title={`${data.overdueAssignments} overdue assignment${data.overdueAssignments === 1 ? '' : 's'}`}>
               <p>

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { AlertIcon, CheckIcon, CopyIcon, CriticalIcon, InfoIcon } from './Icons.jsx';
+import { AlertIcon, CheckIcon, CopyIcon, CriticalIcon, EyeIcon, EyeOffIcon, InfoIcon } from './Icons.jsx';
 
 // ------------------------------------------------------------------ formatting (America/New_York)
 const TZ = 'America/New_York';
@@ -147,6 +147,19 @@ export function Field({ label, hint, error, children, id }) {
       {hint && !error && <span className="hint">{hint}</span>}
       {error && <span className="error-text">{error}</span>}
     </div>
+  );
+}
+
+// A password field with a button to show what was typed.
+export function PasswordInput({ id, ...props }) {
+  const [shown, setShown] = useState(false);
+  return (
+    <span className="password-input">
+      <input id={id} type={shown ? 'text' : 'password'} autoCapitalize="none" spellCheck="false" {...props} />
+      <button type="button" aria-label={shown ? 'Hide password' : 'Show password'} aria-controls={id} onClick={() => setShown((v) => !v)}>
+        {shown ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+      </button>
+    </span>
   );
 }
 

@@ -1,11 +1,12 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Brand } from './Brand.jsx';
+import { Brand, Wordmark } from './Brand.jsx';
 import { ErrorBoundary } from './ErrorBoundary.jsx';
-import { useAuth } from '../state.jsx';
+import { useAuth, useMeta } from '../state.jsx';
 import { api } from '../api.js';
 import {
   BookIcon,
+  ChevronRightIcon,
   CoachIcon,
   DashboardIcon,
   HomeIcon,
@@ -20,8 +21,32 @@ import {
 
 const ROLE = { ae: 'Account executive', am: 'Account manager', manager: 'Manager' };
 
+// Where the person is, for the top bar.
+const SECTIONS = [
+  ['/practice', 'Practice Studio'],
+  ['/attempts', 'Practice Studio'],
+  ['/drills', 'Question bank'],
+  ['/curriculum', 'Curriculum'],
+  ['/progress', 'My Progress'],
+  ['/knowledge', 'Knowledge Library'],
+  ['/manager', 'Manager Dashboard'],
+  ['/coaching', 'Team Coaching'],
+  ['/users', 'User Management'],
+  ['/settings', 'Workspace Settings'],
+];
+function sectionOf(pathname) {
+  if (pathname === '/') return 'Home';
+  return SECTIONS.find(([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`))?.[1] || 'Sales Lab';
+}
+
+export function initials(name = '') {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]?.[0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase() || '?';
+}
+
 export function Shell() {
   const { user, logout } = useAuth();
+  const { meta } = useMeta();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -51,23 +76,20 @@ export function Shell() {
       {extra}
     </NavLink>
   );
+  const coachingOn = Boolean(meta?.coaching?.configured);
 
   return (
     <div className={`shell${open ? ' nav-open' : ''}`}>
       <a className="skip-link" href="#main">
         Skip to content
       </a>
-      <header className="topbar">
-        <Brand />
-        <button className="btn btn-secondary btn-small" aria-expanded={open} aria-controls="sidebar" onClick={() => setOpen((v) => !v)}>
-          <MenuIcon />
-          Menu
-        </button>
-      </header>
       {open && <div className="scrim" onClick={() => setOpen(false)} aria-hidden="true" />}
       <aside className="sidebar" id="sidebar">
-        <Brand />
+        <div className="sidebar-brand">
+          <Brand />
+        </div>
         <nav className="nav" aria-label="Main">
+          <div className="nav-caption">Practice</div>
           {link('/', 'Home', HomeIcon, null, true)}
           {link('/practice', 'Practice Studio', PadIcon)}
           {link('/curriculum', 'Curriculum', ListIcon)}
@@ -84,24 +106,50 @@ export function Shell() {
           )}
         </nav>
         <div className="sidebar-foot">
-          <div className="who">
-            <strong>{user?.name}</strong>
-            <span>{ROLE[user?.role]}</span>
-            <br />
-            <span>{user?.email}</span>
+          <div className="sidebar-user">
+            <span className="avatar small" aria-hidden="true">
+              {initials(user?.name)}
+            </span>
+            <div>
+              <strong>{user?.name}</strong>
+              <span>{ROLE[user?.role]}</span>
+              <span>{user?.email}</span>
+            </div>
           </div>
-          <button className="btn btn-secondary btn-block" onClick={signOut} disabled={signingOut}>
-            <LogoutIcon />
-            {signingOut ? 'Signing out…' : 'Sign out'}
-          </button>
         </div>
       </aside>
-      <main className="main" id="main" tabIndex={-1}>
-        {/* Keyed by page so moving to another page clears a rendering error; the menu stays usable. */}
-        <ErrorBoundary key={location.pathname}>
-          <Outlet />
-        </ErrorBoundary>
-      </main>
+      <div className="main">
+        <header className="topbar">
+          <button className="btn btn-secondary btn-small menu-btn" aria-expanded={open} aria-controls="sidebar" onClick={() => setOpen((v) => !v)}>
+            <MenuIcon />
+            Menu
+          </button>
+          <Link to="/" className="topbar-brand" aria-label="Sales Lab home">
+            <Wordmark />
+          </Link>
+          <div className="topbar-location">
+            <span>Sales Lab</span>
+            <ChevronRightIcon />
+            <strong>{sectionOf(location.pathname)}</strong>
+          </div>
+          <div className="topbar-actions">
+            <span className="coach-status" title={coachingOn ? 'Answers are coached and scored.' : 'No AI key is set up, so answers are saved as unscored practice.'}>
+              <span className={`status-dot ${coachingOn ? 'on' : 'off'}`} aria-hidden="true" />
+              <span className="status-text">{coachingOn ? 'AI coaching on' : 'Unscored practice only'}</span>
+            </span>
+            <button className="btn btn-secondary btn-small" onClick={signOut} disabled={signingOut}>
+              <LogoutIcon />
+              {signingOut ? 'Signing out…' : 'Sign out'}
+            </button>
+          </div>
+        </header>
+        <main className="content" id="main" tabIndex={-1}>
+          {/* Keyed by page so moving to another page clears a rendering error; the menu stays usable. */}
+          <ErrorBoundary key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
+        </main>
+      </div>
     </div>
   );
 }

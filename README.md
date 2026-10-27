@@ -60,10 +60,9 @@ from the person's page in User Management, and a new password from a reset link 
 
 ### Company logos
 
-The sign-in page and the upper left show small Omnizant and Ravenly marks next to the Sales Lab logo.
-Until logo files are added they appear as text. To use the real logos, add `omnizant.svg` (or `.png`) and
-`ravenly.svg` (or `.png`) to `client/public/brand/` and push. A wide, transparent logo works best; it is
-shown 12 pixels tall.
+The sign-in page and the upper left show the Omnizant and Ravenly logos under the Sales Lab wordmark.
+The files are `client/public/brand/omnizant.svg` and `client/public/brand/ravenly.svg`; to change a logo,
+replace its file and push. If a file is missing, the company's name shows in its place.
 
 ## Knowledge Library: the playbook and product knowledge
 
@@ -232,6 +231,5 @@ Needs verification or material:
   confirms them, and the outlines for Web development, SEO, and GEO are still to be written. So questions
   about Omnizant's websites and SEO practice technique (apart from the website review itself), while AI
   Search Plans questions are scored against the brief. Sales-technique questions apply to both brands.
-- Company logo files have not been added (see above).
 - Out of scope for this version: voice, full-call simulation, CRM integrations, automated emails or
   reminders, and imports beyond pasted text, `.txt`, and `.md`.

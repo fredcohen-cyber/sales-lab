@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CheckIcon } from './Icons.jsx';
+import { CheckCircleIcon, CheckIcon, SparkIcon, TargetIcon } from './Icons.jsx';
 import { attemptLabel, Notice, ReviewBadge, ScoreBar } from './ui.jsx';
 
 export const CF_LABEL = {
@@ -184,7 +184,10 @@ export function CoachingResult({ attempt, evaluation, next, conversation = null,
 
       <div className="grid-2">
         <section className="panel">
-          <h2 className="section-title">What worked</h2>
+          <h2 className="section-title with-icon worked">
+            <CheckCircleIcon size={16} />
+            What worked
+          </h2>
           {ev.feedback.strengths.length === 0 ? (
             <p className="muted small">No specific strengths were noted.</p>
           ) : (
@@ -199,7 +202,10 @@ export function CoachingResult({ attempt, evaluation, next, conversation = null,
           )}
         </section>
         <section className="panel">
-          <h2 className="section-title">To improve</h2>
+          <h2 className="section-title with-icon improve">
+            <TargetIcon size={16} />
+            To improve
+          </h2>
           {ev.feedback.improvements.length === 0 ? (
             <p className="muted small">No specific improvements were noted.</p>
           ) : (
@@ -251,7 +257,8 @@ export function CoachingResult({ attempt, evaluation, next, conversation = null,
       </section>
 
       <section className="stack-sm" aria-labelledby="model-title">
-        <h2 id="model-title" className="section-title">
+        <h2 id="model-title" className="section-title with-icon improve">
+          <SparkIcon size={16} />
           A stronger answer
         </h2>
         <div className="model-answer">{ev.feedback.strongerExample}</div>

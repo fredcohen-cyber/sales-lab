@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Brand } from '../components/Brand.jsx';
-import { Loading, Notice } from '../components/ui.jsx';
+import { Loading, Notice, PasswordInput } from '../components/ui.jsx';
+import { LockIcon } from '../components/Icons.jsx';
 import { api, post } from '../api.js';
 
 export function SetPassword() {
@@ -42,48 +43,53 @@ export function SetPassword() {
   };
 
   return (
-    <div className="auth">
+    <main className="auth">
+      <Brand to="/login" large />
       <div className="auth-card">
-        <div className="auth-brand">
-          <Brand to="/login" large />
-        </div>
-        <div className="auth-form stack">
+        <section className="auth-form">
+          <span className="login-lock" aria-hidden="true">
+            <LockIcon />
+          </span>
           {!link && !linkError && <Loading label="Checking your link…" />}
           {linkError && (
             <>
               <h1>This link can’t be used</h1>
-              <Notice kind="warn">{linkError.message}</Notice>
-              <Link className="btn btn-secondary btn-block" to="/login">
-                Go to sign in
-              </Link>
+              <div className="auth-fields">
+                <Notice kind="warn">{linkError.message}</Notice>
+                <Link className="btn btn-secondary btn-block" to="/login">
+                  Go to sign in
+                </Link>
+              </div>
             </>
           )}
           {link && !linkError && (
-            <form className="stack" onSubmit={submit} noValidate>
-              <h1>{link.purpose === 'reset' ? 'Choose a new password' : 'Set your password'}</h1>
-              <p className="muted small">
+            <>
+              <h1>{link.purpose === 'reset' ? 'Choose a new password.' : 'Choose your password.'}</h1>
+              <p className="auth-lead">
                 For {link.name} ({link.email}). This private link works once.
               </p>
-              {error && <Notice kind="critical">{error}</Notice>}
-              <input type="email" autoComplete="username" value={link.email} readOnly hidden />
-              <div className="field">
-                <label htmlFor="pw">New password</label>
-                <input id="pw" type="password" autoComplete="new-password" value={password} aria-invalid={tooShort} onChange={(e) => setPassword(e.target.value)} />
-                <span className={tooShort ? 'error-text' : 'hint'}>At least 10 characters. A short phrase works well.</span>
-              </div>
-              <div className="field">
-                <label htmlFor="pw2">Confirm password</label>
-                <input id="pw2" type="password" autoComplete="new-password" value={confirm} aria-invalid={mismatch} onChange={(e) => setConfirm(e.target.value)} />
-                {mismatch && <span className="error-text">The passwords do not match yet.</span>}
-              </div>
-              <button className="btn btn-block" type="submit" disabled={busy || !password || !confirm}>
-                {busy ? 'Saving…' : 'Save password'}
-              </button>
-              <p className="tiny muted">Saving signs this account out of any other open sessions.</p>
-            </form>
+              <form onSubmit={submit} noValidate>
+                {error && <Notice kind="critical">{error}</Notice>}
+                <input type="email" autoComplete="username" value={link.email} readOnly hidden />
+                <div className="field">
+                  <label htmlFor="pw">New password</label>
+                  <PasswordInput id="pw" autoComplete="new-password" value={password} aria-invalid={tooShort} onChange={(e) => setPassword(e.target.value)} />
+                  <span className={tooShort ? 'error-text' : 'hint'}>At least 10 characters. A short phrase works well.</span>
+                </div>
+                <div className="field">
+                  <label htmlFor="pw2">Confirm password</label>
+                  <PasswordInput id="pw2" autoComplete="new-password" value={confirm} aria-invalid={mismatch} onChange={(e) => setConfirm(e.target.value)} />
+                  {mismatch && <span className="error-text">The passwords do not match yet.</span>}
+                </div>
+                <button className="btn btn-large btn-block" type="submit" disabled={busy || !password || !confirm}>
+                  {busy ? 'Saving…' : 'Save password'}
+                </button>
+              </form>
+              <p className="auth-note">Saving signs this account out of any other open sessions.</p>
+            </>
           )}
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

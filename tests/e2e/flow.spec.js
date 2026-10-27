@@ -103,7 +103,7 @@ test('protected pages send visitors to the sign-in page', async ({ browser }) =>
   const page = await newPage(browser);
   await page.goto('/manager');
   await expect(page).toHaveURL(/\/login\?next=%2Fmanager/);
-  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to Sales Lab.' })).toBeVisible();
   const api = await page.request.get('/api/users');
   expect(api.status()).toBe(401);
   await signIn(page, OWNER.email, 'not-the-password');
@@ -115,7 +115,7 @@ test('protected pages send visitors to the sign-in page', async ({ browser }) =>
 test('owner sets a password from the setup link and signs in', async ({ browser }) => {
   owner = await newPage(browser);
   await owner.goto(await ownerSetupLink());
-  await expect(owner.getByRole('heading', { name: 'Set your password' })).toBeVisible();
+  await expect(owner.getByRole('heading', { name: 'Choose your password.' })).toBeVisible();
   await expect(owner.getByText(`For ${OWNER.name} (${OWNER.email})`)).toBeVisible();
   await shot(owner, '02-set-password');
   await owner.getByLabel('New password').fill(OWNER.password);
@@ -437,7 +437,7 @@ test('a password reset link replaces the password and signs out open sessions', 
   await other.goto(first);
   await expect(other.getByRole('heading', { name: 'This link can’t be used' })).toBeVisible();
   await other.goto(second);
-  await expect(other.getByRole('heading', { name: 'Choose a new password' })).toBeVisible();
+  await expect(other.getByRole('heading', { name: 'Choose a new password.' })).toBeVisible();
   await setPasswordFromLink(other, second, VIC.reset);
   await other.context().close();
 
