@@ -1,6 +1,6 @@
 // The Practice Studio feed and practice conversations: reps choose a stage, never a question; each reply
 // is coached, then the buyer pushes back, until the conversation ends.
-import { test, before, after } from 'node:test';
+import { test, before, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { addUser, drillBySlug, finishConversation, ownerClient, sectionBy, startTestApp, submit, waitFor, waitForCoaching } from '../helpers.js';
@@ -21,6 +21,11 @@ before(async () => {
   ({ client: other } = await addUser(h, owner, { name: 'Oli Other', email: 'oli@omnizant.com', role: 'ae' }));
 });
 after(() => h.close());
+// A test that stops part way must not leave the mock coach holding or failing the next test's replies.
+afterEach(() => {
+  h.provider.behavior = null;
+  h.provider.release();
+});
 
 const reply = (client, afterId, answer, mode = 'coached') => client.post('/api/practice/attempts', { clientRequestId: randomUUID(), continueFrom: afterId, mode, answer });
 const drillBody = (fields) => ({
@@ -114,11 +119,11 @@ test('answering the served question opens a conversation that comes back until i
 test('each reply is coached, then the buyer pushes back from what the rep said; replies are ranked', async () => {
   const d = await drillBySlug(h, 'ravenly-cold-reason');
   const v = await h.db.one(`SELECT default_difficulty FROM drill_versions WHERE id = $1`, [d.version_id]);
-  assert.equal(v.default_difficulty, 3, 'two pushbacks at difficulty 3');
+  assert.equal(v.default_difficulty, 3, 'three pushbacks at difficulty 3');
   h.provider.behavior = 'hold';
   const r1 = await submit(ae, d, 'Fair question. We help firms make sure no inquiry goes unanswered. What happens today when a form comes in at 8 p.m.?');
   assert.equal(r1.status, 201);
-  assert.equal(r1.data.conversation.repliesPlanned, 3);
+  assert.equal(r1.data.conversation.repliesPlanned, 4);
   assert.equal(r1.data.conversation.next.state, 'waiting');
   const early = await reply(ae, r1.data.attempt.id, 'Replying before the buyer has spoken again should not work.');
   assert.equal(early.status, 409);
@@ -128,7 +133,7 @@ test('each reply is coached, then the buyer pushes back from what the rep said; 
   const coached1 = await waitForCoaching(ae, r1.data.attempt.id);
   assert.equal(coached1.conversation.next.state, 'reply');
   assert.match(coached1.conversation.next.buyerLine, /^Mock pushback after reply 1/);
-  assert.match(h.provider.requests.at(-1).user, /this is reply 1 of 3/);
+  assert.match(h.provider.requests.at(-1).user, /this is reply 1 of 4/);
 
   const r2 = await reply(ae, r1.data.attempt.id, 'Understood. Most firms we talk to are not sure either. Could we look at last month’s inquiries together on Thursday?');
   assert.equal(r2.status, 201, JSON.stringify(r2.data));
@@ -138,7 +143,7 @@ test('each reply is coached, then the buyer pushes back from what the rep said; 
   assert.equal(a2.scenario.conversation.history[0].answer, r1.data.attempt.answer);
   const coached2 = await waitForCoaching(ae, a2.id);
   const prompt2 = h.provider.requests.at(-1).user;
-  assert.match(prompt2, /this is reply 2 of 3/);
+  assert.match(prompt2, /this is reply 2 of 4/);
   assert.match(prompt2, /<conversation>\n<turn number="1">\n<buyer>“[^<]+<\/buyer>\n<rep_reply>Fair question\./);
   assert.match(prompt2, /The buyer now says/);
   // One reply per pushback, by the rep only.
@@ -150,24 +155,29 @@ test('each reply is coached, then the buyer pushes back from what the rep said; 
 
   const r3 = await reply(ae, coached2.conversation.next.afterAttemptId, 'That makes sense. Who else would weigh in, and could we book twenty minutes with both of you next Tuesday?');
   assert.equal(r3.status, 201);
-  const last = await waitForCoaching(ae, r3.data.attempt.id);
+  const coached3 = await waitForCoaching(ae, r3.data.attempt.id);
+  assert.match(h.provider.requests.at(-1).user, /this is reply 3 of 4/);
+  assert.equal(coached3.conversation.next.state, 'reply');
+  const r4 = await reply(ae, coached3.conversation.next.afterAttemptId, 'Fair. Then let me send two times that work for both of you, and we will keep it to twenty minutes.');
+  assert.equal(r4.status, 201);
+  const last = await waitForCoaching(ae, r4.data.attempt.id);
   assert.match(h.provider.requests.at(-1).user, /this is the rep’s last reply/);
-  assert.match(last.evaluation.feedback.buyerReaction, /^Mock closing response after reply 3/);
+  assert.match(last.evaluation.feedback.buyerReaction, /^Mock closing response after reply 4/);
   const conv = last.conversation;
   assert.equal(conv.next.state, 'finished');
-  assert.equal(conv.turns.length, 3);
+  assert.equal(conv.turns.length, 4);
   const scores = conv.turns.map((t) => t.score);
-  assert.equal(conv.score, Math.round((scores[0] + scores[1] + scores[2]) / 3));
+  assert.equal(conv.score, Math.round(scores.reduce((sum, x) => sum + x, 0) / 4));
   assert.deepEqual(
     conv.ranked.map((x) => x.score),
     [...scores].sort((x, y) => y - x),
     'replies from strongest to weakest',
   );
-  assert.equal((await reply(ae, r3.data.attempt.id, 'The conversation is over, so this is refused.')).status, 409);
+  assert.equal((await reply(ae, r4.data.attempt.id, 'The conversation is over, so this is refused.')).status, 409);
   // The history lists one entry for the conversation, with its score.
   const list = (await ae.get(`/api/practice/attempts?drillId=${d.id}`)).data.attempts;
   assert.equal(list.length, 1);
-  assert.deepEqual([list[0].conversation_state, list[0].conversation_score, list[0].replies_done], ['scored', conv.score, 3]);
+  assert.deepEqual([list[0].conversation_state, list[0].conversation_score, list[0].replies_done], ['scored', conv.score, 4]);
   // The buyer's written pushbacks are part of the answer key: managers see them, reps do not.
   const asRep = (await ae.get(`/api/practice/attempts/${r1.data.attempt.id}`)).data.attempt.scenario;
   const asManager = (await owner.get(`/api/practice/attempts/${r1.data.attempt.id}`)).data.attempt.scenario;
@@ -238,9 +248,12 @@ test('what a good answer does is written for the rep’s role', async () => {
   );
   assert.equal(trimmed.status, 200);
   assert.deepEqual((await owner.get(`/api/drills/${made.data.id}`)).data.drill.roleGuidance, {});
-  // The buyer pushes back at most three times, so a question lists at most three pushbacks.
+  // The buyer pushes back at most four times, so a question lists at most four pushbacks.
   const four = await owner.put(`/api/drills/${made.data.id}`, drillBody({ title: 'Both roles', pushbacks: ['“One.”', '“Two.”', '“Three.”', '“Four.”'], sourceRefs: [] }));
-  assert.equal(four.status, 400);
+  assert.equal(four.status, 200, JSON.stringify(four.data));
+  assert.equal((await owner.get(`/api/drills/${made.data.id}`)).data.drill.pushbacks.length, 4);
+  const five = await owner.put(`/api/drills/${made.data.id}`, drillBody({ title: 'Both roles', pushbacks: ['“One.”', '“Two.”', '“Three.”', '“Four.”', '“Five.”'], sourceRefs: [] }));
+  assert.equal(five.status, 400);
 });
 
 test('an assigned exercise is complete when its conversation is', async () => {
@@ -257,7 +270,7 @@ test('an assigned exercise is complete when its conversation is', async () => {
   await waitForCoaching(other, first.data.attempt.id);
   let mine = (await other.get('/api/curriculum/mine')).data.active[0].items[0];
   assert.equal(mine.state, 'available');
-  assert.deepEqual(mine.lastAttempt.replies, { done: 1, planned: 2 });
+  assert.deepEqual(mine.lastAttempt.replies, { done: 1, planned: 3 }, 'two pushbacks at difficulty 2');
   await finishConversation(other, first.data.attempt.id);
   mine = (await other.get('/api/curriculum/mine')).data;
   assert.equal(mine.active.length, 0);
@@ -273,7 +286,7 @@ test('reports count a finished conversation once, averaging its replies', async 
   assert.ok(rows.every((r) => r.replies >= 1 && r.repliesPlanned >= r.replies));
   const conv = rows.find((r) => r.drillTitle === 'Give a 20-second reason to talk');
   assert.ok(conv, 'the conversation is one row');
-  assert.equal(conv.replies, 3);
+  assert.equal(conv.replies, 4);
   const view = (await ae.get(`/api/practice/attempts/${conv.id}`)).data.conversation;
   assert.equal(conv.overallScore, view.score);
   assert.equal(conv.firstAttemptScored, true);

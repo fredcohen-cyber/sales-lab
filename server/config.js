@@ -55,8 +55,10 @@ export function loadConfig(env = process.env) {
       anthropicWorkspaceId: (env.ANTHROPIC_WORKSPACE_ID || '').trim(),
       openaiKey: env.OPENAI_API_KEY || '',
       model: (env.AI_MODEL || defaultModel).trim(),
-      timeoutMs: intFrom(env.AI_TIMEOUT_MS, 90_000),
-      maxOutputTokens: intFrom(env.AI_MAX_OUTPUT_TOKENS, 4_000),
+      timeoutMs: intFrom(env.AI_TIMEOUT_MS, 120_000),
+      // Room for a full evaluation of a long reply with many product claims; a response cut off at this
+      // limit is incomplete and has to be asked for again.
+      maxOutputTokens: intFrom(env.AI_MAX_OUTPUT_TOKENS, 8_000),
       // At most this many coaching requests run at once; more wait their turn in a queue.
       maxConcurrent: intFrom(env.AI_MAX_CONCURRENT, 8),
       // How long a coaching request may wait for a free slot before it fails as "busy".

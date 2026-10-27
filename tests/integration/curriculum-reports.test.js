@@ -75,12 +75,12 @@ test('finishing the conversation completes the exercise; failed coaching does no
   h.provider.behavior = null;
   await ae.post(`/api/practice/attempts/${attempt.data.attempt.id}/evaluate`, {});
   const coached = await waitForCoaching(ae, attempt.data.attempt.id);
-  // At difficulty 4 the buyer pushes back three times: coaching one reply does not finish the exercise.
-  assert.equal(coached.conversation.repliesPlanned, 4);
+  // At difficulty 4 the buyer pushes back four times: coaching one reply does not finish the exercise.
+  assert.equal(coached.conversation.repliesPlanned, 5);
   assert.equal(coached.conversation.next.state, 'reply');
   state = await ae.get('/api/curriculum/mine');
   assert.equal(state.data.active[0].items[0].state, 'available', 'the conversation is not finished yet');
-  assert.deepEqual(state.data.active[0].items[0].lastAttempt.replies, { done: 1, planned: 4 });
+  assert.deepEqual(state.data.active[0].items[0].lastAttempt.replies, { done: 1, planned: 5 });
   const last = await finishConversation(ae, attempt.data.attempt.id);
   assert.equal(last.conversation.scoreState, 'scored');
   state = await ae.get('/api/curriculum/mine');
@@ -180,8 +180,8 @@ test('reports: first-attempt averages count finished conversations, excluding re
   const scores = [a1, a3].map((a) => a.last.conversation.score);
   for (const a of [a1, a3]) {
     const replies = a.last.conversation.turns.map((t) => t.score);
-    assert.equal(replies.length, 2, 'difficulty 2: one pushback');
-    assert.equal(a.last.conversation.score, Math.round((replies[0] + replies[1]) / 2));
+    assert.equal(replies.length, 3, 'difficulty 2: two pushbacks');
+    assert.equal(a.last.conversation.score, Math.round((replies[0] + replies[1] + replies[2]) / 3));
   }
   const expected = Math.round((scores.reduce((x, y) => x + y, 0) / scores.length) * 10) / 10;
 
@@ -197,7 +197,7 @@ test('reports: first-attempt averages count finished conversations, excluding re
   assert.equal(p.pendingReviews, 1);
   const e = rep.data.reps[0].engagement;
   assert.equal(e.submitted, 6);
-  assert.equal(e.replies, 11, 'five finished conversations of two replies, and one reply in an unfinished one');
+  assert.equal(e.replies, 16, 'five finished conversations of three replies, and one reply in an unfinished one');
   assert.equal(e.retries, 1);
   assert.equal(e.practiceDays, 1);
   assert.equal(rep.data.reps[0].retry.exercises, 1, 'like-for-like retry gains are reported separately');

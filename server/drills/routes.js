@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { HttpError, notFound, parseBody, route } from '../lib/errors.js';
 import { audit } from '../lib/audit.js';
 import { clientIp, requireManager } from '../auth/middleware.js';
-import { BRANDS, DIMENSION_KEYS, PRODUCT_LINES, STAGE_KEYS, SUBJECTS, defaultProductLine } from '../domain.js';
+import { BRANDS, DIMENSION_KEYS, MAX_PUSHBACKS, PRODUCT_LINES, STAGE_KEYS, SUBJECTS, defaultProductLine } from '../domain.js';
 import { coachingAvailability, DRILL_SQL, shapeDrill, sourceIndexFor } from './service.js';
 
 const level = z.number().int().min(1).max(5);
@@ -25,8 +25,11 @@ const drillSchema = z.object({
     .object({ ae: z.string().trim().max(2000).optional(), am: z.string().trim().max(2000).optional() })
     .default({}),
   // The buyer's likely follow-up objections, in order (used word for word when coaching is off).
-  // At most three: the buyer pushes back up to three times (see pushbacksFor).
-  pushbacks: z.array(z.string().trim().min(3, 'Write each pushback as the buyer would say it.').max(600)).max(3, 'List at most 3 pushbacks.').default([]),
+  // At most four: the buyer pushes back up to four times (see pushbacksFor).
+  pushbacks: z
+    .array(z.string().trim().min(3, 'Write each pushback as the buyer would say it.').max(600))
+    .max(MAX_PUSHBACKS, `List at most ${MAX_PUSHBACKS} pushbacks.`)
+    .default([]),
   defaults: z.object({ difficulty: level, skepticism: level, depth: level }),
   sourceRefs: z
     .array(

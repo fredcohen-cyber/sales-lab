@@ -39,7 +39,8 @@ default Node builder: it installs dependencies, runs `npm run build` (the web ap
 | `ANTHROPIC_API_KEY` | For coaching | Without it, drills run as clearly labeled unscored practice that never counts as scored work. |
 | `ANTHROPIC_WORKSPACE_ID` | Only for a multi-workspace key | The workspace coaching requests run in (starts with `wrkspc_`, listed in the Claude Console under workspaces). Not needed for a key created for one workspace. |
 | `AI_MODEL` | No | Claude model for coaching. Default `claude-sonnet-5-5`. |
-| `AI_TIMEOUT_MS` | No | Longest a coaching request may run once sent. Default `90000`. |
+| `AI_TIMEOUT_MS` | No | Longest a coaching request may run once sent. Default `120000`. |
+| `AI_MAX_OUTPUT_TOKENS` | No | Longest coaching response the AI may write. Default `8000`. |
 | `AI_MAX_CONCURRENT` | No | Coaching requests sent at once; more wait their turn. Default `8`. |
 | `AI_QUEUE_WAIT_MS` | No | How long a request may wait for a turn before it fails as busy. Default `300000`. |
 | `AI_RUNS_PER_USER_PER_HOUR` | No | Coaching runs one person may start per hour (answers plus retries). Default `60`. |
@@ -122,7 +123,8 @@ documents stay archived so past answers still show exactly what they were scored
   filters. **Try again** opens the question with the same buyer and levels as a new conversation; a
   conversation still in progress shows **Continue** instead. Questions since archived drop off the list.
 - **Every question is a conversation.** After each reply the coach scores it and writes the buyer's next
-  line from what the rep actually said: one pushback at difficulty 1 or 2, two at 3, and three at 4 or 5.
+  line from what the rep actually said: one pushback at difficulty 1, two at 2, three at 3, and four at 4 or 5,
+  so a conversation runs up to five replies.
   The rep reads the coaching, then answers the pushback. When the last reply is coached, the rep sees the
   buyer's closing response, every reply ranked from strongest to weakest, and the conversation's score,
   the average of its replies.
@@ -169,8 +171,10 @@ documents stay archived so past answers still show exactly what they were scored
 - Drills that point at "## " sections inside a long document follow them by title when a new version
   renumbers them; sections that were removed or retitled are reported before approval and are not used
   until a manager updates the drill.
-- Answers are saved before any AI request. If coaching fails, times out, or is interrupted, the answer is
-  kept, no score is recorded, and the rep can retry without retyping. In a conversation the buyer pushes
+- Answers are saved before any AI request. If the model's response comes back incomplete (cut off, or
+  missing a required part), coaching asks once more on its own before giving up. If coaching still fails,
+  times out, or is interrupted, the answer is kept, no score is recorded, and the rep can retry without
+  retyping; managers see the technical cause on the reply's page. In a conversation the buyer pushes
   back only after the last reply has been coached.
 - In a conversation, each reply is judged on its own, as an answer to the buyer's latest words, with the
   earlier turns as context. Evidence quotes come only from that reply.
