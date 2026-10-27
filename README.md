@@ -171,8 +171,10 @@ documents stay archived so past answers still show exactly what they were scored
 - Drills that point at "## " sections inside a long document follow them by title when a new version
   renumbers them; sections that were removed or retitled are reported before approval and are not used
   until a manager updates the drill.
-- Answers are saved before any AI request. If coaching fails, times out, or is interrupted, the answer is
-  kept, no score is recorded, and the rep can retry without retyping. In a conversation the buyer pushes
+- Answers are saved before any AI request. If the model's response comes back incomplete (cut off, or
+  missing a required part), coaching asks once more on its own before giving up. If coaching still fails,
+  times out, or is interrupted, the answer is kept, no score is recorded, and the rep can retry without
+  retyping; managers see the technical cause on the reply's page. In a conversation the buyer pushes
   back only after the last reply has been coached.
 - In a conversation, each reply is judged on its own, as an answer to the buyer's latest words, with the
   earlier turns as context. Evidence quotes come only from that reply.
