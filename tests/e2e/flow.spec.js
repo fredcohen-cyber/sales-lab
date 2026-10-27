@@ -63,7 +63,8 @@ async function finishOpenConversations(page) {
   const list = await (await page.request.get(`/api/practice/attempts?drillId=${state.drillId}`)).json();
   for (const c of list.attempts.filter((x) => x.conversation_state === 'unfinished')) {
     let id = c.latest_turn_id;
-    for (let i = 0; i < 20; i += 1) {
+    // Up to four pushbacks, each coached before the next reply: allow time for all of them.
+    for (let i = 0; i < 100; i += 1) {
       const view = await (await page.request.get(`/api/practice/attempts/${id}`)).json();
       const next = view.conversation.next;
       if (next.state === 'finished') break;
