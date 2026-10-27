@@ -72,8 +72,8 @@ export function evaluationTool(assessedKeys) {
               claim_quote: quote,
               status: { type: 'string', enum: ['supported', 'overstated', 'contradicted', 'unsupported', 'uncertain'] },
               source_ref: { type: 'string', description: 'Source label such as S1.' },
-              source_quote: { type: 'string', description: 'Exact words copied from the cited source.' },
-              note: { type: 'string' },
+              source_quote: { type: 'string', description: 'The shortest exact passage from the cited source that settles the claim, under 40 words.' },
+              note: { type: 'string', description: 'One short sentence, only when the status needs explaining.' },
             },
           },
         },
@@ -105,8 +105,26 @@ export function evaluationTool(assessedKeys) {
   };
 }
 
-const str = (max) => z.string().max(max);
-const optStr = (max) => z.string().max(max).optional().nullable();
+// Small departures from the shape (text past a length limit, a list longer than asked, a score sent as
+// "72" or past 100) are tidied rather than failing the whole evaluation: the limits guard storage and the
+// page, not correctness. What a result cannot do without (a missing score, dimension, or buyer line)
+// still fails the run, which is then asked for once more (see runEvaluation).
+const cut = (max) => (s) => (s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s);
+const str = (max) => z.string().transform(cut(max));
+const optStr = (max) => z.string().transform(cut(max)).optional().nullable();
+const list = (item, max) =>
+  z
+    .array(item)
+    .default([])
+    .transform((a) => a.slice(0, max));
+// A score sent as a numeric string is read as a number; a missing or non-numeric score still fails the
+// run instead of becoming a zero.
+const score = z.preprocess(
+  (v) => (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : v),
+  z.number().transform((n) => Math.max(0, Math.min(100, Math.round(n)))),
+);
+// One quote sent on its own is read as a list of one.
+const quotes = (max, maxItems) => z.preprocess((v) => (typeof v === 'string' ? [v] : v), list(str(max), maxItems));
 
 export const evaluationOutputSchema = z.object({
   summary: str(1200),
@@ -114,41 +132,36 @@ export const evaluationOutputSchema = z.object({
     .array(
       z.object({
         key: z.string(),
-        // No coercion: a missing or non-numeric score fails the run instead of becoming a zero.
-        score: z.number().min(0).max(100).transform((n) => Math.round(n)),
+        score,
         rationale: str(2000),
-        evidence: z.array(str(600)).max(5).default([]),
+        evidence: quotes(600, 5),
       }),
     )
     .min(1),
-  strengths: z.array(z.object({ point: str(800), evidence: optStr(600) })).max(6).default([]),
-  improvements: z.array(z.object({ point: str(800), evidence: optStr(600), suggestion: str(1200) })).max(6).default([]),
-  claims: z
-    .array(
-      z.object({
-        claim_quote: str(600),
-        status: z.enum(['supported', 'overstated', 'contradicted', 'unsupported', 'uncertain']),
-        source_ref: optStr(20),
-        source_quote: optStr(1200),
-        note: optStr(800),
-      }),
-    )
-    .max(15)
-    .default([]),
-  critical_failures: z
-    .array(
-      z.object({
-        type: z.enum(['invented_capability', 'contradicts_approved_fact', 'unauthorized_guarantee']),
-        claim_quote: str(600),
-        source_ref: optStr(20),
-        source_quote: optStr(1200),
-        explanation: str(1200),
-      }),
-    )
-    .max(6)
-    .default([]),
+  strengths: list(z.object({ point: str(800), evidence: optStr(600) }), 6),
+  improvements: list(z.object({ point: str(800), evidence: optStr(600), suggestion: str(1200) }), 6),
+  claims: list(
+    z.object({
+      claim_quote: str(600),
+      status: z.enum(['supported', 'overstated', 'contradicted', 'unsupported', 'uncertain']),
+      source_ref: optStr(20),
+      source_quote: optStr(1200),
+      note: optStr(800),
+    }),
+    15,
+  ),
+  critical_failures: list(
+    z.object({
+      type: z.enum(['invented_capability', 'contradicts_approved_fact', 'unauthorized_guarantee']),
+      claim_quote: str(600),
+      source_ref: optStr(20),
+      source_quote: optStr(1200),
+      explanation: str(1200),
+    }),
+    6,
+  ),
   stronger_example: str(6000).refine((s) => s.trim().length > 0, 'stronger_example is empty'),
   buyer_reaction: str(1500).refine((s) => s.trim().length > 0, 'buyer_reaction is empty'),
-  next_focus: z.object({ dimension: z.string().max(60), suggestion: str(800) }),
-  injection_detected: z.boolean().default(false),
+  next_focus: z.object({ dimension: z.string().transform(cut(60)), suggestion: str(800) }),
+  injection_detected: z.preprocess((v) => (v === 'true' ? true : v === 'false' ? false : v), z.boolean().default(false)),
 });

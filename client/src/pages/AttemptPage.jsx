@@ -546,6 +546,7 @@ function CoachingStatus({ run, queued, running, elapsed, overdue, stopped, coach
     <Notice kind="critical" title="Coaching did not finish">
       <p>{run?.errorMessage || 'No coaching result was recorded. Your answer is saved.'}</p>
       <p className="small">No score was recorded, so nothing about this answer has been guessed.</p>
+      {run?.errorDetail && <p className="tiny muted">Technical detail, for managers: {run.errorDetail}</p>}
       {coaching.canRetry ? (
         <button className="btn btn-small" onClick={onRetry} disabled={retrying}>
           <RefreshIcon />

@@ -148,10 +148,12 @@ export const DIMENSION_KEYS = DEFAULT_DIMENSIONS.map((d) => d.key);
 
 export const LEVELS = [1, 2, 3, 4, 5];
 
-// In a practice conversation the buyer pushes back after each reply: once at easy levels, twice at the
-// standard level, three times at advanced and expert levels.
+// In a practice conversation the buyer pushes back after each reply, once more at each level: once at
+// difficulty 1, twice at 2, three times at 3, and four times at 4 and 5. A conversation runs at most
+// five replies.
+export const MAX_PUSHBACKS = 4;
 export function pushbacksFor(difficulty) {
-  return difficulty <= 2 ? 1 : difficulty === 3 ? 2 : 3;
+  return Math.max(1, Math.min(MAX_PUSHBACKS, Number(difficulty) || 1));
 }
 
 // How the coach and the expected answer see the rep's job.

@@ -482,11 +482,12 @@ export function DrillEditor() {
         <section className="panel stack">
           <h2 className="section-title">The buyer’s pushbacks</h2>
           <p className="small muted" style={{ margin: 0 }}>
-            After each reply the buyer pushes back: once at difficulty 1 or 2, twice at 3, three times at 4 or 5. Coaching writes each pushback from what the rep actually said and
-            uses these as a guide. Without coaching, they are used word for word, in order.
+            After each reply the buyer pushes back: once at difficulty 1, twice at 2, three times at 3, and four times at 4 or 5. Coaching writes each pushback from what the rep
+            actually said and uses these as a guide; it raises a realistic concern of its own when the list runs out. Without coaching, they are used word for word, in order,
+            and the conversation ends when they do.
           </p>
-          {[0, 1, 2].map((i) => (
-            <Field key={i} label={`Pushback ${i + 1}${i === 0 ? '' : i === 1 ? ' (difficulty 3 and up)' : ' (difficulty 4 and up)'}`} id={`d-pb-${i}`}>
+          {[0, 1, 2, 3].map((i) => (
+            <Field key={i} label={`Pushback ${i + 1}${i === 0 ? '' : ` (difficulty ${i + 1} and up)`}`} id={`d-pb-${i}`}>
               <input
                 id={`d-pb-${i}`}
                 type="text"

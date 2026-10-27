@@ -9,9 +9,9 @@ import { toConversationRows, isCounted, isFirstScored, performanceFor, engagemen
 import { BANK_QUESTIONS } from '../../server/seed/bank/index.js';
 import { validateBank } from '../../server/seed/bank/validate.js';
 
-test('the buyer pushes back once at easy levels, twice at standard, three times at hard ones', () => {
-  assert.deepEqual([1, 2, 3, 4, 5].map(pushbacksFor), [1, 1, 2, 3, 3]);
-  assert.equal(repliesPlanned({ difficulty: 4, coached: true, pushbacks: [] }), 4, 'coaching writes the pushbacks');
+test('the buyer pushes back once more at each level, up to four times: five replies at most', () => {
+  assert.deepEqual([1, 2, 3, 4, 5].map(pushbacksFor), [1, 2, 3, 4, 4]);
+  assert.equal(repliesPlanned({ difficulty: 5, coached: true, pushbacks: ['“a”', '“b”', '“c”'] }), 5, 'coaching writes the pushbacks, past the written ones');
   assert.equal(repliesPlanned({ difficulty: 4, coached: false, pushbacks: ['“a”', '“b”'] }), 3, 'without coaching, only the written ones');
   assert.equal(repliesPlanned({ difficulty: 1, coached: false, pushbacks: [] }), 1);
 });

@@ -343,7 +343,7 @@ export async function canViewAttempt(q, viewer, attemptId) {
   return viewer.isManager || a.learner_id === viewer.id;
 }
 
-function shapeRun(run) {
+function shapeRun(run, { forManager = false } = {}) {
   if (!run) return null;
   return {
     id: run.id,
@@ -355,6 +355,8 @@ function shapeRun(run) {
     finishedAt: run.finished_at,
     errorCode: run.error_code,
     errorMessage: run.error_message,
+    // Why it failed, in technical terms: for managers diagnosing coaching, never shown to reps.
+    errorDetail: forManager ? run.error_detail || null : undefined,
   };
 }
 
@@ -481,7 +483,7 @@ export async function attemptView(db, config, viewer, attemptId) {
       },
     },
     coaching: {
-      run: shapeRun(latestRun),
+      run: shapeRun(latestRun, { forManager: viewer.isManager }),
       runCount,
       canRetry: retry.canRetry,
       retryBlockedReason: retry.reason,

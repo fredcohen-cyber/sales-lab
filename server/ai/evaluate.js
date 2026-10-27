@@ -66,12 +66,17 @@ export function abortRun(runId) {
 async function failRun(db, runId, err, log) {
   const code = err instanceof ProviderError ? err.code : 'internal';
   const message = RUN_ERROR_MESSAGES[code] || RUN_ERROR_MESSAGES.internal;
+  // The technical cause, kept for managers: the provider's status and detail, or the internal error.
+  const detail =
+    err instanceof ProviderError
+      ? [err.status ? `HTTP ${err.status}` : '', err.detail ? String(err.detail) : ''].filter(Boolean).join(': ') || null
+      : String(err.message || err).slice(0, 300);
   if (!(err instanceof ProviderError)) log(`[coach] run ${runId} internal error: ${err.stack || err.message}`);
-  else log(`[coach] run ${runId} failed: ${code}${err.status ? ` (${err.status})` : ''}${err.detail ? ` - ${String(err.detail).slice(0, 300)}` : ''}`);
+  else log(`[coach] run ${runId} failed: ${code}${detail ? ` - ${detail.slice(0, 300)}` : ''}`);
   await db.query(
-    `UPDATE evaluation_runs SET status = $2, error_code = $3, error_message = $4, finished_at = now()
+    `UPDATE evaluation_runs SET status = $2, error_code = $3, error_message = $4, error_detail = $5, finished_at = now()
       WHERE id = $1 AND status = 'running'`,
-    [runId, code === 'timeout' ? 'timed_out' : 'failed', code, message],
+    [runId, code === 'timeout' ? 'timed_out' : 'failed', code, message, detail ? detail.slice(0, 500) : null],
   );
 }
 
@@ -134,6 +139,32 @@ async function persistEvaluation(db, { runId, processed, rawOutput, model, thres
   });
 }
 
+// A response that comes back incomplete (cut off, no tool call, or a field missing or malformed) is asked
+// for once more before the run fails: model output varies, and a second request usually completes.
+export const REQUESTS_PER_RUN = 2;
+
+// One request to the model: wait for a free slot while the run's deadline allows, then send it with the
+// time limit. Returns null when the run was superseded or swept while it waited.
+async function requestEvaluation({ db, config, provider, runId, request, deadlineMs }) {
+  const gotSlot = await acquireSlot(config.ai.maxConcurrent, deadlineMs - Date.now() - config.ai.timeoutMs - RUN_GRACE_MS, runId);
+  if (!gotSlot) throw new ProviderError('busy', RUN_ERROR_MESSAGES.busy);
+  const controller = new AbortController();
+  try {
+    // The time limit starts now that the request can actually be sent.
+    const started = await db.one(
+      `UPDATE evaluation_runs SET call_started_at = now(), deadline_at = now() + make_interval(secs => $2)
+        WHERE id = $1 AND status = 'running' RETURNING id`,
+      [runId, (config.ai.timeoutMs + RUN_GRACE_MS) / 1000],
+    );
+    if (!started) return null;
+    inProgress.set(runId, controller);
+    return await provider.evaluate(request, { timeoutMs: config.ai.timeoutMs, signal: controller.signal });
+  } finally {
+    inProgress.delete(runId);
+    releaseSlot();
+  }
+}
+
 export async function runEvaluation({ db, config, provider, runId, log = console.log }) {
   try {
     const run = await db.one(`SELECT * FROM evaluation_runs WHERE id = $1`, [runId]);
@@ -145,33 +176,35 @@ export async function runEvaluation({ db, config, provider, runId, log = console
     const sources = await loadSourceText(db, attempt.source_versions);
     const request = buildCoachingRequest({ scenario: attempt.scenario, answer: attempt.answer, sources });
     await db.query(`UPDATE evaluation_runs SET prompt_version = $2 WHERE id = $1`, [runId, request.promptVersion]);
-    const deadline = new Date(run.deadline_at).getTime();
-    const gotSlot = await acquireSlot(config.ai.maxConcurrent, deadline - Date.now() - config.ai.timeoutMs - RUN_GRACE_MS, runId);
-    if (!gotSlot) throw new ProviderError('busy', RUN_ERROR_MESSAGES.busy);
+    let deadlineMs = new Date(run.deadline_at).getTime();
     let result;
-    const controller = new AbortController();
-    try {
-      // The time limit starts now that the request can actually be sent.
-      const started = await db.one(
-        `UPDATE evaluation_runs SET call_started_at = now(), deadline_at = now() + make_interval(secs => $2)
-          WHERE id = $1 AND status = 'running' RETURNING id`,
-        [runId, (config.ai.timeoutMs + RUN_GRACE_MS) / 1000],
-      );
-      if (!started) return; // superseded or swept while it waited
-      inProgress.set(runId, controller);
-      result = await provider.evaluate(request, { timeoutMs: config.ai.timeoutMs, signal: controller.signal });
-    } finally {
-      inProgress.delete(runId);
-      releaseSlot();
+    let processed;
+    for (let n = 1; ; n += 1) {
+      try {
+        result = await requestEvaluation({ db, config, provider, runId, request, deadlineMs });
+        if (!result) return; // superseded or swept while it waited
+        processed = processEvaluation({
+          output: result.output,
+          scenario: attempt.scenario,
+          answer: attempt.answer,
+          sources,
+          rubricDimensions: rubric.dimensions,
+          threshold: settings.proficiency_threshold,
+        });
+        break;
+      } catch (err) {
+        if (!(err instanceof ProviderError) || err.code !== 'invalid_response' || n >= REQUESTS_PER_RUN) throw err;
+        log(`[coach] run ${runId}: incomplete response (${String(err.detail || '').slice(0, 200)}); asking again`);
+        // The second request may wait for a slot like the first, so its deadline makes room for that.
+        const waitMs = config.ai.queueWaitMs + config.ai.timeoutMs + RUN_GRACE_MS;
+        const extended = await db.one(
+          `UPDATE evaluation_runs SET deadline_at = now() + make_interval(secs => $2) WHERE id = $1 AND status = 'running' RETURNING deadline_at`,
+          [runId, waitMs / 1000],
+        );
+        if (!extended) return; // superseded or swept meanwhile
+        deadlineMs = new Date(extended.deadline_at).getTime();
+      }
     }
-    const processed = processEvaluation({
-      output: result.output,
-      scenario: attempt.scenario,
-      answer: attempt.answer,
-      sources,
-      rubricDimensions: rubric.dimensions,
-      threshold: settings.proficiency_threshold,
-    });
     await persistEvaluation(db, {
       runId,
       processed,

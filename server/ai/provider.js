@@ -237,10 +237,11 @@ function mockProvider() {
       this.requests = [...this.requests.slice(-19), request];
       const answer = /<rep_answer>\n([\s\S]*?)\n<\/rep_answer>/.exec(request.user)?.[1] || '';
       let mode = this.behavior;
-      // "once" markers misbehave on the first call for an answer and succeed on the retry (browser tests).
-      if (!mode && (answer.includes('[[mock:failonce]]') || answer.includes('[[mock:hangonce]]')) && !this._seen.has(answer)) {
+      // "once" markers misbehave on the first call for an answer and succeed on the retry.
+      const once = ['failonce', 'hangonce', 'invalidonce'].find((m) => answer.includes(`[[mock:${m}]]`));
+      if (!mode && once && !this._seen.has(answer)) {
         this._seen.add(answer);
-        mode = answer.includes('[[mock:failonce]]') ? 'fail' : 'slow';
+        mode = { failonce: 'fail', hangonce: 'slow', invalidonce: 'invalid' }[once];
       }
       if (mode === 'hold') await new Promise((resolve) => this._waiters.push(resolve));
       if (mode === 'slow' || answer.includes('[[mock:slow]]')) {

@@ -223,7 +223,7 @@ test('Vic chooses a stage, not a question: it is served with its buyer and level
 test('Vic answers each pushback; every reply is coached, and the replies are ranked at the end', async () => {
   const box = vic.getByRole('textbox', { name: 'Your reply' });
   const done = vic.getByRole('heading', { name: 'Conversation complete' });
-  for (let turn = 2; turn <= 4; turn += 1) {
+  for (let turn = 2; turn <= 5; turn += 1) {
     // After coaching, either the buyer pushes back or the conversation is over.
     await expect(box.or(done)).toBeVisible({ timeout: 20_000 });
     if (await done.isVisible()) break;

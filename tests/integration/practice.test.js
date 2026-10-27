@@ -51,12 +51,12 @@ test('preview shows persona, situation, objective, and settings, not the grading
   assert.equal(s.goodLooksLike, undefined);
   assert.equal(s.pushbacks, undefined);
   assert.equal(s.repRole, 'ae');
-  assert.equal(s.conversation.replies, 1 + (difficulty <= 2 ? 1 : difficulty === 3 ? 2 : 3));
+  assert.equal(s.conversation.replies, 1 + Math.min(4, difficulty));
   assert.ok(s.assessedDimensions.length >= 3);
   // Managers can try a question at other levels.
   const asManager = await owner.post('/api/practice/preview', { drillId: d.id, persona: 'solo_attorney', difficulty: 5, skepticism: 4, depth: 2 });
   assert.deepEqual(asManager.data.scenario.settings, { difficulty: 5, skepticism: 4, depth: 2 });
-  assert.equal(asManager.data.scenario.conversation.replies, 4);
+  assert.equal(asManager.data.scenario.conversation.replies, 5, 'difficulty 5: up to five replies');
 });
 
 test('answer is saved before coaching, then coaching completes with a verified evaluation', async () => {
@@ -162,14 +162,32 @@ test('timeouts end the wait and are retryable; incomplete responses are not scor
   assert.equal(timedOut.coaching.run.status, 'timed_out');
   assert.equal(timedOut.evaluation, null);
   h.provider.behavior = 'invalid';
+  const callsBefore = h.provider.calls;
   await rep.post(`/api/practice/attempts/${created.data.attempt.id}/evaluate`, {});
   const invalid = await waitForCoaching(rep, created.data.attempt.id);
   assert.equal(invalid.coaching.run.errorCode, 'invalid_response');
   assert.equal(invalid.evaluation, null);
+  assert.equal(h.provider.calls - callsBefore, 2, 'an incomplete response is asked for once more before the run fails');
+  // Managers see the technical cause; reps see only the plain message.
+  assert.equal(invalid.coaching.run.errorDetail, undefined);
+  const forManager = (await owner.get(`/api/practice/attempts/${created.data.attempt.id}`)).data;
+  assert.match(forManager.coaching.run.errorDetail, /dimensions/);
   h.provider.behavior = null;
   await rep.post(`/api/practice/attempts/${created.data.attempt.id}/evaluate`, {});
   const ok = await waitForCoaching(rep, created.data.attempt.id);
   assert.equal(ok.coaching.run.status, 'succeeded');
+});
+
+test('an incomplete coaching response is asked for again, and the second one is scored', async () => {
+  const d = await drillBySlug(h, 'send-me-information');
+  await prepare(rep, d.id, d.personas[0]);
+  const created = await submit(rep, d, 'Happy to. So I send the right thing, can I ask two quick questions? [[mock:invalidonce]]');
+  assert.equal(created.status, 201, JSON.stringify(created.data));
+  const done = await waitForCoaching(rep, created.data.attempt.id);
+  assert.equal(done.coaching.run.status, 'succeeded');
+  assert.equal(done.coaching.runCount, 1, 'one coaching run, with a second request inside it');
+  assert.ok(done.evaluation.overallScore >= 0);
+  assert.ok(h.logs.some((l) => l.includes('incomplete response') && l.includes('asking again')));
 });
 
 test('a stale coaching request cannot overwrite a newer one', async () => {
