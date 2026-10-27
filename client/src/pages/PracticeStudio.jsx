@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { get } from '../api.js';
 import { useAuth, useMeta } from '../state.jsx';
-import { BrandChip, Empty, ErrorNotice, Loading, Notice, useLoad } from '../components/ui.jsx';
+import { BrandChip, Empty, ErrorNotice, fmtDate, Loading, Notice, useLoad } from '../components/ui.jsx';
 import { PlusIcon } from '../components/Icons.jsx';
 import { NextUpCard } from './Home.jsx';
 
 const TRACK_TITLE = { ae: 'Account executive stages', am: 'Account manager stages' };
+const VIEW_LABEL = { practice: 'Practice', again: 'Try again', bank: 'Question bank' };
 // Product lines in the order reps see them in the filter.
 const PRODUCT_ORDER = ['ravenly', 'omnizant_ai_search', 'omnizant_web', 'general'];
 
@@ -35,7 +36,7 @@ export const filterQuery = ({ product, buyer }, { persona = 'buyer' } = {}) => {
   return q.toString();
 };
 
-function PracticeFilters({ meta, filters, onChange }) {
+function PracticeFilters({ meta, filters, onChange, children = null }) {
   const products = PRODUCT_ORDER.filter((k) => meta.productLines?.[k]);
   return (
     <div className="filters" role="search" aria-label="Narrow the questions">
@@ -61,6 +62,7 @@ function PracticeFilters({ meta, filters, onChange }) {
           ))}
         </select>
       </div>
+      {children}
       {(filters.product || filters.buyer) && (
         <button type="button" className="btn btn-quiet btn-small" onClick={() => onChange({ product: '', buyer: '' })}>
           Clear filters
@@ -124,6 +126,134 @@ function StageGrid({ user, filters }) {
         </div>
       </section>
     ));
+}
+
+// The latest result of a question the person answered, as the list shows it.
+function lastResult({ state, score, repliesDone, repliesPlanned }) {
+  if (state === 'scored') return String(score);
+  if (state === 'unfinished') return `${repliesDone} of ${repliesPlanned} replies`;
+  if (state === 'unscored') return 'Unscored';
+  if (state === 'pending_review') return 'Pending review';
+  if (state === 'disputed') return 'Disputed';
+  return 'Being coached';
+}
+
+// Sort order for the try-again list, remembered on this device only.
+const sortKey = (userId) => `${userId}:try-again-sort`;
+function savedSort(userId) {
+  try {
+    return localStorage.getItem(sortKey(userId)) === 'lowest' ? 'lowest' : 'recent';
+  } catch {
+    return 'recent';
+  }
+}
+
+// Questions the person has answered, one row per question and buyer, to try one again with the same
+// buyer and levels, or to finish a conversation they started.
+function TryAgainList({ user, meta, filters, setFilters, onPractice }) {
+  const query = filterQuery(filters, { persona: 'persona' });
+  const { data, error, loading, reload } = useLoad(() => get(`/practice/answered${query ? `?${query}` : ''}`), [query]);
+  const [sort, setSort] = useState(() => savedSort(user.id));
+  const changeSort = (v) => {
+    setSort(v);
+    try {
+      localStorage.setItem(sortKey(user.id), v);
+    } catch {
+      /* storage unavailable: the order still applies for this visit */
+    }
+  };
+  const items = useMemo(() => {
+    const list = [...(data?.questions || [])];
+    // Lowest score first; questions without a score yet come after the scored ones.
+    const scoreOf = (it) => (it.last.state === 'scored' ? it.last.score : Infinity);
+    if (sort === 'lowest') list.sort((a, b) => scoreOf(a) - scoreOf(b) || b.lastAt.localeCompare(a.lastAt));
+    return list;
+  }, [data, sort]);
+  const narrowed = Boolean(filters.product || filters.buyer);
+
+  return (
+    <>
+      <PracticeFilters meta={meta} filters={filters} onChange={setFilters}>
+        <div className="field">
+          <label htmlFor="ta-sort">Sort</label>
+          <select id="ta-sort" value={sort} onChange={(e) => changeSort(e.target.value)}>
+            <option value="recent">Most recent</option>
+            <option value="lowest">Lowest score first</option>
+          </select>
+        </div>
+      </PracticeFilters>
+      <ErrorNotice error={error} retry={reload} />
+      {loading && !data && <Loading />}
+      {data && items.length === 0 &&
+        (narrowed ? (
+          <Empty title="No answered questions match these filters">Clear a filter to see more.</Empty>
+        ) : (
+          <Empty
+            title="No answered questions yet"
+            action={
+              <button type="button" className="btn btn-small" onClick={onPractice}>
+                Choose a stage
+              </button>
+            }
+          >
+            Questions you answer from a stage appear here, so you can try them again.
+          </Empty>
+        ))}
+      {items.length > 0 && (
+        <div className="table-wrap">
+          <table className="data">
+            <thead>
+              <tr>
+                <th>Question</th>
+                <th>Buyer</th>
+                <th className="num">Tries</th>
+                <th className="num">Last score</th>
+                <th className="num">Best</th>
+                <th>Last answered</th>
+                <th>
+                  <span className="visually-hidden">Action</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((it) => (
+                <tr key={`${it.drillId}:${it.persona.key}`}>
+                  <td>
+                    <Link className="row-link" to={`/attempts/${it.last.attemptId}`}>
+                      {it.title}
+                    </Link>
+                    <div className="tiny muted">
+                      {it.stageLabel}, level {it.difficulty}
+                    </div>
+                  </td>
+                  <td>{it.persona.label}</td>
+                  <td className="num">{it.conversations}</td>
+                  <td className="num">{lastResult(it.last)}</td>
+                  <td className="num">{it.best ?? '—'}</td>
+                  <td>{fmtDate(it.lastAt)}</td>
+                  <td>
+                    {it.openAttemptId ? (
+                      <Link className="btn btn-small" to={`/attempts/${it.openAttemptId}`} aria-label={`Continue ${it.title}`}>
+                        Continue
+                      </Link>
+                    ) : (
+                      <Link
+                        className="btn btn-small"
+                        to={`/practice/drill/${it.drillId}?persona=${encodeURIComponent(it.persona.key)}&from=again`}
+                        aria-label={`Try again: ${it.title}`}
+                      >
+                        Try again
+                      </Link>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  );
 }
 
 // Managers browse and edit every question; reps never pick one.
@@ -274,6 +404,7 @@ function usePracticeFilters(user, meta, params, setParams) {
   const setFilters = (next) => {
     savePracticeFilters(user.id, next);
     const p = new URLSearchParams(filterQuery(next));
+    if (params.get('view')) p.set('view', params.get('view'));
     setParams(p, { replace: true });
   };
   return [filters, setFilters];
@@ -283,13 +414,19 @@ export function PracticeStudio() {
   const { user } = useAuth();
   const { meta } = useMeta();
   const [params, setParams] = useSearchParams();
-  const view = user.isManager && params.get('view') === 'bank' ? 'bank' : 'practice';
+  const views = user.isManager ? ['practice', 'again', 'bank'] : ['practice', 'again'];
+  const view = views.includes(params.get('view')) ? params.get('view') : 'practice';
   const [filters, setFilters] = usePracticeFilters(user, meta, params, setParams);
   const cur = useLoad(() => get('/curriculum/mine'), []);
   useEffect(() => {
-    document.title = `${view === 'bank' ? 'Question bank' : 'Practice Studio'} · Sales Lab`;
+    document.title = `${view === 'practice' ? 'Practice Studio' : VIEW_LABEL[view]} · Sales Lab`;
   }, [view]);
-  const show = (v) => setParams(v === 'bank' ? { view: 'bank' } : {}, { replace: true });
+  // Practice and Try again share the product and buyer filters; the question bank has its own.
+  const show = (v) => {
+    const next = new URLSearchParams(v === 'bank' ? '' : filterQuery(filters));
+    if (v !== 'practice') next.set('view', v);
+    setParams(next, { replace: true });
+  };
 
   return (
     <div className="page">
@@ -299,7 +436,9 @@ export function PracticeStudio() {
           <p className="sub">
             {view === 'bank'
               ? 'Every question reps can be served, by stage. Each one sets its buyer and challenge levels, and lists the pushbacks the buyer may raise.'
-              : 'Choose a stage and answer the buyer’s question. Each reply is coached, then the buyer pushes back, so you practice handling one objection after another.'}
+              : view === 'again'
+                ? 'Questions you’ve answered, with your latest result. Try one again with the same buyer and levels: it starts a new conversation, and your earlier ones stay in My Progress.'
+                : 'Choose a stage and answer the buyer’s question. Each reply is coached, then the buyer pushes back, so you practice handling one objection after another.'}
           </p>
         </div>
         {user.isManager && view === 'bank' && (
@@ -310,16 +449,13 @@ export function PracticeStudio() {
         )}
       </div>
 
-      {user.isManager && (
-        <div className="tabs" role="tablist" aria-label="Practice Studio view">
-          <button role="tab" aria-selected={view === 'practice'} className={view === 'practice' ? 'active' : ''} onClick={() => show('practice')}>
-            Practice
+      <div className="tabs" role="tablist" aria-label="Practice Studio view">
+        {views.map((v) => (
+          <button key={v} role="tab" aria-selected={view === v} className={view === v ? 'active' : ''} onClick={() => show(v)}>
+            {VIEW_LABEL[v]}
           </button>
-          <button role="tab" aria-selected={view === 'bank'} className={view === 'bank' ? 'active' : ''} onClick={() => show('bank')}>
-            Question bank
-          </button>
-        </div>
-      )}
+        ))}
+      </div>
 
       {!meta.coaching.configured && (
         <div style={{ marginBottom: 20 }}>
@@ -339,6 +475,8 @@ export function PracticeStudio() {
           <PracticeFilters meta={meta} filters={filters} onChange={setFilters} />
           <StageGrid user={user} filters={filters} />
         </>
+      ) : view === 'again' ? (
+        <TryAgainList user={user} meta={meta} filters={filters} setFilters={setFilters} onPractice={() => show('practice')} />
       ) : (
         <QuestionBank user={user} meta={meta} />
       )}

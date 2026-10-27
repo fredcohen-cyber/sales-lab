@@ -152,8 +152,10 @@ export function DrillRunner({ stage = null, initialPreview = null, backHref = nu
     }
   };
 
-  const backTo = assigned ? '/curriculum' : user.isManager && !fed ? '/practice?view=bank' : backHref || '/practice';
-  const backLabel = assigned ? 'Curriculum' : user.isManager && !fed ? 'the question bank' : 'Practice Studio';
+  // A question tried again from the Practice Studio's list goes back to that list.
+  const fromAgain = !assigned && !fed && params.get('from') === 'again';
+  const backTo = assigned ? '/curriculum' : fromAgain ? '/practice?view=again' : user.isManager && !fed ? '/practice?view=bank' : backHref || '/practice';
+  const backLabel = assigned ? 'Curriculum' : fromAgain ? 'Practice Studio' : user.isManager && !fed ? 'the question bank' : 'Practice Studio';
   if (loadError) {
     return (
       <div className="page">

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { notFound, parseBody, route } from '../lib/errors.js';
 import { previewOf } from './scenario.js';
 import { attemptView, createAttempt, resolvePractice, retryCoaching } from './service.js';
-import { drawQuestion, parseFilters, stageOverview } from './feed.js';
+import { answeredQuestions, drawQuestion, parseFilters, stageOverview } from './feed.js';
 import { CONVERSATION_SUMMARY_SQL, withConversationScore } from './conversation.js';
 import { scheduleEvaluation } from '../ai/evaluate.js';
 import { UNAVAILABLE_TEXT } from '../drills/service.js';
@@ -81,6 +81,16 @@ export function practiceRoutes({ db, config, provider, log }) {
       res.json({
         stages: await db.tx(async (q) => stageOverview(q, config, req.user, await parseFilters(q, req.query))),
       });
+    }),
+  );
+
+  // The questions the person has answered, one per question and buyer, to try again. Narrowed like the
+  // stages by ?product=&persona= (the buyer they practiced with).
+  r.get(
+    '/answered',
+    route(async (req, res) => {
+      res.set('Cache-Control', 'no-store');
+      res.json({ questions: await db.tx(async (q) => answeredQuestions(q, req.user, await parseFilters(q, req.query))) });
     }),
   );
 

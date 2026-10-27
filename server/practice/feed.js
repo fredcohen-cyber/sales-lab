@@ -6,8 +6,9 @@
 // skipping never leads to an easier question.
 import { HttpError } from '../lib/errors.js';
 import { aiConfigured } from '../config.js';
-import { PRODUCT_LINES, STAGES } from '../domain.js';
+import { PRODUCT_LINES, STAGES, stageLabel } from '../domain.js';
 import { availabilityReason, DRILL_SQL } from '../drills/service.js';
+import { CONVERSATION_SUMMARY_SQL, withConversationScore } from './conversation.js';
 import { buildSourceIndex, resolveRef } from '../knowledge/service.js';
 import { RUNS_PER_ATTEMPT_PER_HOUR } from '../ai/evaluate.js';
 
@@ -194,4 +195,62 @@ export async function drawQuestion(q, config, user, stageKey, filters = {}) {
     [user.id, stage.key, drill.id, persona],
   );
   return { drillId: drill.id, persona };
+}
+
+// Questions the person has answered in the Practice Studio, one entry per question and buyer, so they can
+// try one again: the latest conversation's result, the best score, and a conversation still unfinished.
+// Questions since archived, or no longer written for that buyer, cannot be practiced again and are left
+// out. Filters narrow the list like the stages: a product line, and the buyer the person practiced with.
+export async function answeredQuestions(q, user, filters = {}) {
+  const drills = new Map((await activeDrills(q)).map((d) => [d.id, d]));
+  const personas = new Map((await q.many(`SELECT key, label FROM personas`)).map((p) => [p.key, p.label]));
+  const rows = (
+    await q.many(
+      `SELECT a.id, a.drill_id, a.persona, a.mode, a.replies_planned, a.submitted_at, conv.*
+         FROM attempts a
+         ${CONVERSATION_SUMMARY_SQL}
+        WHERE a.learner_id = $1 AND a.turn_number = 1 AND a.assignment_item_id IS NULL
+        ORDER BY a.submitted_at DESC`,
+      [user.id],
+    )
+  ).map(withConversationScore);
+  const byQuestion = new Map();
+  for (const row of rows) {
+    const drill = drills.get(row.drill_id);
+    if (!drill || !drill.personas.includes(row.persona)) continue;
+    if (filters.product && drill.product_line !== filters.product) continue;
+    if (filters.persona && row.persona !== filters.persona) continue;
+    const key = `${row.drill_id}:${row.persona}`;
+    if (!byQuestion.has(key)) byQuestion.set(key, { drill, persona: row.persona, conversations: [] });
+    byQuestion.get(key).conversations.push(row);
+  }
+  const at = (c) => new Date(c.last_reply_at || c.submitted_at).getTime();
+  return [...byQuestion.values()]
+    .map(({ drill, persona, conversations }) => {
+      const last = conversations.reduce((a, b) => (at(b) > at(a) ? b : a));
+      const scores = conversations.filter((c) => c.conversation_state === 'scored').map((c) => c.conversation_score);
+      const open = conversations.find((c) => c.conversation_state === 'unfinished');
+      return {
+        drillId: drill.id,
+        title: drill.title,
+        stage: drill.stage,
+        stageLabel: stageLabel(drill.stage),
+        brand: drill.brand,
+        productLine: drill.product_line,
+        difficulty: drill.default_difficulty,
+        persona: { key: persona, label: personas.get(persona) || persona },
+        conversations: conversations.length,
+        lastAt: new Date(at(last)).toISOString(),
+        last: {
+          attemptId: last.latest_turn_id,
+          state: last.conversation_state,
+          score: last.conversation_score,
+          repliesDone: last.replies_done,
+          repliesPlanned: last.replies_planned,
+        },
+        best: scores.length ? Math.max(...scores) : null,
+        openAttemptId: open ? open.latest_turn_id : null,
+      };
+    })
+    .sort((a, b) => b.lastAt.localeCompare(a.lastAt));
 }

@@ -187,6 +187,7 @@ test('Vic chooses a stage, not a question: it is served with its buyer and level
   await expect(vic.getByText('Set for this question')).toBeVisible();
   await expect(vic.getByLabel('Buyer persona')).toHaveCount(0);
   const title = await vic.getByRole('heading', { level: 1 }).textContent();
+  state.drillTitle = title;
   await vic.getByRole('textbox', { name: 'Your answer' }).fill(ANSWER);
   await shot(vic, '08-drill-runner');
   // Reloading serves the same question, with the draft.
@@ -242,6 +243,22 @@ test('Vic answers each pushback; every reply is coached, and the replies are ran
   // The draft of the first answer was cleared once it was saved.
   await vic.goto(state.drillUrl);
   await expect(vic.getByRole('textbox', { name: 'Your answer' })).toHaveValue('');
+});
+
+test('Vic finds the question he answered under Try again and opens it again with the same buyer', async () => {
+  await vic.goto('/practice');
+  await vic.getByRole('tab', { name: 'Try again' }).click();
+  await expect(vic).toHaveURL(/\/practice\?view=again$/);
+  const row = vic.getByRole('row').filter({ hasText: state.drillTitle });
+  await expect(row).toHaveCount(1);
+  await expect(row.getByRole('cell').nth(2)).toHaveText('1');
+  await shot(vic, '10c-try-again');
+  await row.getByRole('link', { name: `Try again: ${state.drillTitle}` }).click();
+  await expect(vic).toHaveURL(new RegExp(`/practice/drill/${state.drillId}\\?persona=`));
+  await expect(vic.getByRole('heading', { level: 1 })).toHaveText(state.drillTitle);
+  await expect(vic.getByText('Set for this question')).toBeVisible();
+  await vic.getByRole('link', { name: 'Back to Practice Studio' }).click();
+  await expect(vic).toHaveURL(/\/practice\?view=again$/);
 });
 
 test('failed coaching keeps the answer, invents nothing, and a retry succeeds', async () => {

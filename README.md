@@ -116,6 +116,11 @@ documents stay archived so past answers still show exactly what they were scored
   brands) and one buyer (managing partner, solo attorney, marketing manager, or office manager or intake
   director). Each stage then counts and serves only matching questions. The filters are kept in the link
   and remembered on the device until cleared; an unfinished conversation still comes back first.
+- **Try a question again.** The Practice Studio's **Try again** tab lists every question a person has
+  answered, one row per question and buyer, with the latest result, the best score, and how many times
+  they tried it, sorted by most recent or lowest score and narrowed by the same product and buyer
+  filters. **Try again** opens the question with the same buyer and levels as a new conversation; a
+  conversation still in progress shows **Continue** instead. Questions since archived drop off the list.
 - **Every question is a conversation.** After each reply the coach scores it and writes the buyer's next
   line from what the rep actually said: one pushback at difficulty 1 or 2, two at 3, and three at 4 or 5.
   The rep reads the coaching, then answers the pushback. When the last reply is coached, the rep sees the
@@ -199,12 +204,13 @@ Automated tests use a test-only stand-in for the AI service that cannot be enabl
 
 ## Status
 
-Implemented and covered by automated tests (156 server tests and 25 browser tests): company email and
+Implemented and covered by automated tests (158 server tests and 26 browser tests): company email and
 password sign-in with manager-created accounts only, private single-use setup and reset links, sign-in
 throttling, deactivation and session revocation, server-side roles and learner privacy, the knowledge
 library as collections of sections with versions, approval, evidence basis, ordering, and document
 splitting, drills with relevance checks, the Practice Studio with stages that serve questions at random
-and rotate through concepts, product and buyer filters, practice conversations with per-reply coaching
+and rotate through concepts, product and buyer filters, trying an answered question again, practice
+conversations with per-reply coaching
 and buyer pushbacks, role-specific expectations, retries,
 and a coaching queue, Team Coaching with per-item review of critical failures and
 flags, Curriculum assignments and learning paths, the Manager Dashboard and rep reports with CSV export,

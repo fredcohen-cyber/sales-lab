@@ -309,7 +309,7 @@ export function AttemptPage() {
   const isOwn = attempt.learner.id === user.id;
   const againLink = attempt.assignment
     ? `/practice/assigned/${attempt.assignment.itemId}`
-    : `/practice/drill/${attempt.drillId}?persona=${attempt.persona}&difficulty=${attempt.settings.difficulty}&skepticism=${attempt.settings.skepticism}&depth=${attempt.settings.depth}`;
+    : `/practice/drill/${attempt.drillId}?persona=${attempt.persona}&difficulty=${attempt.settings.difficulty}&skepticism=${attempt.settings.skepticism}&depth=${attempt.settings.depth}&from=again`;
   const conv = data.conversation;
   const multi = conv.repliesPlanned > 1;
   const finished = conv.next.state === 'finished';
