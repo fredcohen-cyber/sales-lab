@@ -592,14 +592,18 @@ p {
   }
 }
 @media (max-width: 900px) {
+  /* Closed, the menu is out of view, out of the tab order, and casts no shadow onto the page. */
   .sidebar {
     width: min(86vw, 290px);
     transform: translateX(-102%);
-    transition: transform 0.18s ease;
-    box-shadow: var(--shadow-pop);
+    visibility: hidden;
+    transition: transform 0.18s ease, visibility 0s linear 0.18s;
   }
   .shell.nav-open .sidebar {
     transform: none;
+    visibility: visible;
+    box-shadow: var(--shadow-pop);
+    transition: transform 0.18s ease;
   }
   .main {
     margin-left: 0;
@@ -2681,4 +2685,282 @@ dialog.modal::backdrop {
 }
 .section-title.improve svg {
   color: var(--purple);
+}
+
+/* ------------------------------------------------------------------ question bank */
+.link-btn {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--purple);
+  cursor: pointer;
+}
+.link-btn:hover {
+  color: var(--purple-strong);
+  text-decoration: underline;
+}
+.qb-product {
+  margin-top: 30px;
+}
+.qb-product > h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+.qb-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  padding: 1px 8px;
+  border-radius: 7px;
+  background: var(--pale);
+  color: var(--purple-ink);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+.qb-group {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.qb-group + .qb-group {
+  margin-top: 12px;
+}
+.qb-group > summary {
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 14px 20px;
+  cursor: pointer;
+  background: var(--surface-2);
+}
+.qb-group > summary::-webkit-details-marker {
+  display: none;
+}
+.qb-group > summary::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-right: 1.7px solid var(--ink-3);
+  border-bottom: 1.7px solid var(--ink-3);
+  transform: rotate(-45deg) translateY(-1px);
+  transition: transform 0.15s;
+}
+.qb-group[open] > summary::before {
+  transform: rotate(45deg) translateY(-3px);
+}
+.qb-group[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+.qb-group-title {
+  font-weight: 650;
+  font-size: 14px;
+}
+.qb-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.qb-row {
+  border-top: 1px solid #edf0f4;
+  scroll-margin-top: 84px;
+}
+.qb-row:first-child {
+  border-top: 0;
+}
+.qb-row.inactive .qb-title {
+  color: var(--ink-3);
+}
+.qb-row-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 20px;
+}
+.qb-row.open .qb-row-head {
+  background: #fcfbfe;
+}
+.qb-row-main {
+  flex: 1;
+  min-width: 0;
+}
+.qb-title {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  font: 650 14px/1.45 var(--sans);
+  color: var(--ink);
+  cursor: pointer;
+}
+.qb-title:hover {
+  color: var(--purple);
+}
+.qb-title::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 9px;
+  border-right: 1.6px solid var(--ink-3);
+  border-bottom: 1.6px solid var(--ink-3);
+  transform: rotate(45deg) translateY(-3px);
+  transition: transform 0.15s;
+}
+.qb-title[aria-expanded='true']::after {
+  transform: rotate(225deg) translate(-1px, -1px);
+}
+.qb-line {
+  margin: 4px 0 8px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-3);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.qb-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.qb-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+.qb-delete {
+  color: var(--red-ink);
+}
+.qb-delete:hover {
+  background: var(--red-wash);
+  color: #8f3a3f;
+}
+.qb-review {
+  border-top: 1px dashed var(--line);
+  padding: 20px 20px 22px;
+  background: #fcfbfe;
+}
+.qb-review-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
+}
+.qb-review .buyer blockquote {
+  font-size: 15px;
+}
+.qb-ideal {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 16px 18px;
+}
+.qb-pushbacks,
+.qb-sources {
+  margin: 0;
+  padding-left: 20px;
+}
+.qb-pushbacks li + li,
+.qb-sources li + li {
+  margin-top: 4px;
+}
+.ideal-panel {
+  border-color: #d8d0f0;
+  box-shadow: 0 0 0 4px rgba(102, 85, 204, 0.05);
+  scroll-margin-top: 84px;
+}
+.ideal-proposing {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f5f2fc;
+  color: #4e4470;
+  font-size: 13px;
+}
+.ideal-spinner {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid #d9d1f3;
+  border-top-color: var(--purple);
+  animation: ideal-spin 0.9s linear infinite;
+}
+@keyframes ideal-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ideal-actions {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+.ideal-approve {
+  font-weight: 600;
+}
+.ideal-facts .evidence {
+  margin-top: 6px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ideal-spinner {
+    animation-duration: 2.4s;
+  }
+}
+/* Six filters in one even row on a wide screen, then three, then two. */
+.qb-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) repeat(5, minmax(0, 1fr));
+}
+.qb-filters .field {
+  min-width: 0;
+}
+@media (max-width: 1180px) {
+  .qb-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 960px) {
+  .qb-review-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .qb-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .qb-filters .field:first-child {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 640px) {
+  .qb-row-head {
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+  .qb-group > summary {
+    padding: 13px 16px;
+    flex-wrap: wrap;
+  }
+  .qb-review {
+    padding: 16px;
+  }
 }

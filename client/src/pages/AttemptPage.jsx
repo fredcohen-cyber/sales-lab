@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { get, newRequestId, post } from '../api.js';
 import { DRAFT_PREFIX, useAuth } from '../state.jsx';
 import { BrandChip, ErrorNotice, fmtDateTime, Loading, Modal, Notice, ReviewBadge, useToast, attemptLabel, scoreText } from '../components/ui.jsx';
-import { CheckIcon, RefreshIcon } from '../components/Icons.jsx';
+import { CheckIcon, RefreshIcon, SparkIcon } from '../components/Icons.jsx';
 import { CF_LABEL, CoachingResult, FLAG_LABEL } from '../components/Coaching.jsx';
 
 const MAX_REPLY = 6000;
@@ -412,6 +412,18 @@ export function AttemptPage() {
               </p>
             </div>
           </details>
+          {s.idealAnswer && (
+            <section className="panel panel-tight stack-sm" aria-labelledby="model-answer-title">
+              <h2 id="model-answer-title" className="section-title with-icon improve" style={{ margin: 0 }}>
+                <SparkIcon size={16} />
+                A model answer your manager approved
+              </h2>
+              <div className="model-answer">{s.idealAnswer}</div>
+              <p className="tiny muted" style={{ margin: 0 }}>
+                One strong way to answer the opening question. Coaching scores against the criteria, not against these exact words.
+              </p>
+            </section>
+          )}
           {data.siblings.length > 1 && (
             <div className="panel panel-tight">
               <h2 className="section-title">All attempts at this question with this buyer</h2>

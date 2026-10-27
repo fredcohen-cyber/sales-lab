@@ -52,6 +52,8 @@ export function buildScenario({ drill, persona, settings, rubricDimensions, sour
     buyerLine: personaLines[persona.key] || drill.buyer_line,
     objective: drill.objective,
     goodLooksLike: expectationsFor(drill, repRole),
+    // A model answer, only once a manager has approved it. Part of the answer key, like the criteria.
+    idealAnswer: drill.ideal_answer_status === 'approved' && drill.ideal_answer ? drill.ideal_answer : null,
     // The buyer's likely follow-up objections, in order. Never shown to the rep before they happen.
     pushbacks: Array.isArray(drill.pushbacks) ? drill.pushbacks : [],
     conversation: { turn: 1, replies, history: [] },
@@ -98,8 +100,9 @@ export function scenarioFor(viewer, scenario) {
   return rest;
 }
 
-// Before an answer is submitted the learner does not see the manager's "what good looks like" criteria.
+// Before an answer is submitted the learner does not see the manager's "what good looks like" criteria,
+// or the approved model answer.
 export function previewOf(scenario) {
-  const { goodLooksLike, pushbacks, ...rest } = scenario;
+  const { goodLooksLike, pushbacks, idealAnswer, ...rest } = scenario;
   return rest;
 }

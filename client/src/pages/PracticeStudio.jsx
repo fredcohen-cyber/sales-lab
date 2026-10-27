@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { get } from '../api.js';
 import { useAuth, useMeta } from '../state.jsx';
-import { BrandChip, Empty, ErrorNotice, fmtDate, Loading, Notice, useLoad } from '../components/ui.jsx';
-import { PadIcon, PlusIcon, STAGE_ICONS } from '../components/Icons.jsx';
+import { Empty, ErrorNotice, fmtDate, Loading, Notice, useLoad } from '../components/ui.jsx';
+import { ClipboardIcon, PadIcon, STAGE_ICONS } from '../components/Icons.jsx';
 import { NextUpCard } from './Home.jsx';
 
 const TRACK_TITLE = { ae: 'Account executive stages', am: 'Account manager stages' };
-const VIEW_LABEL = { practice: 'Practice', again: 'Try again', bank: 'Question bank' };
+const VIEW_LABEL = { practice: 'Practice', again: 'Try again' };
 // Product lines in the order reps see them in the filter.
 const PRODUCT_ORDER = ['ravenly', 'omnizant_ai_search', 'omnizant_web', 'general'];
 
@@ -264,141 +264,6 @@ function TryAgainList({ user, meta, filters, setFilters, onPractice }) {
   );
 }
 
-// Managers browse and edit every question; reps never pick one.
-function QuestionBank({ user, meta }) {
-  const [params, setParams] = useSearchParams();
-  const status = params.get('status') || 'active';
-  const { data, error, loading, reload } = useLoad(() => get(`/drills?status=${status}`), [status]);
-  const [q, setQ] = useState('');
-
-  const filter = (key) => params.get(key) || '';
-  const setFilter = (key, value) => {
-    const next = new URLSearchParams(params);
-    if (value) next.set(key, value);
-    else next.delete(key);
-    setParams(next, { replace: true });
-  };
-
-  const drills = useMemo(() => {
-    const list = data?.drills || [];
-    const brand = filter('brand');
-    const product = filter('product');
-    const persona = filter('persona');
-    const role = filter('role');
-    const subject = filter('subject');
-    const text = q.trim().toLowerCase();
-    return list.filter(
-      (d) =>
-        (!brand || d.brand === brand) &&
-        (!product || d.productLine === product) &&
-        (!persona || d.personas.includes(persona)) &&
-        (!role || d.roles.includes(role)) &&
-        (!subject || d.subject === subject) &&
-        (!text || d.title.toLowerCase().includes(text) || d.buyerLine.toLowerCase().includes(text)),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, params, q]);
-
-  const byStage = meta.stages.map((s) => ({ ...s, drills: drills.filter((d) => d.stage === s.key) })).filter((s) => s.drills.length);
-
-  return (
-    <>
-      <div className="filters" role="search">
-        <div className="field">
-          <label htmlFor="f-q">Search</label>
-          <input id="f-q" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Objection or topic" />
-        </div>
-        <div className="field">
-          <label htmlFor="f-brand">Brand</label>
-          <select id="f-brand" value={filter('brand')} onChange={(e) => setFilter('brand', e.target.value)}>
-            <option value="">All</option>
-            <option value="ravenly">Ravenly</option>
-            <option value="omnizant">Omnizant</option>
-            <option value="both">Both brands</option>
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="f-product">Product</label>
-          <select id="f-product" value={filter('product')} onChange={(e) => setFilter('product', e.target.value)}>
-            <option value="">All</option>
-            {PRODUCT_ORDER.filter((k) => meta.productLines?.[k]).map((k) => (
-              <option key={k} value={k}>
-                {meta.productLines[k].label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="f-subject">Subject</label>
-          <select id="f-subject" value={filter('subject')} onChange={(e) => setFilter('subject', e.target.value)}>
-            <option value="">All</option>
-            {Object.entries(meta.subjects).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="f-persona">Buyer</label>
-          <select id="f-persona" value={filter('persona')} onChange={(e) => setFilter('persona', e.target.value)}>
-            <option value="">All personas</option>
-            {meta.personas.map((p) => (
-              <option key={p.key} value={p.key}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="f-role">For</label>
-          <select id="f-role" value={filter('role')} onChange={(e) => setFilter('role', e.target.value)}>
-            <option value="">AEs and AMs</option>
-            <option value="ae">Account executives</option>
-            <option value="am">Account managers</option>
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="f-status">Status</label>
-          <select id="f-status" value={status} onChange={(e) => setFilter('status', e.target.value === 'active' ? '' : e.target.value)}>
-            <option value="active">Active</option>
-            <option value="draft">Draft</option>
-            <option value="archived">Archived</option>
-          </select>
-        </div>
-      </div>
-
-      <ErrorNotice error={error} retry={reload} />
-      {loading && !data && <Loading />}
-      {data && drills.length === 0 && <Empty title="No questions match these filters">Clear a filter to see more questions.</Empty>}
-      {byStage.map((stage) => (
-        <section key={stage.key} className="stage-group" aria-labelledby={`stage-${stage.key}`}>
-          <h2 id={`stage-${stage.key}`}>
-            {stage.label} <span className="tiny muted">{stage.drills.length}</span>
-          </h2>
-          <div className="drill-list">
-            {stage.drills.map((d) => (
-              <Link key={d.id} to={`/practice/drill/${d.id}`} className="drill">
-                <h3>{d.title}</h3>
-                <p className="drill-line">{d.buyerLine}</p>
-                <div className="drill-foot">
-                  <BrandChip brand={d.brand} />
-                  {d.productLine?.startsWith('omnizant_') && <span className="chip">{meta.productLines[d.productLine].label.replace(/^Omnizant /, '')}</span>}
-                  <span className="chip">{meta.subjects[d.subject]}</span>
-                  <span className="chip">{d.roles.map((r) => (r === 'am' ? 'AM' : 'AE')).join(' and ')}</span>
-                  <span className="chip">Level {d.defaults.difficulty}</span>
-                  {!d.coaching.available && <span className="badge badge-warn">Unscored only</span>}
-                  {d.status !== 'active' && <span className="badge badge-neutral">{d.status === 'draft' ? 'Draft' : 'Archived'}</span>}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      ))}
-    </>
-  );
-}
-
 // The practice view's filters: from the link when it has them, otherwise the ones last used here.
 function usePracticeFilters(user, meta, params, setParams) {
   const fromUrl = params.has('product') || params.has('buyer');
@@ -422,19 +287,22 @@ export function PracticeStudio() {
   const { user } = useAuth();
   const { meta } = useMeta();
   const [params, setParams] = useSearchParams();
-  const views = user.isManager ? ['practice', 'again', 'bank'] : ['practice', 'again'];
+  const views = ['practice', 'again'];
   const view = views.includes(params.get('view')) ? params.get('view') : 'practice';
   const [filters, setFilters] = usePracticeFilters(user, meta, params, setParams);
   const cur = useLoad(() => get('/curriculum/mine'), []);
   useEffect(() => {
     document.title = `${view === 'practice' ? 'Practice Studio' : VIEW_LABEL[view]} · Sales Lab`;
   }, [view]);
-  // Practice and Try again share the product and buyer filters; the question bank has its own.
+  // Practice and Try again share the product and buyer filters.
   const show = (v) => {
-    const next = new URLSearchParams(v === 'bank' ? '' : filterQuery(filters));
+    const next = new URLSearchParams(filterQuery(filters));
     if (v !== 'practice') next.set('view', v);
     setParams(next, { replace: true });
   };
+
+  // The question bank moved to its own page.
+  if (params.get('view') === 'bank') return <Navigate to={user.isManager ? '/questions' : '/practice'} replace />;
 
   return (
     <div className="page">
@@ -442,17 +310,15 @@ export function PracticeStudio() {
         <div>
           <h1>Practice Studio</h1>
           <p className="sub">
-            {view === 'bank'
-              ? 'Every question reps can be served, by stage. Each one sets its buyer and challenge levels, and lists the pushbacks the buyer may raise.'
-              : view === 'again'
-                ? 'Questions you’ve answered, with your latest result. Try one again with the same buyer and levels: it starts a new conversation, and your earlier ones stay in My Progress.'
-                : 'Choose a stage and answer the buyer’s question. Each reply is coached, then the buyer pushes back, so you practice handling one objection after another.'}
+            {view === 'again'
+              ? 'Questions you’ve answered, with your latest result. Try one again with the same buyer and levels: it starts a new conversation, and your earlier ones stay in My Progress.'
+              : 'Choose a stage and answer the buyer’s question. Each reply is coached, then the buyer pushes back, so you practice handling one objection after another.'}
           </p>
         </div>
-        {user.isManager && view === 'bank' && (
-          <Link className="btn btn-secondary" to="/drills/new">
-            <PlusIcon />
-            New question
+        {user.isManager && (
+          <Link className="btn btn-secondary" to="/questions">
+            <ClipboardIcon size={16} />
+            Open the Question Bank
           </Link>
         )}
       </div>
@@ -483,10 +349,8 @@ export function PracticeStudio() {
           <PracticeFilters meta={meta} filters={filters} onChange={setFilters} />
           <StageGrid user={user} filters={filters} />
         </>
-      ) : view === 'again' ? (
-        <TryAgainList user={user} meta={meta} filters={filters} setFilters={setFilters} onPractice={() => show('practice')} />
       ) : (
-        <QuestionBank user={user} meta={meta} />
+        <TryAgainList user={user} meta={meta} filters={filters} setFilters={setFilters} onPractice={() => show('practice')} />
       )}
     </div>
   );

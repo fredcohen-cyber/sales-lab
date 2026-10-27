@@ -7,6 +7,7 @@ import { api } from '../api.js';
 import {
   BookIcon,
   ChevronRightIcon,
+  ClipboardIcon,
   CoachIcon,
   DashboardIcon,
   HomeIcon,
@@ -25,7 +26,8 @@ const ROLE = { ae: 'Account executive', am: 'Account manager', manager: 'Manager
 const SECTIONS = [
   ['/practice', 'Practice Studio'],
   ['/attempts', 'Practice Studio'],
-  ['/drills', 'Question bank'],
+  ['/drills', 'Question Bank'],
+  ['/questions', 'Question Bank'],
   ['/curriculum', 'Curriculum'],
   ['/progress', 'My Progress'],
   ['/knowledge', 'Knowledge Library'],
@@ -69,8 +71,9 @@ export function Shell() {
     await logout();
   };
 
+  // Closing on click as well covers a link to the page already open, which changes no path.
   const link = (to, label, Icon, extra = null, end = false) => (
-    <NavLink to={to} end={end} className={({ isActive }) => (isActive ? 'active' : undefined)}>
+    <NavLink to={to} end={end} className={({ isActive }) => (isActive ? 'active' : undefined)} onClick={() => setOpen(false)}>
       <Icon />
       <span>{label}</span>
       {extra}
@@ -100,6 +103,7 @@ export function Shell() {
               <div className="nav-group-label">Managing</div>
               {link('/manager', 'Manager Dashboard', DashboardIcon)}
               {link('/coaching', 'Team Coaching', CoachIcon, pending ? <span className="count" aria-label={`${pending} pending reviews`}>{pending}</span> : null)}
+              {link('/questions', 'Question Bank', ClipboardIcon)}
               {link('/users', 'User Management', UsersIcon)}
               {link('/settings', 'Workspace Settings', SettingsIcon)}
             </>

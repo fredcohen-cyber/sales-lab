@@ -36,6 +36,8 @@ export const AUDIT_LABELS = {
   'drill.created': 'Drill created',
   'drill.version_added': 'Drill updated',
   'drill.status_changed': 'Drill status changed',
+  'drill.deleted': 'Question deleted',
+  'drill.ideal_answer_proposed': 'Ideal answer proposed',
   'assignment.created': 'Curriculum assigned',
   'assignment.cancelled': 'Assignment cancelled',
   'path.created': 'Learning path created',

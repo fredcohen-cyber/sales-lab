@@ -137,9 +137,9 @@ documents stay archived so past answers still show exactly what they were scored
   three follow-up objections the buyer is likely to raise: the coach uses them as a guide, and practice
   without coaching uses them word for word. Questions about Omnizant's websites and SEO practice technique,
   apart from a few on the complimentary website review itself, because only the review and the competitor
-  angles are approved; none rely on the unconfirmed "Omnizant at a glance" draft. Managers browse every question under **Question bank** in the Practice
-  Studio, filter it by product, set a question's product and concept in the editor, and can still assign
-  specific questions in Curriculum.
+  angles are approved; none rely on the unconfirmed "Omnizant at a glance" draft. Managers review, add,
+  edit, and delete questions on the **Question Bank** page (below), set a question's product and concept in
+  the editor, and can still assign specific questions in Curriculum.
 - **Four buyers.** The office manager or intake director joined the managing partner, solo attorney, and
   marketing manager: the person who runs the intake team and the website vendor, books the attorneys'
   time, and recommends but rarely signs. Managers can edit how each buyer is described in Settings.
@@ -148,6 +148,35 @@ documents stay archived so past answers still show exactly what they were scored
   Unfinished conversations are listed separately, and managers are told about any left for more than a
   day. Critical failures and pending reviews are counted reply by reply, so an unfinished conversation
   never hides them. An assigned exercise is complete when its conversation is.
+
+## Question Bank: questions and ideal answers
+
+- **One page for every question.** Managers find it under **Managing › Question Bank**. Questions are
+  grouped by product (Ravenly, Omnizant AI Search Plans, Omnizant websites and SEO, sales technique for
+  both brands), then by subject, with counts and how many have an approved ideal answer. Search and
+  filters narrow it by stage, buyer, role, status, and ideal answer. Opening a question shows the moment,
+  what a good answer does, the buyer's pushbacks, scoring and sources, how many conversations reps have
+  had on it, and its ideal answer. **Edit** saves a new version; answers already given keep the version
+  they were scored against.
+- **Adding a question proposes its ideal answer.** After writing the question, the manager chooses
+  **Next: propose the ideal answer**. The AI writes what an excellent rep would say in that moment, from
+  the question and its approved source material only, and lists the facts it relies on. The server checks
+  each fact: it is marked *Matched to the material* only when its words are in the answer and its quoted
+  passage is in the cited source; anything else is marked *Not matched: check it*. The manager edits the
+  answer, asks for a new one, or writes their own, then approves it or adds the question and approves the
+  answer later. A question with no approved material gets an answer that avoids product facts, with a
+  warning. Proposals are limited to 60 per manager per hour, and an incomplete response is asked for once
+  more before giving up. Without an AI key, managers write the answer themselves.
+- **Only an approved answer is used.** Reps see it after they answer, on the reply's page, never before.
+  Coaching gets it as a reference for the first reply: it scores against the criteria and the rubric, not
+  by how closely the rep's words match, and builds the stronger example on it. A proposal nobody approved
+  is seen only by managers. Changing an approved answer's text needs a new approval; the approval carries
+  over only while the text is unchanged. Existing questions can have one proposed from the Question Bank.
+- **Deleting is permanent from the page.** A deleted question leaves the Question Bank, the stages, the
+  **Try again** list, and the Knowledge Library's "used by" lists, and it can no longer be assigned or
+  edited. Answers already given stay in reps' history and reports, an open conversation can be
+  finished, and exercises already assigned can still be completed. To hide a question for a while
+  instead, set its status to Archived.
 
 ## How coaching stays honest
 

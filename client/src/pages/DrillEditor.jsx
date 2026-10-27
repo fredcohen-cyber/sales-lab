@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { get, post, put } from '../api.js';
 import { useMeta } from '../state.jsx';
 import { ErrorNotice, Field, Loading, Notice, useToast } from '../components/ui.jsx';
 import { groupSections } from '../components/KnowledgeParts.jsx';
+import { IdealAnswerEditor } from '../components/IdealAnswer.jsx';
+import { formFromDrill, idealBody, idealFromDrill, questionBody } from '../lib/drillForm.js';
+import { ArrowRightIcon } from '../components/Icons.jsx';
 
 const BLANK = {
   title: '',
@@ -245,48 +248,69 @@ function SourcePicker({ value, onChange, form, meta }) {
 
 export function DrillEditor() {
   const { id } = useParams();
+  const [params] = useSearchParams();
   const { meta } = useMeta();
   const navigate = useNavigate();
   const toast = useToast();
   const [form, setForm] = useState(id ? null : BLANK);
+  const [ideal, setIdeal] = useState(() => idealFromDrill(null));
+  const [proposing, setProposing] = useState(false);
+  const [proposeError, setProposeError] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const proposeOnLoad = useRef(Boolean(id) && params.get('propose') === '1');
 
   useEffect(() => {
-    document.title = `${id ? 'Edit drill' : 'New drill'} · Sales Lab`;
+    document.title = `${id ? 'Edit question' : 'Add a question'} · Sales Lab`;
     if (!id) return;
     get(`/drills/${id}`)
-      .then(({ drill: d }) =>
-        setForm({
-          title: d.title,
-          brand: d.brand,
-          subject: d.subject,
-          stage: d.stage,
-          roles: d.roles,
-          personas: d.personas,
-          situation: d.situation,
-          buyerLine: d.buyerLine,
-          personaLines: d.personaLines || {},
-          objective: d.objective,
-          goodLooksLike: d.goodLooksLike,
-          roleGuidance: d.roleGuidance || {},
-          pushbacks: d.pushbacks || [],
-          assessedDimensions: d.assessedDimensions,
-          defaults: d.defaults,
-          sourceRefs: d.sourceRefs || [],
-          changeNote: '',
-          status: d.status,
-          version: d.version,
-          productLine: d.productLine,
-          concept: d.concept || '',
-        }),
-      )
+      .then(({ drill: d }) => {
+        setForm(formFromDrill(d));
+        setIdeal(idealFromDrill(d));
+      })
       .catch(setLoadError);
   }, [id]);
 
+  // Asked for from the Question Bank: propose an ideal answer as soon as the question is loaded.
+  useEffect(() => {
+    if (form && proposeOnLoad.current) {
+      proposeOnLoad.current = false;
+      if (!ideal.text) propose();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form]);
+
   if (loadError) return <div className="page"><ErrorNotice error={loadError} /></div>;
   if (!form) return <div className="page"><Loading /></div>;
+
+  const showIdeal = () => setTimeout(() => document.getElementById('ideal-answer')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  async function propose() {
+    setProposeError(null);
+    setProposing(true);
+    showIdeal();
+    try {
+      const { proposal: p } = await post('/drills/ideal-answer', { ...questionBody(form), drillId: id || undefined }, { timeoutMs: 150000 });
+      setIdeal({
+        text: p.answer,
+        approved: false,
+        origin: 'ai',
+        approach: p.approach,
+        notes: p.notes,
+        claims: p.claims,
+        persona: p.persona,
+        model: p.model,
+        warnings: p.warnings,
+        approvedByName: null,
+        approvedAt: null,
+      });
+      showIdeal();
+    } catch (err) {
+      setProposeError(err);
+    } finally {
+      setProposing(false);
+    }
+  }
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const toggle = (k, v) => setForm((f) => ({ ...f, [k]: f[k].includes(v) ? f[k].filter((x) => x !== v) : [...f[k], v] }));
@@ -309,24 +333,15 @@ export function DrillEditor() {
     setBusy(true);
     setError(null);
     try {
-      const { version, ...rest } = form;
-      const body = {
-        ...rest,
-        pushbacks: Array.from(form.pushbacks, (x) => (x || '').trim()).filter(Boolean),
-        sourceRefs: form.sourceRefs.map((r) => ({
-          sourceId: r.sourceId,
-          sections: r.wholeSource ? [] : r.sections,
-          wholeSource: Boolean(r.wholeSource),
-        })),
-      };
+      const body = { ...questionBody(form), idealAnswer: idealBody(ideal) };
       if (id) {
         await put(`/drills/${id}`, body);
-        toast('Drill saved as a new version');
-        navigate(`/practice/drill/${id}`);
+        toast('Question saved as a new version');
+        navigate(`/questions?review=${id}`);
       } else {
         const r = await post('/drills', body);
-        toast('Drill created');
-        navigate(`/practice/drill/${r.id}`);
+        toast('Question added');
+        navigate(`/questions?review=${r.id}`);
       }
     } catch (err) {
       setError(err);
@@ -334,16 +349,23 @@ export function DrillEditor() {
       setBusy(false);
     }
   };
+  // Adding a question: the ideal answer is proposed and reviewed before the question is created.
+  const adding = !id;
+  const idealShown = !adding || proposing || Boolean(ideal.text) || Boolean(proposeError);
 
   return (
     <div className="page page-narrow">
-      <Link className="crumb" to={id ? `/practice/drill/${id}` : '/practice'}>
-        Back
+      <Link className="crumb" to={id ? `/questions?review=${id}` : '/questions'}>
+        Back to the Question Bank
       </Link>
       <div className="page-head">
         <div>
-          <h1>{id ? `Edit ${/^[“"]/.test(form.title) ? form.title : `“${form.title}”`}` : 'New drill'}</h1>
-          <p className="sub">{id ? `Saving creates version ${form.version + 1}. Past answers keep the version they were written against.` : 'One focused buyer moment, scored on the dimensions it actually tests.'}</p>
+          <h1>{id ? `Edit ${/^[“"]/.test(form.title) ? form.title : `“${form.title}”`}` : 'Add a question'}</h1>
+          <p className="sub">
+            {id
+              ? `Saving creates version ${form.version + 1}. Past answers keep the version they were written against.`
+              : 'One focused buyer moment, scored on the dimensions it actually tests. When the question is written, Sales Lab proposes an ideal answer for you to review.'}
+          </p>
         </div>
       </div>
       <div className="stack-lg">
@@ -542,6 +564,10 @@ export function DrillEditor() {
           <SourcePicker value={form.sourceRefs} onChange={(v) => set('sourceRefs', v)} form={form} meta={meta} />
         </section>
 
+        {idealShown && (
+          <IdealAnswerEditor ideal={ideal} onChange={setIdeal} onPropose={propose} proposing={proposing} error={proposeError} adding={adding} />
+        )}
+
         {id && (
           <Field label="Change note" id="d-note">
             <input id="d-note" type="text" value={form.changeNote} maxLength={500} onChange={(e) => set('changeNote', e.target.value)} />
@@ -549,9 +575,26 @@ export function DrillEditor() {
         )}
         {error && <ErrorNotice error={{ message: error.message }} />}
         <div className="row">
-          <button className="btn" onClick={save} disabled={busy}>
-            {busy ? 'Saving…' : id ? 'Save new version' : 'Create drill'}
-          </button>
+          {adding && !ideal.text ? (
+            <>
+              <button className="btn" onClick={propose} disabled={busy || proposing}>
+                {proposing ? 'Proposing an ideal answer…' : 'Next: propose the ideal answer'}
+                {!proposing && <ArrowRightIcon size={16} />}
+              </button>
+              {(proposeError || !meta.coaching.configured) && (
+                <button className="btn btn-quiet" onClick={save} disabled={busy || proposing}>
+                  Add without an ideal answer
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <button className="btn" onClick={save} disabled={busy || proposing}>
+                {busy ? 'Saving…' : id ? 'Save new version' : ideal.approved ? 'Add the question' : 'Add the question; approve the answer later'}
+              </button>
+              {adding && !ideal.approved && ideal.text && <span className="tiny muted">Until you approve it, reps and coaching do not see the ideal answer.</span>}
+            </>
+          )}
         </div>
       </div>
     </div>

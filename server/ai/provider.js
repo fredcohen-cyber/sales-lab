@@ -129,7 +129,7 @@ function anthropicProvider(config) {
         const reminder = [
           ...messages,
           ...(json.content?.length ? [{ role: 'assistant', content: json.content }] : []),
-          { role: 'user', content: `Record your evaluation now by calling the ${toolName} tool. Do not reply in plain text.` },
+          { role: 'user', content: `Respond now by calling the ${toolName} tool. Do not reply in plain text.` },
         ];
         json = await send(reminder, remainingMs);
         if (json.stop_reason === 'refusal') throw new ProviderError('refusal', RUN_ERROR_MESSAGES.refusal);
@@ -216,6 +216,23 @@ function mockProvider() {
       }, { once: true });
     });
   const firstWords = (s, n) => String(s).replace(/\[\[mock:[a-z]+\]\]/g, '').trim().split(/\s+/).slice(0, n).join(' ');
+  // The first eight words of the first plain sentence-like line in source S1, a fact the source check can match.
+  const firstSourceFact = (user) => {
+    const start = user.indexOf('--- S1 section: ');
+    if (start < 0) return '';
+    for (const raw of user.slice(start).split('\n').slice(1)) {
+      if (/^\[S\d+\] /.test(raw) || raw.startsWith('</source_material>')) break;
+      if (raw.startsWith('--- ') || raw.includes('](') || raw.trim().length < 40) continue;
+      const words = raw
+        .replace(/[*_`#>|]/g, ' ')
+        .replace(/^\s*(?:[-+]|\d+[.)])\s+/, '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+      if (words.length >= 5) return words.slice(0, 8).join(' ');
+    }
+    return '';
+  };
   return {
     name: 'mock',
     model: 'mock-evaluator',
@@ -235,6 +252,7 @@ function mockProvider() {
     async evaluate(request, { timeoutMs, signal }) {
       this.calls += 1;
       this.requests = [...this.requests.slice(-19), request];
+      if (request.tool.name === 'record_ideal_answer') return this.proposeIdeal(request, { timeoutMs, signal });
       const answer = /<rep_answer>\n([\s\S]*?)\n<\/rep_answer>/.exec(request.user)?.[1] || '';
       let mode = this.behavior;
       // "once" markers misbehave on the first call for an answer and succeed on the retry.
@@ -300,6 +318,36 @@ function mockProvider() {
           next_focus: { dimension: keys[0], suggestion: 'Mock next focus.' },
           injection_detected: answer.includes('[[mock:inject]]'),
         },
+        usage: null,
+        model: 'mock-evaluator',
+      };
+    },
+    // An ideal answer built from the first approved source line, so the source check can match it. The
+    // question's buyer line can carry [[mock:...]] markers: fail, slow, invalidonce, unmatched.
+    async proposeIdeal(request, { timeoutMs, signal }) {
+      const line = /The buyer says: ([^\n]*)/.exec(request.user)?.[1] || '';
+      if (this.behavior === 'hold') await new Promise((resolve) => this._waiters.push(resolve));
+      if (this.behavior === 'slow' || line.includes('[[mock:slow]]')) {
+        await sleep(timeoutMs + 500, signal);
+        throw new ProviderError('timeout', RUN_ERROR_MESSAGES.timeout);
+      }
+      await sleep(Math.min(this.delayMs, timeoutMs), signal);
+      if (this.behavior === 'fail' || line.includes('[[mock:fail]]')) {
+        throw new ProviderError('provider_unavailable', RUN_ERROR_MESSAGES.provider_unavailable, { status: 529 });
+      }
+      if (line.includes('[[mock:invalidonce]]') && !this._seen.has(`ideal:${line}`)) {
+        this._seen.add(`ideal:${line}`);
+        return { output: { approach: 'partial' }, usage: null, model: 'mock-evaluator' };
+      }
+      const fact = firstSourceFact(request.user);
+      const claims = fact ? [{ claim: fact, source_ref: 'S1', source_quote: fact }] : [];
+      let answer = `That is a fair question, and I will answer it directly. ${fact ? `${fact}. ` : ''}What would make this an easy yes for you? Could we look at it together on Thursday?`;
+      if (line.includes('[[mock:unmatched]]')) {
+        answer += ' We answer every inquiry within ten seconds.';
+        claims.push({ claim: 'We answer every inquiry within ten seconds', source_ref: 'S1', source_quote: 'every inquiry is answered within ten seconds' });
+      }
+      return {
+        output: { answer, approach: 'Mock approach: answers the question, then asks for a next step.', claims, notes: fact ? '' : 'Mock note: no source material.' },
         usage: null,
         model: 'mock-evaluator',
       };

@@ -90,7 +90,7 @@ export async function resolvePractice(q, config, user, input) {
         .catch(() => null);
     }
     if (!drill) throw notFound('That drill was not found.');
-    if (drill.status !== 'active' && !user.isManager) throw notFound('That drill is not available.');
+    if (drill.status === 'deleted' || (drill.status !== 'active' && !user.isManager)) throw notFound('That drill is not available.');
     personaKey = input.persona || drill.personas[0];
     if (!drill.personas.includes(personaKey)) throw new HttpError(400, 'validation_failed', 'That persona is not part of this drill.');
     if (!user.isManager) await assertServedOrRetry(q, user, drill.id, personaKey);

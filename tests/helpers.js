@@ -134,6 +134,9 @@ export class Client {
   patch(p, b = {}, o) {
     return this.req('PATCH', p, b, o);
   }
+  del(p, o) {
+    return this.req('DELETE', p, undefined, o);
+  }
 }
 
 export const PASSWORD = 'correct horse battery';

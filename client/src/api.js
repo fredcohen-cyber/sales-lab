@@ -58,6 +58,7 @@ export const get = (p, o) => api(p, o);
 export const post = (p, body = {}, o) => api(p, { ...o, method: 'POST', body });
 export const put = (p, body = {}, o) => api(p, { ...o, method: 'PUT', body });
 export const patch = (p, body = {}, o) => api(p, { ...o, method: 'PATCH', body });
+export const del = (p, o) => api(p, { ...o, method: 'DELETE' });
 
 export function newRequestId() {
   if (crypto?.randomUUID) return crypto.randomUUID();

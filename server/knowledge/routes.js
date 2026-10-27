@@ -101,7 +101,7 @@ async function approveVersion(q, sourceId, versionId, userId, ip) {
 export async function drillImpact(q, sourceId, targetVersionId) {
   const drills = await q.many(
     `SELECT d.id, d.status, v.title, v.source_refs FROM drills d JOIN drill_versions v ON v.id = d.current_version_id
-      WHERE d.status <> 'archived' AND v.source_refs @> $1::jsonb`,
+      WHERE d.status NOT IN ('archived', 'deleted') AND v.source_refs @> $1::jsonb`,
     [JSON.stringify([{ sourceId }])],
   );
   const refs = drills.map((d) => ({ d, ref: (d.source_refs || []).find((x) => x.sourceId === sourceId) })).filter((x) => x.ref?.sections?.length);
@@ -297,7 +297,7 @@ export function knowledgeRoutes({ db }) {
       const usedBy = forManager
         ? await db.many(
             `SELECT d.id, d.status, v.title FROM drills d JOIN drill_versions v ON v.id = d.current_version_id
-              WHERE d.status <> 'archived' AND v.source_refs @> $1::jsonb ORDER BY v.title`,
+              WHERE d.status NOT IN ('archived', 'deleted') AND v.source_refs @> $1::jsonb ORDER BY v.title`,
             [JSON.stringify([{ sourceId: source.id }])],
           )
         : undefined;

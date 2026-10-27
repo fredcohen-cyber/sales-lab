@@ -154,8 +154,8 @@ export function DrillRunner({ stage = null, initialPreview = null, backHref = nu
 
   // A question tried again from the Practice Studio's list goes back to that list.
   const fromAgain = !assigned && !fed && params.get('from') === 'again';
-  const backTo = assigned ? '/curriculum' : fromAgain ? '/practice?view=again' : user.isManager && !fed ? '/practice?view=bank' : backHref || '/practice';
-  const backLabel = assigned ? 'Curriculum' : fromAgain ? 'Practice Studio' : user.isManager && !fed ? 'the question bank' : 'Practice Studio';
+  const backTo = assigned ? '/curriculum' : fromAgain ? '/practice?view=again' : user.isManager && !fed ? `/questions?review=${drillId}` : backHref || '/practice';
+  const backLabel = assigned ? 'Curriculum' : fromAgain ? 'Practice Studio' : user.isManager && !fed ? 'the Question Bank' : 'Practice Studio';
   if (loadError) {
     return (
       <div className="page">

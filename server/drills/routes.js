@@ -5,6 +5,7 @@ import { audit } from '../lib/audit.js';
 import { clientIp, requireManager } from '../auth/middleware.js';
 import { BRANDS, DIMENSION_KEYS, MAX_PUSHBACKS, PRODUCT_LINES, STAGE_KEYS, SUBJECTS, defaultProductLine } from '../domain.js';
 import { coachingAvailability, DRILL_SQL, shapeDrill, sourceIndexFor } from './service.js';
+import { idealAnswerFields, MAX_IDEAL_CHARS, PROPOSALS_PER_MANAGER_PER_HOUR, proposeIdealAnswer } from './ideal.js';
 
 const level = z.number().int().min(1).max(5);
 const drillSchema = z.object({
@@ -49,6 +50,37 @@ const drillSchema = z.object({
   productLine: z.enum(Object.keys(PRODUCT_LINES)).optional(),
   // Questions that test the same skill share a concept, so the feed rotates through concepts.
   concept: z.string().trim().max(120).default(''),
+  // The ideal answer as the manager left it. The server records who approved it and when.
+  idealAnswer: z
+    .object({
+      text: z.string().trim().max(MAX_IDEAL_CHARS, `Keep the ideal answer under ${MAX_IDEAL_CHARS.toLocaleString()} characters.`).default(''),
+      approved: z.boolean().default(false),
+      // Proposed by the AI and kept as written, proposed and then edited, or written by the manager.
+      origin: z.enum(['ai', 'ai_edited', 'manager']).default('manager'),
+      approach: z.string().trim().max(1000).default(''),
+      notes: z.string().trim().max(1500).default(''),
+      claims: z
+        .array(
+          z.object({
+            claim: z.string().max(600),
+            sourceTitle: z.string().max(300).nullable().default(null),
+            sourceQuote: z.string().max(800).default(''),
+            verified: z.boolean().default(false),
+          }),
+        )
+        .max(20)
+        .default([]),
+      persona: z.object({ key: z.string().max(60), label: z.string().max(120) }).nullable().default(null),
+      model: z.string().max(120).nullable().default(null),
+    })
+    .optional(),
+});
+
+// A question draft to propose an ideal answer for: the same fields, but it needs no title or criteria yet.
+const proposeSchema = drillSchema.extend({
+  title: z.string().trim().max(140).default(''),
+  goodLooksLike: z.string().trim().max(3000).default(''),
+  assessedDimensions: z.array(z.enum(DIMENSION_KEYS)).default([]),
 });
 
 // The product line must belong to the question's brand.
@@ -95,13 +127,13 @@ async function validateRefs(q, body) {
   }
 }
 
-async function insertDrillVersion(q, drillId, body, userId) {
+async function insertDrillVersion(q, drillId, body, userId, ideal) {
   const next = await q.one(`SELECT COALESCE(max(version), 0) + 1 AS v FROM drill_versions WHERE drill_id = $1`, [drillId]);
   return q.one(
     `INSERT INTO drill_versions (drill_id, version, title, brand, subject, stage, roles, personas, situation, buyer_line, persona_lines,
        objective, good_looks_like, assessed_dimensions, default_difficulty, default_skepticism, default_depth, source_refs, change_note, created_by,
-       role_guidance, pushbacks, product_line, concept)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24) RETURNING id, version`,
+       role_guidance, pushbacks, product_line, concept, ideal_answer, ideal_answer_status, ideal_answer_review)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27) RETURNING id, version`,
     [
       drillId,
       next.v,
@@ -127,12 +159,43 @@ async function insertDrillVersion(q, drillId, body, userId) {
       JSON.stringify(body.pushbacks || []),
       body.productLine,
       body.concept || '',
+      ideal.text,
+      ideal.status,
+      JSON.stringify(ideal.review || {}),
     ],
   );
 }
 
-export function drillRoutes({ db, config }) {
+export function drillRoutes({ db, config, provider, log = () => {} }) {
   const r = Router();
+
+  // The AI proposes an ideal answer for a question draft, from its approved source material. Nothing is
+  // saved: the manager reviews the proposal in the editor and saves it with the question.
+  r.post(
+    '/ideal-answer',
+    requireManager,
+    route(async (req, res) => {
+      const draft = parseBody(proposeSchema, req.body);
+      await validateRefs(db, draft);
+      const recent = await db.one(
+        `SELECT count(*)::int AS n FROM audit_events WHERE actor_id = $1 AND action = 'drill.ideal_answer_proposed' AND created_at > now() - interval '1 hour'`,
+        [req.user.id],
+      );
+      if (recent.n >= PROPOSALS_PER_MANAGER_PER_HOUR) {
+        throw new HttpError(429, 'ideal_rate_limited', 'You have asked for many ideal answers in the last hour. Try again in a few minutes, or write one yourself.');
+      }
+      const proposal = await proposeIdealAnswer({ q: db, config, provider, draft, log });
+      await audit(db, {
+        actorId: req.user.id,
+        action: 'drill.ideal_answer_proposed',
+        entityType: 'drill',
+        entityId: req.body?.drillId && /^[0-9a-f-]{36}$/.test(req.body.drillId) ? req.body.drillId : null,
+        details: { title: draft.title || null, model: proposal.model, claims: proposal.claims.length, unmatched: proposal.claims.filter((c) => !c.verified).length },
+        ip: clientIp(req),
+      });
+      res.json({ proposal });
+    }),
+  );
 
   // The question bank is for managers: reps are served questions by stage and never choose one.
   r.get(
@@ -141,7 +204,13 @@ export function drillRoutes({ db, config }) {
     route(async (req, res) => {
       const forManager = req.user.isManager;
       const status = forManager ? String(req.query.status || '') : 'active';
-      const rows = await db.many(`${DRILL_SQL} ${status ? 'WHERE d.status = $1' : ''} ORDER BY v.title`, status ? [status] : []);
+      if (status === 'deleted') throw new HttpError(400, 'validation_failed', 'Deleted questions are not listed.');
+      const rows = await db.many(`${DRILL_SQL} WHERE d.status <> 'deleted' ${status ? 'AND d.status = $1' : ''} ORDER BY v.title`, status ? [status] : []);
+      // How many conversations reps have started on each question, so a manager knows what deleting affects.
+      const counts = new Map(
+        (await db.many(`SELECT drill_id, count(*)::int AS n FROM attempts WHERE turn_number = 1 GROUP BY drill_id`)).map((c) => [c.drill_id, c.n]),
+      );
+      for (const row of rows) row.answers = counts.get(row.id) || 0;
       const index = await sourceIndexFor(db, rows);
       let drills = rows.map((row) => shapeDrill(row, coachingAvailability(config, row, index), { forManager }));
       const { brand, stage, persona, role, subject, product } = req.query;
@@ -163,7 +232,7 @@ export function drillRoutes({ db, config }) {
     requireManager,
     route(async (req, res) => {
       const row = await db.one(`${DRILL_SQL} WHERE d.id = $1`, [req.params.id]).catch(() => null);
-      if (!row || (!req.user.isManager && row.status !== 'active')) throw notFound('That drill was not found.');
+      if (!row || row.status === 'deleted' || (!req.user.isManager && row.status !== 'active')) throw notFound('That drill was not found.');
       const index = await sourceIndexFor(db, [row]);
       const drill = shapeDrill(row, coachingAvailability(config, row, index), { forManager: req.user.isManager, index });
       let versions;
@@ -186,7 +255,7 @@ export function drillRoutes({ db, config }) {
       const id = await db.tx(async (q) => {
         await validateRefs(q, body);
         const drill = await q.one(`INSERT INTO drills (status, created_by) VALUES ($1, $2) RETURNING id`, [body.status || 'active', req.user.id]);
-        const v = await insertDrillVersion(q, drill.id, body, req.user.id);
+        const v = await insertDrillVersion(q, drill.id, body, req.user.id, idealAnswerFields(body.idealAnswer, null, req.user));
         await q.query(`UPDATE drills SET current_version_id = $2 WHERE id = $1`, [drill.id, v.id]);
         await audit(q, { actorId: req.user.id, action: 'drill.created', entityType: 'drill', entityId: drill.id, details: { title: body.title }, ip: clientIp(req) });
         return drill.id;
@@ -202,9 +271,10 @@ export function drillRoutes({ db, config }) {
       const body = parseBody(drillSchema, req.body);
       const out = await db.tx(async (q) => {
         const drill = await q.one(`SELECT * FROM drills WHERE id = $1 FOR UPDATE`, [req.params.id]);
-        if (!drill) throw notFound('That drill was not found.');
+        if (!drill || drill.status === 'deleted') throw notFound('That drill was not found.');
         await validateRefs(q, body);
-        const v = await insertDrillVersion(q, drill.id, body, req.user.id);
+        const current = await q.one(`SELECT ideal_answer, ideal_answer_status, ideal_answer_review FROM drill_versions WHERE id = $1`, [drill.current_version_id]);
+        const v = await insertDrillVersion(q, drill.id, body, req.user.id, idealAnswerFields(body.idealAnswer, current, req.user));
         await q.query(`UPDATE drills SET current_version_id = $2, status = COALESCE($3, status), updated_at = now() WHERE id = $1`, [
           drill.id,
           v.id,
@@ -232,11 +302,42 @@ export function drillRoutes({ db, config }) {
       const { status } = parseBody(statusSchema, req.body);
       await db.tx(async (q) => {
         const drill = await q.one(`SELECT * FROM drills WHERE id = $1 FOR UPDATE`, [req.params.id]);
-        if (!drill) throw notFound('That drill was not found.');
+        if (!drill || drill.status === 'deleted') throw notFound('That drill was not found.');
         await q.query(`UPDATE drills SET status = $2, updated_at = now() WHERE id = $1`, [drill.id, status]);
         await audit(q, { actorId: req.user.id, action: 'drill.status_changed', entityType: 'drill', entityId: drill.id, details: { from: drill.status, to: status }, ip: clientIp(req) });
       });
       res.json({ ok: true });
+    }),
+  );
+
+  // Deleting a question takes it out of the bank and out of practice for good. Answers reps already gave
+  // stay in their history and reports, an open conversation can still be finished, and exercises already
+  // assigned stay as they are.
+  r.delete(
+    '/:id',
+    requireManager,
+    route(async (req, res) => {
+      const out = await db.tx(async (q) => {
+        const drill = await q.one(
+          `SELECT d.*, v.title FROM drills d JOIN drill_versions v ON v.id = d.current_version_id WHERE d.id = $1 FOR UPDATE OF d`,
+          [req.params.id],
+        ).catch(() => null);
+        if (!drill || drill.status === 'deleted') throw notFound('That question was not found.');
+        const used = await q.one(`SELECT count(*)::int AS n FROM attempts WHERE drill_id = $1 AND turn_number = 1`, [drill.id]);
+        await q.query(`UPDATE drills SET status = 'deleted', deleted_at = now(), deleted_by = $2, updated_at = now() WHERE id = $1`, [drill.id, req.user.id]);
+        // A rep who was served it and has not answered yet gets another question from the stage.
+        await q.query(`DELETE FROM practice_draws WHERE drill_id = $1`, [drill.id]);
+        await audit(q, {
+          actorId: req.user.id,
+          action: 'drill.deleted',
+          entityType: 'drill',
+          entityId: drill.id,
+          details: { title: drill.title, from: drill.status, answers: used.n },
+          ip: clientIp(req),
+        });
+        return { answers: used.n };
+      });
+      res.json({ deleted: true, answers: out.answers });
     }),
   );
 

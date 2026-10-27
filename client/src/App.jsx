@@ -23,6 +23,7 @@ import { Users } from './pages/Users.jsx';
 import { UserDetail } from './pages/UserDetail.jsx';
 import { Settings } from './pages/Settings.jsx';
 import { DrillEditor } from './pages/DrillEditor.jsx';
+import { QuestionBank } from './pages/QuestionBank.jsx';
 
 function RequireAuth({ children }) {
   const { loading, user } = useAuth();
@@ -107,6 +108,8 @@ export function App() {
         <Route path="users" element={<ManagerOnly><Users /></ManagerOnly>} />
         <Route path="users/:id" element={<ManagerOnly><UserDetail /></ManagerOnly>} />
         <Route path="settings" element={<ManagerOnly><Settings /></ManagerOnly>} />
+        <Route path="questions" element={<ManagerOnly><QuestionBank /></ManagerOnly>} />
+        <Route path="questions/new" element={<ManagerOnly><DrillEditor /></ManagerOnly>} />
         <Route path="drills/new" element={<ManagerOnly><DrillEditor /></ManagerOnly>} />
         <Route path="drills/:id/edit" element={<ManagerOnly><DrillEditor /></ManagerOnly>} />
         <Route

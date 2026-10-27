@@ -6,13 +6,15 @@ export const DRILL_SQL = `
   SELECT d.id, d.slug, d.status, d.created_at, d.updated_at, v.id AS version_id, v.version, v.title, v.brand, v.subject, v.stage,
          v.roles, v.personas, v.situation, v.buyer_line, v.persona_lines, v.objective, v.good_looks_like,
          v.assessed_dimensions, v.default_difficulty, v.default_skepticism, v.default_depth, v.source_refs,
-         v.role_guidance, v.pushbacks, v.change_note, v.created_at AS version_created_at, v.product_line, v.concept
+         v.role_guidance, v.pushbacks, v.change_note, v.created_at AS version_created_at, v.product_line, v.concept,
+         v.ideal_answer, v.ideal_answer_status, v.ideal_answer_review
     FROM drills d JOIN drill_versions v ON v.id = d.current_version_id`;
 
 export const DRILL_VERSION_SQL = `
   SELECT d.id, d.slug, d.status, v.id AS version_id, v.version, v.title, v.brand, v.subject, v.stage, v.roles, v.personas,
          v.situation, v.buyer_line, v.persona_lines, v.objective, v.good_looks_like, v.assessed_dimensions,
-         v.default_difficulty, v.default_skepticism, v.default_depth, v.source_refs, v.role_guidance, v.pushbacks, v.product_line, v.concept
+         v.default_difficulty, v.default_skepticism, v.default_depth, v.source_refs, v.role_guidance, v.pushbacks, v.product_line, v.concept,
+         v.ideal_answer, v.ideal_answer_status
     FROM drill_versions v JOIN drills d ON d.id = v.drill_id`;
 
 // Source lookup for many drills at once (see buildSourceIndex).
@@ -96,6 +98,10 @@ export function shapeDrill(row, availability, { forManager, index = null }) {
     // part of the answer key, so only managers see them before answering.
     roleGuidance: forManager ? row.role_guidance || {} : undefined,
     pushbacks: forManager ? row.pushbacks || [] : undefined,
+    // The ideal answer and its review: managers only. Reps see an approved one after they answer.
+    idealAnswer: forManager ? { text: row.ideal_answer || '', status: row.ideal_answer_status || 'none', review: row.ideal_answer_review || {} } : undefined,
+    // How many conversations reps have started on it (the question bank's list only).
+    answers: forManager && row.answers !== undefined ? row.answers : undefined,
     assessedDimensions: row.assessed_dimensions,
     defaults: { difficulty: row.default_difficulty, skepticism: row.default_skepticism, depth: row.default_depth },
     sourceRefs: forManager ? (index ? editorRefs(row.source_refs, index) : row.source_refs) : undefined,

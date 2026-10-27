@@ -475,7 +475,11 @@ function Paths() {
             {p.items.map((it, i) => (
               <li key={i}>
                 {it.title} <span className="muted">(levels {it.difficulty}/{it.skepticism}/{it.depth})</span>
-                {it.drillStatus !== 'active' && <span className="badge badge-warn" style={{ marginLeft: 6 }}>Drill not active</span>}
+                {it.drillStatus !== 'active' && (
+                  <span className="badge badge-warn" style={{ marginLeft: 6 }}>
+                    {it.drillStatus === 'deleted' ? 'Question deleted' : 'Drill not active'}
+                  </span>
+                )}
               </li>
             ))}
           </ol>

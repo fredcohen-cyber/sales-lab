@@ -474,14 +474,63 @@ test('deactivation blocks Vic immediately, keeps his history, and reactivation n
   await expect(vic.getByRole('heading', { name: 'Practice Studio', level: 1 })).toBeVisible();
 });
 
-test('managers browse the question bank and see each question’s pushbacks', async () => {
+test('managers review, add, and delete questions in the Question Bank; ideal answers are proposed and approved', async () => {
   await owner.goto('/practice');
   await expect(owner.getByRole('heading', { name: 'Account manager stages' })).toBeVisible();
-  await owner.getByRole('tab', { name: 'Question bank' }).click();
-  await expect(owner).toHaveURL(/view=bank/);
-  await expect(owner.getByRole('heading', { name: /^Cold outreach/, level: 2 })).toBeVisible();
-  await expect(owner.getByRole('link', { name: DRILL })).toBeVisible();
+  await owner.getByRole('link', { name: 'Open the Question Bank' }).click();
+  await expect(owner).toHaveURL(/\/questions$/);
+  await expect(owner.getByRole('heading', { name: 'Question Bank', level: 1 })).toBeVisible();
+  await expect(owner.getByRole('heading', { name: /^Ravenly/, level: 2 })).toBeVisible();
   await shot(owner, '28-question-bank');
+
+  // Find the question Vic answered, review it, and have an ideal answer proposed for it.
+  await owner.getByLabel('Search', { exact: true }).fill(state.drillTitle);
+  await expect(owner.getByText(/^1 of \d+ questions match\./)).toBeVisible();
+  await expect(owner.getByRole('button', { name: 'Clear filters' })).toBeVisible();
+  const row = owner.locator('.qb-row').filter({ hasText: state.drillTitle });
+  await row.getByRole('button', { name: state.drillTitle, exact: true }).click();
+  await expect(row.getByRole('heading', { name: 'The buyer’s pushbacks' })).toBeVisible();
+  await expect(row.getByText('No ideal answer yet.')).toBeVisible();
+  await expect(row.getByText(/[1-9]\d* conversations?/)).toBeVisible();
+  await row.getByRole('link', { name: 'Propose an ideal answer' }).click();
+  await expect(owner).toHaveURL(/\/edit\?propose=1/);
+  await expect(owner.getByRole('textbox', { name: 'Ideal answer', exact: true })).not.toHaveValue('', { timeout: 20_000 });
+  await expect(owner.getByText('Matched to the material').first()).toBeVisible();
+  await owner.getByLabel('I reviewed it: approve this as the ideal answer').check();
+  await owner.getByRole('button', { name: 'Save new version' }).click();
+  await expect(owner).toHaveURL(new RegExp(`/questions\\?review=${state.drillId}`));
+  await expect(owner.locator(`#row-${state.drillId}`).getByText(/Approved by Fred Cohen/)).toBeVisible();
+
+  // Adding a question proposes its ideal answer for review first.
+  await owner.goto('/questions');
+  await owner.getByRole('link', { name: 'Add a question' }).click();
+  await expect(owner).toHaveURL(/\/questions\/new$/);
+  await owner.getByLabel('Title', { exact: true }).fill('E2E question to delete');
+  await owner.getByLabel('Situation', { exact: true }).fill('A managing partner has seen your proposal and is weighing it against doing nothing.');
+  await owner.getByLabel('What the buyer says', { exact: true }).fill('“Honestly, it costs more than I expected.”');
+  await owner.getByLabel('The rep’s objective', { exact: true }).fill('Isolate the real concern and agree on a next step.');
+  await owner.getByLabel('What a good answer does', { exact: true }).fill('- Acknowledges the concern.\n- Proposes a specific next step.');
+  await owner.getByRole('button', { name: 'Next: propose the ideal answer' }).click();
+  await expect(owner.getByRole('status').filter({ hasText: 'Writing an ideal answer' })).toBeVisible();
+  await expect(owner.getByRole('textbox', { name: 'Ideal answer', exact: true })).not.toHaveValue('', { timeout: 20_000 });
+  await expect(owner.getByText('No approved source material is attached')).toBeVisible();
+  await shot(owner, '28a-ideal-answer-review');
+  await owner.getByRole('button', { name: 'Add the question; approve the answer later' }).click();
+  await expect(owner).toHaveURL(/\/questions\?review=/);
+  const added = owner.locator('.qb-row').filter({ hasText: 'E2E question to delete' });
+  await expect(added.getByText('Ideal answer to review').first()).toBeVisible();
+  await added.getByRole('button', { name: 'Approve this answer' }).click();
+  await expect(toast(owner, 'Ideal answer approved')).toBeVisible();
+  await expect(added.getByText('Ideal answer approved').first()).toBeVisible();
+  // The open group holds hundreds of questions, so the review is captured on its own.
+  await added.screenshot({ path: `${SHOTS}/28b-question-review.png` });
+
+  await added.getByRole('button', { name: 'Delete E2E question to delete' }).click();
+  await expect(owner.getByRole('dialog')).toContainText('No rep has answered it yet.');
+  await owner.getByRole('button', { name: 'Delete the question' }).click();
+  await expect(toast(owner, 'Deleted “E2E question to delete”')).toBeVisible();
+  await expect(owner.locator('.qb-row').filter({ hasText: 'E2E question to delete' })).toHaveCount(0);
+
   await owner.goto(`/drills/${state.drillId}/edit`);
   await expect(owner.getByRole('heading', { name: 'The buyer’s pushbacks' })).toBeVisible();
   await expect(owner.getByLabel('Pushback 1')).not.toHaveValue('');
