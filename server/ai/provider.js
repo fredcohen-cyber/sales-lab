@@ -253,6 +253,7 @@ function mockProvider() {
       this.calls += 1;
       this.requests = [...this.requests.slice(-19), request];
       if (request.tool.name === 'record_ideal_answer') return this.proposeIdeal(request, { timeoutMs, signal });
+      if (request.tool.name === 'record_call_evaluation') return this.evaluateCall(request, { timeoutMs, signal });
       const answer = /<rep_answer>\n([\s\S]*?)\n<\/rep_answer>/.exec(request.user)?.[1] || '';
       let mode = this.behavior;
       // "once" markers misbehave on the first call for an answer and succeed on the retry.
@@ -348,6 +349,49 @@ function mockProvider() {
       }
       return {
         output: { answer, approach: 'Mock approach: answers the question, then asks for a next step.', claims, notes: fact ? '' : 'Mock note: no source material.' },
+        usage: null,
+        model: 'mock-evaluator',
+      };
+    },
+    // Coaching on a practice call, from the rep's lines in the transcript. A rep line can carry
+    // [[mock:fail]], [[mock:invalidonce]], or [[mock:gtee]] (a guarantee to flag as a critical failure).
+    async evaluateCall(request, { timeoutMs, signal }) {
+      const rep = [...request.user.matchAll(/<rep>([\s\S]*?)<\/rep>/g)].map((m) => m[1].trim());
+      const all = rep.join('\n');
+      if (this.behavior === 'hold') await new Promise((resolve) => this._waiters.push(resolve));
+      await sleep(Math.min(this.delayMs, timeoutMs), signal);
+      if (this.behavior === 'fail' || all.includes('[[mock:fail]]')) {
+        throw new ProviderError('provider_unavailable', RUN_ERROR_MESSAGES.provider_unavailable, { status: 529 });
+      }
+      if (all.includes('[[mock:invalidonce]]') && !this._seen.has(`call:${all}`)) {
+        this._seen.add(`call:${all}`);
+        return { output: { summary: 'partial', dimensions: [] }, usage: null, model: 'mock-evaluator' };
+      }
+      const keys = request.tool.input_schema.properties.dimensions.items.properties.key.enum;
+      const first = rep.find((l) => l.split(/\s+/).length >= 3) || rep[0] || '';
+      const quote = firstWords(first, 6);
+      const questions = rep.filter((l) => l.includes('?')).length;
+      const base = Math.min(90, 55 + questions * 6 + Math.min(15, Math.floor(all.length / 40)));
+      const critical = [];
+      if (all.includes('[[mock:gtee]]')) {
+        const line = rep.find((l) => l.includes('[[mock:gtee]]'));
+        const sentence = /[^.!?]*guarantee[^.!?]*/i.exec(line)?.[0]?.trim() || quote;
+        critical.push({ type: 'unauthorized_guarantee', claim_quote: sentence, explanation: 'Promises a commercial result as certain.' });
+      }
+      const booked = /thursday|tuesday|calendar|tomorrow at|\bat \d/i.test(all);
+      return {
+        output: {
+          summary: 'Mock summary of the call.',
+          dimensions: keys.map((key, i) => ({ key, score: Math.max(0, base - i * 2), rationale: `Mock rationale for ${key}.`, evidence: [quote] })),
+          strengths: [{ point: 'Mock strength.', evidence: quote }],
+          improvements: [{ point: 'Mock improvement.', evidence: quote, suggestion: 'Mock suggestion.' }],
+          claims: [],
+          critical_failures: critical,
+          key_moments: [{ rep_quote: quote, what_happened: 'Mock: the opening.', better_line: 'Mock better line: ask one question about their intake first.' }],
+          outcome: { next_step: booked ? 'booked' : 'none', summary: booked ? 'Mock: they agreed to a time.' : 'Mock: no next step.' },
+          next_focus: { dimension: keys[0], suggestion: 'Mock next focus.' },
+          injection_detected: false,
+        },
         usage: null,
         model: 'mock-evaluator',
       };

@@ -231,6 +231,15 @@ export function scheduleEvaluation(ctx, runId) {
   inFlight.add(p);
   return p;
 }
+// Other coaching that runs after a request returns (a practice call's transcript) is tracked the same way.
+export function runInBackground(fn) {
+  const p = new Promise((resolve) => setImmediate(resolve))
+    .then(fn)
+    .catch(() => {})
+    .finally(() => inFlight.delete(p));
+  inFlight.add(p);
+  return p;
+}
 export function waitForEvaluations() {
   return Promise.allSettled([...inFlight]);
 }

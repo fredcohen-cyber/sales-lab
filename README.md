@@ -2,7 +2,8 @@
 
 Practice, coaching, and reporting for the shared Omnizant and Ravenly sales team. Reps choose a stage of
 the sale, answer the buyer's question in writing, get AI coaching grounded in approved source material, and
-then answer the buyer's pushbacks, one objection after another. Managers assign ordered practice, review
+then answer the buyer's pushbacks, one objection after another. In Practice Studio-Voice they practice the
+same moments as phone calls, out loud, and get the same written coaching on the transcript. Managers assign ordered practice, review
 evaluations, and follow performance and engagement. Scores are for coaching and development only, not
 employment decisions or rankings.
 
@@ -46,7 +47,11 @@ default Node builder: it installs dependencies, runs `npm run build` (the web ap
 | `AI_RUNS_PER_USER_PER_HOUR` | No | Coaching runs one person may start per hour (answers plus retries). Default `60`. |
 | `APP_BASE_URL` | No | Public address for links. Defaults to the Railway domain. |
 | `OWNER_EMAIL`, `OWNER_NAME` | No | The owner account created on first start. Default Fred Cohen, `fred.cohen@omnizant.com`. |
-| `OPENAI_API_KEY`, `AI_PROVIDER` | No | An alternative provider. Anthropic is used when its key is present. |
+| `OPENAI_API_KEY` | For voice practice | Turns on Practice Studio-Voice: OpenAI's realtime voice plays the person who answers. Calls are billed by the minute to this OpenAI account (pay as you go). Coaching still uses Anthropic when its key is present. |
+| `VOICE_MODEL` | No | The realtime voice model. Default `gpt-realtime-2.1`; `gpt-realtime-2.1-mini` costs about a third as much. |
+| `VOICE_MAX_CALL_MINUTES` | No | Each practice call ends at this length. Default `10`. |
+| `VOICE_CALLS_PER_DAY` | No | Practice calls one person may make per day (New York time). Default `20`. |
+| `AI_PROVIDER` | No | `openai` to coach with OpenAI instead of Anthropic. Anthropic is used when its key is present. |
 
 On Railway the server always runs in production mode: secure cookies, proxy-aware client addresses for
 sign-in throttling, and no test-only coaching.
@@ -178,6 +183,40 @@ documents stay archived so past answers still show exactly what they were scored
   finished, and exercises already assigned can still be completed. To hide a question for a while
   instead, set its status to Archived.
 
+## Practice Studio-Voice: practice calls out loud
+
+- **A phone call, not a form.** Reps open **Practice Studio-Voice**, choose what they are selling and,
+  if they like, who picks up, and go to a call screen laid out like a softphone. Before dialing they know
+  only the product, whether the firm is a new prospect (account executives) or an existing client
+  (account managers), and the role of the person who answers. They talk; the person at the firm talks
+  back, interrupts, asks questions, and hangs up when the call is over. Managers can make either kind of
+  call.
+- **The buyer is played from the Question Bank.** Each call takes a question the way the Practice Studio
+  does (the concept the rep has met least, preferring questions coaching can score): cold-outreach
+  questions for prospects, adoption, value, and renewal questions for clients. Voicemail questions are
+  left out. The question's situation, the buyer's main concern, and their pushbacks become the private
+  brief of the person who answers, with a made-up name, firm, and a 555-01xx number reserved for fiction.
+  The rep never sees the brief until the call ends.
+- **How the voice works.** OpenAI's realtime voice (`gpt-realtime-2.1`) plays the person who answers.
+  Audio goes directly between the browser and OpenAI over WebRTC. Sales Lab's server only forwards the
+  browser's connection offer, with the hidden brief and the server's own key, so neither the key nor the
+  brief passes through the browser on the way. Coaching stays on Claude.
+- **Coached in writing.** When the call ends, Sales Lab coaches the transcript with the same checks as
+  written practice: scores on the question's dimensions plus discovery and advancing, evidence that must
+  quote the rep word for word (never the buyer), product claims checked against the approved material,
+  and guarantees and invented capabilities flagged. The feedback adds the moments that mattered (what the
+  rep said and a better line), whether they booked a next step, and how much of the call each side
+  talked. The page then shows what the rep did not know: the situation, the buyer's concerns, and the
+  manager's criteria and approved model answer. Practice calls are not held for a manager's review and
+  do not count in the dashboard or reports.
+- **Costs stay bounded.** Each call ends at 10 minutes, and each person can make 20 calls a day. A call
+  left running (a closed laptop) is hung up at OpenAI by the server, and coached from the transcript
+  saved along the way. Only one call per person can be live at a time, and a double click never opens a
+  second paid session.
+- **What is kept.** The transcript (made by speech recognition, so names can come out wrong), the rep's
+  notes, and the coaching. No audio is stored. Reps see their own calls; managers see everyone's under
+  **Team calls**.
+
 ## How coaching stays honest
 
 - Approved sections are the only product facts coaching may rely on. Each drill names the sections it
@@ -232,7 +271,8 @@ npm test            # unit and integration tests (needs Postgres at postgres://p
 npm run test:e2e    # browser tests of the full manager and rep journey (needs a Chromium for Playwright)
 ```
 
-Automated tests use a test-only stand-in for the AI service that cannot be enabled in production.
+Automated tests use test-only stand-ins for the AI service and the realtime voice that cannot be enabled in
+production. In browser tests the stand-in voice speaks scripted lines and the rep types what they would say.
 
 ## Status
 

@@ -1,10 +1,11 @@
-import { loadConfig, aiConfigured } from './config.js';
+import { loadConfig, aiConfigured, voiceConfigured } from './config.js';
 import { createDb } from './db.js';
 import { migrate } from './migrate.js';
 import { ownerSetupLinkIfNeeded, seed } from './seed/index.js';
 import { createProvider } from './ai/provider.js';
 import { createApp } from './app.js';
 import { sweepStaleRuns, waitForEvaluations } from './ai/evaluate.js';
+import { sweepVoiceCalls } from './voice/sweep.js';
 
 const log = (...args) => console.log(...args);
 
@@ -16,6 +17,11 @@ async function main() {
   await ownerSetupLinkIfNeeded(db, config, log);
 
   const provider = createProvider(config);
+  log(
+    voiceConfigured(config)
+      ? `[voice] Voice practice enabled: ${config.voice.provider} / ${config.voice.model}`
+      : '[voice] Voice practice is not configured (set OPENAI_API_KEY).',
+  );
   log(
     aiConfigured(config)
       ? `[coach] AI coaching enabled: ${config.ai.provider} / ${config.ai.model}`
@@ -31,6 +37,12 @@ async function main() {
       if (n) log(`[coach] marked ${n} stalled coaching run(s) as timed out`);
     } catch (err) {
       log(`[coach] sweep failed: ${err.message}`);
+    }
+    try {
+      const v = await sweepVoiceCalls({ db, config, provider, log });
+      if (v.overdue || v.stale) log(`[voice] ended ${v.overdue} call(s) at the time limit; marked ${v.stale} stalled coaching run(s)`);
+    } catch (err) {
+      log(`[voice] sweep failed: ${err.message}`);
     }
   };
   await sweep();

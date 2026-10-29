@@ -16,6 +16,7 @@ const child = spawn(process.execPath, [path.join(root, 'server/index.js')], {
     DATABASE_URL: url,
     APP_BASE_URL: 'http://127.0.0.1:3300',
     AI_PROVIDER: 'mock',
+    VOICE_PROVIDER: 'mock',
     SALES_LAB_ALLOW_MOCK_AI: 'yes-test-only',
     AI_TIMEOUT_MS: '6000',
     MOCK_AI_DELAY_MS: '2500',

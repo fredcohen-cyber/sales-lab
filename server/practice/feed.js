@@ -37,7 +37,7 @@ async function activeDrills(q) {
 }
 
 // Personas of a drill that coaching can score (or all of them when coaching is off).
-function coachablePersonas(config, drill, index) {
+export function coachablePersonas(config, drill, index) {
   if (!aiConfigured(config)) return drill.personas;
   return drill.personas.filter((persona) => {
     const sources = (drill.source_refs || []).map((ref) => resolveRef(ref, index, drill, persona));

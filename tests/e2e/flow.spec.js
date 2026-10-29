@@ -163,7 +163,7 @@ test('Vic sets a password, signs in, and the link cannot be reused', async ({ br
   await signIn(vic, VIC.email, VIC.password);
   await expect(vic.getByRole('heading', { name: 'Welcome back, Vic' })).toBeVisible();
   const nav = vic.getByRole('navigation', { name: 'Main' });
-  for (const label of ['Practice Studio', 'Curriculum', 'My Progress', 'Knowledge Library']) await expect(nav.getByRole('link', { name: label })).toBeVisible();
+  for (const label of ['Practice Studio', 'Practice Studio-Voice', 'Curriculum', 'My Progress', 'Knowledge Library']) await expect(nav.getByRole('link', { name: label, exact: true })).toBeVisible();
   await expect(nav.getByRole('link', { name: 'User Management' })).toHaveCount(0);
   await shot(vic, '06-rep-home');
 
@@ -175,7 +175,7 @@ test('Vic sets a password, signs in, and the link cannot be reused', async ({ br
 });
 
 test('Vic chooses a stage, not a question: it is served with its buyer and levels set, and the draft survives a reload', async () => {
-  await vic.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Practice Studio' }).click();
+  await vic.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Practice Studio', exact: true }).click();
   await expect(vic.getByRole('heading', { name: 'Practice Studio', level: 1 })).toBeVisible();
   await expect(vic.getByRole('heading', { name: 'Account executive stages' })).toBeVisible();
   // Reps see stages, never a list of questions to pick from.
@@ -534,6 +534,63 @@ test('managers review, add, and delete questions in the Question Bank; ideal ans
   await owner.goto(`/drills/${state.drillId}/edit`);
   await expect(owner.getByRole('heading', { name: 'The buyer’s pushbacks' })).toBeVisible();
   await expect(owner.getByLabel('Pushback 1')).not.toHaveValue('');
+});
+
+test('reps practice a call out loud in Practice Studio-Voice and get written coaching on the transcript', async () => {
+  await vic.goto('/');
+  await vic.getByRole('link', { name: 'Practice Studio-Voice' }).click();
+  await expect(vic.getByRole('heading', { name: 'Practice Studio-Voice', level: 1 })).toBeVisible();
+  await vic.locator('label.voice-product').filter({ hasText: 'Ravenly' }).click();
+  await vic.getByLabel('Who picks up').selectOption('office_manager');
+  await shot(vic, '30-voice-start');
+  await vic.getByRole('button', { name: 'Go to the phone' }).click();
+  await expect(vic).toHaveURL(/\/voice\/calls\/[0-9a-f-]{36}$/);
+  const know = vic.locator('.call-know');
+  await expect(know).toContainText('Ravenly');
+  await expect(know).toContainText('A new prospect');
+  await expect(know).toContainText('Office manager or intake director');
+  await expect(vic.getByRole('status').filter({ hasText: 'Ready to call' })).toBeVisible();
+  await shot(vic, '31-voice-ready');
+
+  await vic.getByRole('button', { name: 'Call', exact: true }).click();
+  await expect(vic.getByRole('status').filter({ hasText: 'Ringing' })).toBeVisible();
+  await expect(vic.getByRole('status').filter({ hasText: 'On the call' })).toBeVisible({ timeout: 15_000 });
+  await vic.getByRole('button', { name: 'Transcript' }).click();
+  const live = vic.locator('.live-transcript');
+  await expect(live.locator('.tline-buyer')).toHaveCount(1);
+  const say = async (text, buyerLines) => {
+    await vic.getByLabel('Say (test mode)').fill(text);
+    await vic.getByRole('button', { name: 'Say it' }).click();
+    await expect(live.locator('.tline-rep').filter({ hasText: text })).toBeVisible();
+    if (buyerLines) await expect(live.locator('.tline-buyer')).toHaveCount(buyerLines);
+  };
+  await say('Hi, this is Vic with Ravenly. I help firms answer website inquiries faster. Did I catch you at a bad time?', 2);
+  await say('Fair. How does your team handle an inquiry that comes in at eight at night today?', 3);
+  await vic.getByRole('textbox', { name: 'Notes' }).fill('Front desk screens vendors. Asked for Thursday.');
+  await shot(vic, '32-voice-live');
+  // The person at the firm says goodbye and hangs up; the call ends on its own.
+  await say('Would fifteen minutes on Thursday at two work to see whether it fits?');
+  await expect(vic.getByRole('heading', { name: /^Your call with / })).toBeVisible({ timeout: 20_000 });
+  await expect(vic.getByLabel(/^Score \d+ out of 100$/)).toBeVisible({ timeout: 20_000 });
+  await expect(vic.getByText('Next step booked')).toBeVisible();
+  await expect(vic.getByText('They hung up')).toBeVisible();
+  await expect(vic.getByRole('heading', { name: 'Moments that mattered' })).toBeVisible();
+  await expect(vic.getByRole('heading', { name: 'What you did not know' })).toBeVisible();
+  await expect(vic.locator('.transcript .tline-rep')).toHaveCount(3);
+  await expect(vic.getByText('Front desk screens vendors. Asked for Thursday.')).toBeVisible();
+  await shot(vic, '33-voice-review');
+
+  await vic.getByRole('link', { name: 'Back to Practice Studio-Voice' }).first().click();
+  const row = vic.locator('table.voice-calls tbody tr').first();
+  await expect(row).toContainText('Office manager or intake director');
+  await expect(row).toContainText('Next step booked');
+
+  // Managers see the team's calls and can open one.
+  await owner.goto('/voice');
+  const team = owner.locator('section').filter({ has: owner.getByRole('heading', { name: 'Team calls' }) });
+  await expect(team).toContainText('Vic Alvarez');
+  await team.locator('tbody tr').first().getByRole('link').click();
+  await expect(owner.getByRole('heading', { name: /^Vic Alvarez’s call with / })).toBeVisible();
 });
 
 test('managers cannot deactivate or demote themselves, and the owner is protected', async () => {

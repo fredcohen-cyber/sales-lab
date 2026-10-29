@@ -45,6 +45,31 @@ function AiPanel({ ai }) {
   );
 }
 
+function VoicePanel({ voice }) {
+  return (
+    <section className="panel stack-sm">
+      <h2 className="section-title">Voice practice</h2>
+      {voice.configured ? (
+        <dl className="kv">
+          <dt>Voice</dt>
+          <dd>OpenAI realtime ({voice.model})</dd>
+          <dt>Call length</dt>
+          <dd>Up to {voice.maxCallMinutes} minutes</dd>
+          <dt>Daily limit</dt>
+          <dd>{voice.callsPerDay} calls per person</dd>
+        </dl>
+      ) : (
+        <Notice kind="warn" title="Voice practice is not configured">
+          <p>Add OPENAI_API_KEY as a server variable in Railway. The key stays on the server. Calls are billed by the minute to that OpenAI account; coaching on the calls still uses the AI coaching key above.</p>
+        </Notice>
+      )}
+      <p className="tiny muted" style={{ margin: 0 }}>
+        To change these, set VOICE_MODEL, VOICE_MAX_CALL_MINUTES, or VOICE_CALLS_PER_DAY in Railway.
+      </p>
+    </section>
+  );
+}
+
 function RubricPanel({ settings, onSaved }) {
   const toast = useToast();
   const [weights, setWeights] = useState(() => Object.fromEntries(settings.rubric.dimensions.map((d) => [d.key, d.weight])));
@@ -262,6 +287,7 @@ export function Settings() {
       {data && (
         <div className="stack-lg">
           <AiPanel ai={data.ai} />
+          {data.voice && <VoicePanel voice={data.voice} />}
           <RubricPanel key={`r${data.rubric.version}`} settings={data} onSaved={saved} />
           <ThresholdPanel key={JSON.stringify(data.thresholds)} settings={data} onSaved={saved} />
           <PersonaPanel personas={data.personas} onSaved={saved} />

@@ -16,6 +16,7 @@ import { reviewRoutes } from './reviews/routes.js';
 import { reportRoutes } from './reports/routes.js';
 import { settingsRoutes } from './settings/routes.js';
 import { homeRoutes } from './home/routes.js';
+import { voiceRoutes } from './voice/routes.js';
 
 const DIST = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../client/dist');
 
@@ -72,6 +73,7 @@ export function createApp({ db, config, provider, log = console.log }) {
   api.use('/knowledge', knowledgeRoutes(ctx));
   api.use('/drills', drillRoutes(ctx));
   api.use('/practice', practiceRoutes(ctx));
+  api.use('/voice', voiceRoutes(ctx));
   api.use(curriculumRoutes(ctx));
   api.use(reviewRoutes(ctx));
   api.use(reportRoutes(ctx));

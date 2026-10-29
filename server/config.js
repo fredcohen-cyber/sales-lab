@@ -38,6 +38,17 @@ export function loadConfig(env = process.env) {
 
   const defaultModel = provider === 'openai' ? 'gpt-5' : 'claude-sonnet-5-5';
 
+  // Voice practice: OpenAI's realtime voice plays the person who answers the call. Coaching on the call
+  // still runs on the AI provider above. Like coaching, the stand-in exists only for automated tests.
+  let voiceProvider = (env.VOICE_PROVIDER || '').trim().toLowerCase();
+  if (!voiceProvider) voiceProvider = env.OPENAI_API_KEY ? 'openai' : 'none';
+  if (!['openai', 'mock', 'none'].includes(voiceProvider)) {
+    throw new Error(`VOICE_PROVIDER must be openai or none (got "${voiceProvider}")`);
+  }
+  if (voiceProvider === 'mock' && (isProduction || env.SALES_LAB_ALLOW_MOCK_AI !== 'yes-test-only')) {
+    throw new Error('VOICE_PROVIDER=mock is only allowed in automated tests.');
+  }
+
   return {
     nodeEnv,
     isProduction,
@@ -66,8 +77,26 @@ export function loadConfig(env = process.env) {
       // Coaching runs one person may start per hour (new answers plus retries).
       runsPerUserPerHour: intFrom(env.AI_RUNS_PER_USER_PER_HOUR, 60),
     },
+    voice: {
+      provider: voiceProvider,
+      openaiKey: env.OPENAI_API_KEY || '',
+      // Only tests point this elsewhere (a stand-in for OpenAI's realtime calls endpoint).
+      baseUrl: (env.OPENAI_BASE_URL || 'https://api.openai.com/v1').trim().replace(/\/+$/, ''),
+      model: (env.VOICE_MODEL || 'gpt-realtime-2.1').trim(),
+      transcribeModel: (env.VOICE_TRANSCRIBE_MODEL || 'gpt-4o-transcribe').trim(),
+      // Calls are billed by the minute: each call ends at this length, and each person gets this many a day.
+      maxCallMinutes: intFrom(env.VOICE_MAX_CALL_MINUTES, 10),
+      callsPerDay: intFrom(env.VOICE_CALLS_PER_DAY, 20),
+      requestTimeoutMs: intFrom(env.VOICE_REQUEST_TIMEOUT_MS, 20_000),
+    },
     sweepIntervalMs: intFrom(env.SWEEP_INTERVAL_MS, 15_000),
   };
+}
+
+export function voiceConfigured(config) {
+  const { provider, openaiKey } = config.voice;
+  if (provider === 'openai') return Boolean(openaiKey);
+  return provider === 'mock';
 }
 
 export function aiConfigured(config) {

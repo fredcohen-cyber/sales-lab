@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { HttpError, notFound, parseBody, route } from '../lib/errors.js';
 import { audit } from '../lib/audit.js';
 import { clientIp, requireManager } from '../auth/middleware.js';
-import { aiConfigured } from '../config.js';
+import { aiConfigured, voiceConfigured } from '../config.js';
 import { ProviderError } from '../ai/provider.js';
 import { COLLECTION_KINDS } from '../knowledge/sections.js';
 import { ALLOWED_EMAIL_DOMAINS, BRANDS, CRITICAL_FAILURE_TYPES, DEPTH_TEXT, DIFFICULTY_TEXT, DIMENSION_KEYS, EVIDENCE_BASIS, EXPERIENCE, PRODUCT_LINES, REVIEW_STATUS, ROLES, SKEPTICISM_TEXT, STAGES, SUBJECTS } from '../domain.js';
@@ -47,6 +47,7 @@ export function settingsRoutes({ db, config, provider }) {
           minEvidence: settings.min_evidence,
         },
         coaching: { configured: aiConfigured(config) },
+        voice: { configured: voiceConfigured(config) },
       });
     }),
   );
@@ -71,6 +72,12 @@ export function settingsRoutes({ db, config, provider }) {
           model: config.ai.model,
           configured: aiConfigured(config),
           timeoutSeconds: Math.round(config.ai.timeoutMs / 1000),
+        },
+        voice: {
+          configured: voiceConfigured(config),
+          model: config.voice.model,
+          maxCallMinutes: config.voice.maxCallMinutes,
+          callsPerDay: config.voice.callsPerDay,
         },
         owner,
         allowedDomains: ALLOWED_EMAIL_DOMAINS,

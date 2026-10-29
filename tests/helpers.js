@@ -31,6 +31,7 @@ export async function startTestApp({ dbName = 'saleslab_test', env = {} } = {}) 
     AI_PROVIDER: 'mock',
     SALES_LAB_ALLOW_MOCK_AI: 'yes-test-only',
     AI_TIMEOUT_MS: '1500',
+    VOICE_PROVIDER: 'mock',
     APP_BASE_URL: 'http://127.0.0.1',
     ...env,
   });
@@ -105,12 +106,15 @@ export class Client {
     this.base = base;
     this.cookie = null;
   }
-  async req(method, path, body, { headers = {}, csrf = true } = {}) {
+  // raw: { body, type } sends a body as is (a WebRTC offer, say) instead of JSON.
+  async req(method, path, body, { headers = {}, csrf = true, raw = null } = {}) {
     const h = { ...headers };
-    if (body !== undefined) h['content-type'] = 'application/json';
+    if (raw) h['content-type'] = raw.type;
+    else if (body !== undefined) h['content-type'] = 'application/json';
     if (csrf) h['x-requested-with'] = 'SalesLab';
     if (this.cookie) h.cookie = this.cookie;
-    const res = await fetch(this.base + path, { method, headers: h, body: body !== undefined ? JSON.stringify(body) : undefined, redirect: 'manual' });
+    const payload = raw ? raw.body : body !== undefined ? JSON.stringify(body) : undefined;
+    const res = await fetch(this.base + path, { method, headers: h, body: payload, redirect: 'manual' });
     for (const c of res.headers.getSetCookie?.() || []) {
       const [pair] = c.split(';');
       const idx = pair.indexOf('=');

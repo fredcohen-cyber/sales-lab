@@ -24,6 +24,15 @@ import {
   LockKeyhole,
   LogOut,
   Menu,
+  Mic,
+  MicOff,
+  Captions,
+  CaptionsOff,
+  Headset,
+  NotebookPen,
+  Phone,
+  PhoneOff,
+  Building2,
   MessageSquare,
   MessageSquareText,
   MessagesSquare,
@@ -82,6 +91,15 @@ export const SparkIcon = sized(Sparkles);
 export const TargetIcon = sized(Target);
 export const RepeatIcon = sized(Repeat);
 export const ClipboardIcon = sized(ClipboardList);
+export const PhoneIcon = sized(Phone);
+export const PhoneOffIcon = sized(PhoneOff);
+export const MicIcon = sized(Mic);
+export const MicOffIcon = sized(MicOff);
+export const CaptionsIcon = sized(Captions);
+export const CaptionsOffIcon = sized(CaptionsOff);
+export const HeadsetIcon = sized(Headset);
+export const NotesIcon = sized(NotebookPen);
+export const FirmIcon = sized(Building2);
 
 // One icon per practice stage, for the stage cards.
 export const STAGE_ICONS = {

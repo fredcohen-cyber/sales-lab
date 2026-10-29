@@ -24,6 +24,8 @@ import { UserDetail } from './pages/UserDetail.jsx';
 import { Settings } from './pages/Settings.jsx';
 import { DrillEditor } from './pages/DrillEditor.jsx';
 import { QuestionBank } from './pages/QuestionBank.jsx';
+import { VoiceStudio } from './pages/VoiceStudio.jsx';
+import { VoiceCallPage } from './pages/VoiceCall.jsx';
 
 function RequireAuth({ children }) {
   const { loading, user } = useAuth();
@@ -93,6 +95,8 @@ export function App() {
         <Route path="practice/stage/:stage" element={<StageRunner />} />
         <Route path="practice/assigned/:itemId" element={<DrillRunner />} />
         <Route path="attempts/:id" element={<AttemptPage />} />
+        <Route path="voice" element={<VoiceStudio />} />
+        <Route path="voice/calls/:id" element={<VoiceCallPage />} />
         <Route path="curriculum" element={<Curriculum />} />
         <Route path="progress" element={<Progress />} />
         <Route path="knowledge" element={<Knowledge />} />

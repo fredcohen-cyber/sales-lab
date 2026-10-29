@@ -2964,3 +2964,583 @@ dialog.modal::backdrop {
     padding: 16px;
   }
 }
+
+/* ------------------------------------------------------------------ Practice Studio-Voice */
+.voice-start-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 18px;
+  align-items: start;
+}
+.voice-products {
+  border: 0;
+  padding: 0;
+  margin-inline: 0;
+  margin-bottom: 0;
+  min-width: 0;
+}
+.voice-products > legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-weight: 550;
+  font-size: 12.5px;
+  color: #5d6276;
+}
+.voice-product-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.voice-product {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.voice-product input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.voice-product:hover {
+  border-color: #d8d3ed;
+}
+.voice-product.selected {
+  border-color: var(--purple);
+  background: var(--pale-2);
+  box-shadow: 0 0 0 3px rgba(102, 85, 204, 0.1);
+}
+.voice-product:focus-within {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
+.voice-product.empty {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.voice-product-name {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+.voice-start-row {
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.btn-call {
+  --b: #2e8b67;
+}
+.btn-call:hover {
+  --b: #26775a;
+}
+.voice-tip-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--ink-2);
+}
+.voice-tip-list li + li {
+  margin-top: 6px;
+}
+.voice-history {
+  margin-top: 28px;
+}
+.voice-firm {
+  display: block;
+}
+.voice-team-filter select {
+  min-height: 34px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  font-size: 12.5px;
+}
+
+/* The phone: a softphone in the app's plum, so a live call reads as a different place. */
+.call-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 430px) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+.phone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  min-height: 560px;
+  padding: 20px 22px 26px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #3b3352 0%, #2b2540 100%);
+  color: #f4f2fa;
+  box-shadow: var(--shadow-pop);
+}
+.phone-top {
+  align-self: stretch;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+  color: #c9c2dc;
+}
+.phone-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #ece8f6;
+}
+.phone-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8a83a0;
+}
+.phone-dot.on {
+  background: #4fd39a;
+  box-shadow: 0 0 0 3px rgba(79, 211, 154, 0.18);
+}
+.phone-timer {
+  font-variant-numeric: tabular-nums;
+}
+.phone-who {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 28px;
+}
+.phone-avatar {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #514869;
+  color: #efeaff;
+  margin-bottom: 16px;
+}
+.phone-avatar::before,
+.phone-avatar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(169, 155, 236, 0.6);
+  opacity: 0;
+}
+.phone-avatar.speaking::before {
+  animation: voice-ring 1.6s ease-out infinite;
+}
+.phone-avatar.speaking::after {
+  animation: voice-ring 1.6s ease-out 0.8s infinite;
+}
+.phone-avatar.ringing {
+  animation: phone-ring 2s ease-in-out infinite;
+}
+@keyframes voice-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+@keyframes phone-ring {
+  0%,
+  60%,
+  100% {
+    transform: rotate(0);
+  }
+  10%,
+  30%,
+  50% {
+    transform: rotate(-6deg);
+  }
+  20%,
+  40% {
+    transform: rotate(6deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .phone-avatar.speaking::before,
+  .phone-avatar.speaking::after,
+  .phone-avatar.ringing {
+    animation: none;
+  }
+  .phone-avatar.speaking::before {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+.phone-name {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+.phone-role {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: #d6d0e8;
+}
+.phone-number {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: #a9a2bf;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.phone-dialpad,
+.phone-incall {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.phone-mic-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.phone-mic-label {
+  font-size: 12px;
+  color: #c9c2dc;
+}
+.phone .segmented {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.phone .segmented button {
+  color: #d6d0e8;
+}
+.phone .segmented button:hover:not(:disabled) {
+  color: #fff;
+}
+.phone .segmented button[aria-pressed='true'] {
+  background: #fff;
+  color: var(--plum);
+}
+.phone-round {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  border: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: transform 0.12s, background 0.15s;
+}
+.phone-round:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.phone-round:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+.phone-round:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.phone-call {
+  background: #2fa274;
+}
+.phone-call:hover {
+  background: #278c63;
+}
+.phone-hangup {
+  background: #d6464f;
+}
+.phone-hangup:hover:not(:disabled) {
+  background: #bd3a43;
+}
+.phone-round-label {
+  font-size: 12.5px;
+  font-weight: 550;
+  color: #d6d0e8;
+}
+.phone-note {
+  margin: auto 0 0;
+  font-size: 13px;
+  color: #c9c2dc;
+  text-align: center;
+}
+.phone-you {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 12.5px;
+  color: #d6d0e8;
+}
+.mic-level {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.mic-level span {
+  width: 3px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.22);
+}
+.mic-level span:nth-child(1) {
+  height: 4px;
+}
+.mic-level span:nth-child(2) {
+  height: 7px;
+}
+.mic-level span:nth-child(3) {
+  height: 10px;
+}
+.mic-level span:nth-child(4) {
+  height: 12px;
+}
+.mic-level span:nth-child(5) {
+  height: 14px;
+}
+.mic-level span.on {
+  background: #4fd39a;
+}
+.mic-level.muted span {
+  background: rgba(255, 255, 255, 0.12);
+}
+.phone-warning {
+  margin: 0;
+  font-size: 12.5px;
+  color: #ffd98a;
+  text-align: center;
+}
+.phone-error {
+  margin: 0;
+  max-width: 36ch;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #ffc9cc;
+  text-align: center;
+}
+.phone-error p {
+  margin: 0 0 8px;
+}
+.phone-controls {
+  display: flex;
+  gap: 24px;
+  margin-top: 6px;
+}
+.phone-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #e6e1f3;
+  font: 500 12px/1.3 var(--sans);
+  cursor: pointer;
+}
+.phone-btn svg {
+  width: 50px;
+  height: 50px;
+  padding: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.15s, color 0.15s;
+}
+.phone-btn:hover:not(:disabled) svg {
+  background: rgba(255, 255, 255, 0.17);
+}
+.phone-btn[aria-pressed='true'] svg {
+  background: #fff;
+  color: var(--plum);
+}
+.phone-btn:focus-visible {
+  outline: none;
+}
+.phone-btn:focus-visible svg {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+.phone-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.phone-mock {
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 8px;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.phone-mock label {
+  grid-column: 1 / -1;
+  font-size: 11.5px;
+  color: #c9c2dc;
+}
+.phone-mock input {
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.15);
+  color: #fff;
+}
+.call-side {
+  min-width: 0;
+}
+.call-know {
+  margin: 0;
+}
+.live-transcript {
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.live-transcript .tline {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.tline-who {
+  font-weight: 650;
+  margin-right: 8px;
+  color: var(--ink);
+}
+.tline-rep .tline-who {
+  color: var(--purple-ink);
+}
+
+/* After the call */
+.transcript {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.transcript .tline {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 120px) minmax(0, 1fr);
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line-2);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.transcript .tline:first-child {
+  border-top: 0;
+}
+.transcript .tline-who {
+  margin: 0;
+}
+.tline-time {
+  padding-top: 1px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.transcript .tline-buyer .tline-text {
+  color: var(--ink-2);
+}
+.talk-split {
+  max-width: 420px;
+  margin-top: 4px;
+}
+.talk-bar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--line);
+}
+.talk-rep {
+  background: var(--purple);
+}
+.talk-buyer {
+  background: #c9c3dc;
+}
+.moments {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.moment {
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+.moment:first-child {
+  border-top: 0;
+  padding-top: 4px;
+}
+.moment-said,
+.moment-try {
+  margin: 0;
+}
+.moment-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+.moment-said .evidence {
+  margin-top: 0;
+}
+.moment-try .model-answer {
+  display: block;
+}
+.call-sub {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink);
+}
+.call-pushbacks {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.call-pushbacks li + li {
+  margin-top: 6px;
+}
+@media (max-width: 960px) {
+  .voice-start-grid,
+  .call-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .phone {
+    min-height: 0;
+  }
+}
+@media (max-width: 640px) {
+  .voice-product-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .transcript .tline {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 4px 10px;
+  }
+  .transcript .tline-who,
+  .transcript .tline-text {
+    grid-column: 2;
+  }
+}

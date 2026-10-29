@@ -15,6 +15,7 @@ import {
   LogoutIcon,
   MenuIcon,
   PadIcon,
+  PhoneIcon,
   ProgressIcon,
   SettingsIcon,
   UsersIcon,
@@ -26,6 +27,7 @@ const ROLE = { ae: 'Account executive', am: 'Account manager', manager: 'Manager
 const SECTIONS = [
   ['/practice', 'Practice Studio'],
   ['/attempts', 'Practice Studio'],
+  ['/voice', 'Practice Studio-Voice'],
   ['/drills', 'Question Bank'],
   ['/questions', 'Question Bank'],
   ['/curriculum', 'Curriculum'],
@@ -95,6 +97,7 @@ export function Shell() {
           <div className="nav-caption">Practice</div>
           {link('/', 'Home', HomeIcon, null, true)}
           {link('/practice', 'Practice Studio', PadIcon)}
+          {link('/voice', 'Practice Studio-Voice', PhoneIcon)}
           {link('/curriculum', 'Curriculum', ListIcon)}
           {link('/progress', 'My Progress', ProgressIcon)}
           {link('/knowledge', 'Knowledge Library', BookIcon)}
